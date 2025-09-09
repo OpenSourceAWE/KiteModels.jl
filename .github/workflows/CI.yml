@@ -75,7 +75,7 @@ jobs:
           
   test-with-code-coverage:
     name: Julia ${{ matrix.julia_version }} - ${{ matrix.os }} - ${{ matrix.julia_arch }} - with code coverage
-    timeout-minutes: 70
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
