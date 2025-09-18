@@ -1,3 +1,6 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 # plot the lift and drag coefficients as function of angle of attack
 
 # t_start  t_stop   duration  depower  height   av_elevation std_elevation av_pitch  av_wind_200 
@@ -73,7 +76,7 @@ function simulate(kps4, integrator, logger, steps)
         r = set.drum_radius
         n = set.gear_ratio
         set_torque = -r/n * force
-        KiteModels.next_step!(kps4, integrator; set_torque, dt)
+        next_step!(kps4, integrator; set_torque, dt)
         sys_state = KiteModels.SysState(kps4)
         aoa = kps4.alpha_2
         sys_state.var_01 = aoa
@@ -112,7 +115,7 @@ for depower in DEPOWER
     kps4::KPS4 = KPS4(kcu)
     set.elevation += 5
     set.v_wind = V_WIND_200[i] / 1.348881340489221 * calc_wind_factor(kps4.am, HEIGHT[i])/1.348881340489221
-    integrator = KiteModels.init_sim!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
     if ! isnothing(integrator)
         try
             cl, cd = simulate(kps4, integrator, logger, STEPS)

@@ -1,3 +1,6 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Printf
 # simulate the effect of steering the kite using the one point kite model
 using KiteModels
@@ -47,20 +50,21 @@ function simulate(integrator, steps, plot=false)
         end
 
 
-        KiteModels.next_step!(kps3, integrator; set_speed=0, dt)
+        next_step!(kps3, integrator; set_speed=0, dt)
         iter += kps3.iter
 
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                lines, sc, txt = plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments, lines, sc, txt)       
+                lines, sc, txt = plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments, 
+                                        lines, sc, txt, fig="simulate_steering")       
             end
         end
     end
     iter / steps
 end
 
-integrator = KiteModels.init_sim!(kps3; delta=0, stiffness_factor=0.04, prn=STATISTIC)
+integrator = KiteModels.init!(kps3; delta=0, stiffness_factor=0.04, prn=STATISTIC)
 
 if PLOT
     av_steps = simulate(integrator, STEPS, true)

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Uwe Fechner, Daan van Wolffelaar
+# SPDX-License-Identifier: MIT
+
 using KiteUtils
 using KiteModels
 using KitePodModels

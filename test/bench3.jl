@@ -1,13 +1,17 @@
+# SPDX-FileCopyrightText: 2022 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
 using KiteModels, KitePodModels
 
 if ! @isdefined SEGMENTS
     const SEGMENTS = se().segments
 end
-if ! @isdefined kcu
-    const kcu = KCU(se())
-    const kps = KPS3(kcu)
-end
+
+set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
+set = load_settings("system.yaml")
+kcu::KCU = KCU(set)
+kps::KPS3 = KPS3(kcu)
 
 res1 = zeros(SVector{SEGMENTS+1, KiteModels.KVec3})
 res2 = deepcopy(res1)
@@ -20,7 +24,7 @@ msg=""
 
 function set_defaults()
     KiteModels.clear!(kps)
-    kps.set.l_tether = 150.0
+    kps.set.l_tethers[1] = 150.0
     kps.set.elevation = 60.0
     kps.set.area = 20.0
     kps.set.rel_side_area = 50.0
@@ -33,7 +37,7 @@ end
 
 function init_392()
     KiteModels.clear!(kps)
-    kps.set.l_tether = 392.0
+    kps.set.l_tethers[1] = 392.0
     kps.set.elevation = 70.0
     kps.set.area = 10.0
     kps.set.rel_side_area = 50.0

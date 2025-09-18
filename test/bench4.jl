@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Pkg
 if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
     using TestEnv; TestEnv.activate()
@@ -7,7 +10,7 @@ using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
-set = deepcopy(load_settings("system.yaml"))
+set = load_settings("system.yaml")
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
@@ -16,7 +19,7 @@ msg = String[]
 
     function set_defaults()
         KiteModels.clear!(kps4)
-        kps4.set.l_tether = 150.0
+        kps4.set.l_tethers[1] = 150.0
         kps4.set.elevation = 60.0
         kps4.set.area = 20.0
         kps4.set.rel_side_area = 50.0
@@ -29,7 +32,7 @@ msg = String[]
 
     function init_392()
         KiteModels.clear!(kps4)
-        kps4.set.l_tether = 392.0
+        kps4.set.l_tethers[1] = 392.0
         kps4.set.elevation = 70.0
         kps4.set.area = 10.0
         kps4.set.rel_side_area = 50.0
@@ -40,7 +43,7 @@ msg = String[]
 
     function init_150()
         KiteModels.clear!(kps4)
-        kps4.set.l_tether = 150.0
+        kps4.set.l_tethers[1] = 150.0
         kps4.set.elevation = 70.0
         kps4.set.area = 10.0
         kps4.set.rel_side_area = 50.0
@@ -56,7 +59,7 @@ msg = String[]
         kps4.set.alpha = 1.0/7.0
         init_150()
         kps4.set.elevation = 60.0
-        kps4.set.profile_law = Int(FAST_EXP)
+        kps4.set.profile_law = Int(EXP)
         pos, vel = KiteModels.init_inner(kps4)
         posd = copy(vel)
         veld = zero(vel)
@@ -82,7 +85,7 @@ msg = String[]
 
     # benchmark inner_loop!
     pos, vel = KiteModels.init_inner(kps4)
-    t = @benchmark KiteModels.inner_loop!(kps4, pos, vel, v_wind_gnd, segments, d_tether) setup=(kps4.set.elevation = 60.0; kps4.set.profile_law = Int(FAST_EXP);
+    t = @benchmark KiteModels.inner_loop!(kps4, pos, vel, v_wind_gnd, segments, d_tether) setup=(kps4.set.elevation = 60.0; kps4.set.profile_law = Int(EXP);
                                         kps4.set.alpha = 1.0/7.0; pos = $pos; vel=$vel;
                                         v_wind_gnd = KVec3(7.0, 0.1, 0.0); kps4.stiffness_factor = 0.5; segments = kps4.set.segments; d_tether = kps4.set.d_tether/1000.0)
     push!(msg, ("Mean time inner_loop!:          $(round(mean(t.times), digits=1)) ns"))
@@ -92,7 +95,7 @@ msg = String[]
     kps4.set.alpha = 1.0/7.0
     init_150()
     kps4.set.elevation = 60.0
-    kps4.set.profile_law = Int(FAST_EXP)
+    kps4.set.profile_law = Int(EXP)
     for i in 1:se().segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
@@ -107,15 +110,14 @@ msg = String[]
     end
     t = @benchmark KiteModels.calc_aero_forces!($kps4, $pos, $vel, $rho, $alpha_depower, $rel_steering)
     push!(msg, ("Mean time calc_aero_forces!:    $(round(mean(t.times), digits=1)) ns"))
-    @test t.memory <= 128
+    @test t.memory <= 0
 
     # benchmark loop!
     init2()
     pos, vel, posd, veld = init2()
     t = @benchmark KiteModels.loop!($kps4, $pos, $vel, $posd, $veld)
     push!(msg, ("Mean time loop!:                $(round(mean(t.times), digits=1)) ns"))
-
-    @test t.memory <= 128
+    @test t.memory <= 0
 
     # benchmark residual!
     init2()
@@ -127,13 +129,17 @@ msg = String[]
     time = 0.0
     t = @benchmark residual!($res, $yd0, $y0, $kps4, $time)
     push!(msg, ("Mean time residual!:           $(round(mean(t.times), digits=1)) ns"))
-    @test t.memory <= 208
+    # println("t.memory: ", t.memory)
+    @test t.memory <= 0
 
     # time using Python/ Numba: 8.94 µs, time using Julia 1.7.2: 1.6µs, Julia 1.8.0: 1.244µs
     # Julia 1.9 on Ryzen:  816.1 ns
     # Julia 1.10 on Ryzen: 787.0 ns 6000 RAM
     # Julia 1.10 on Laptop on battery: 1047ns
     # Julia 1.11 on Laptop on battery: 1035ns
+    # Julia 1.11 on Laptop on battery, branch perf2: 1042ns
+    # Julia 1.11 on Desktop, branch perf2: 835..899 ns on June 15, 2025 after 13:12
+
 end
 printstyled("Benchmark results for KPS4:\n"; bold = true)
 for i in eachindex(msg)

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Pkg
 if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
     using TestEnv; TestEnv.activate()
@@ -18,7 +21,7 @@ poss, vels = nothing, nothing
 
 function set_defaults()
     KiteModels.clear!(kps4)
-    kps4.set.l_tether = 150.0
+    kps4.set.l_tethers[1] = 150.0
     kps4.set.elevation = 60.0
     kps4.set.area = 20.0
     kps4.set.rel_side_area = 50.0
@@ -27,12 +30,12 @@ function set_defaults()
     kps4.set.damping =  2 * 473.0
     kps4.set.alpha = 1.0/7
     kps4.set.c_s = 0.6
-    kps4.set.kcu_diameter = 0
+    kps4.set.kcu_diameter = 0.0
 end
 
 function init_392()
     KiteModels.clear!(kps4)
-    kps4.set.l_tether = 392.0
+    kps4.set.l_tethers[1] = 392.0
     kps4.set.elevation = 70.0
     kps4.set.area = 10.0
     kps4.set.rel_side_area = 50.0
@@ -43,7 +46,7 @@ end
 
 function init_150()
     KiteModels.clear!(kps4)
-    kps4.set.l_tether = 150.0
+    kps4.set.l_tethers[1] = 150.0
     kps4.set.elevation = 70.0
     kps4.set.area = 10.18
     kps4.set.rel_side_area = 30.6
@@ -58,7 +61,7 @@ end
 function init3()
     kps4.set.alpha =  0.08163
     KiteModels.clear!(kps4)
-    kps4.set.l_tether = 150.0 # - kps4.set.height_k - kps4.set.h_bridle
+    kps4.set.l_tethers[1] = 150.0 # - kps4.set.height_k - kps4.set.h_bridle
     kps4.set.area = 10.18
     kps4.set.rel_side_area = 30.6
     kps4.set.mass = 6.21
@@ -231,7 +234,9 @@ end
     kps4.set.alpha = 1.0/7.0
     init_150()
     kps4.set.elevation = 60.0
-    kps4.set.profile_law = Int(EXP)
+    kps4.set.profile_law = Int(EXPLOG)
+    kps4.set.alpha = 0.08163
+    # kps4.set.profile_low = se().profile_law
     for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
@@ -316,6 +321,8 @@ end
 @testset "test_loop          " begin
     init2()
     pos, vel, posd, veld = init2()
+    kps4.set.profile_law = Int(EXPLOG)
+    kps4.set.alpha = 0.08163
     KiteModels.loop!(kps4, pos, vel, posd, veld)
     res1=[[-0.        0.000001 -0.      ]
           [ 0.        0.        0.      ]
@@ -448,7 +455,6 @@ end
             @test all(res2_[i, :] .≈ res2[i])
         end
     end
-
 end
 
 @testset "test_getters" begin
@@ -504,7 +510,7 @@ end
 function simulate(integrator, steps)
     iter = 0
     for i in 1:steps
-        KiteModels.next_step!(kps4, integrator; set_speed=0)
+        next_step!(kps4, integrator; set_speed=0)
         iter += kps4.iter
     end
     iter / steps
@@ -514,7 +520,10 @@ end
     STEPS = 500
     kps4.set.depower = 23.6
     kps4.set.solver = "IDA"
-    integrator = KiteModels.init_sim!(kps4; stiffness_factor=0.5, prn=false)
+    kps4.set.profile_law = Int(EXPLOG)
+    kps4.set.alpha = 0.08163
+    # struct_diff(kps4.set, se())
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.5, prn=false)
     # println("\nStarting simulation...")
     simulate(integrator, 100)
     av_steps = simulate(integrator, STEPS-100)
@@ -543,7 +552,7 @@ end
 
 @testset "Raptures" begin
     kps4_ = KPS4(KCU(set))
-    integrator = KiteModels.init_sim!(kps4_; stiffness_factor=0.035, prn=false)
+    integrator = KiteModels.init!(kps4_; stiffness_factor=0.035, prn=false)
     kps4_.set.version = 2
     kps4_.stiffness_factor = 3
     @test maximum(spring_forces(kps4_; prn=false)) > 9000

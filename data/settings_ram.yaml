@@ -1,5 +1,5 @@
 system:
-    log_file: "data/log_8700W_8ms" # filename without extension  [replay only]
+    log_file: "data/ram_air_kite"  # filename without extension  [replay only]
                                    #   use / as path delimiter, even on Windows 
     time_lapse:   1.0              # relative replay speed
     sim_time:   100.0              # simulation time             [sim only]
@@ -10,22 +10,20 @@ system:
     fixed_font: ""                 # name or filepath+filename of alternative fixed pitch font
 
 initial:
-    l_tether: 50.0        # initial tether length       [m]
-    elevation: 70.8        # initial elevation angle   [deg]
-    v_reel_out: 0.0        # initial reel out speed    [m/s]
+    l_tethers: [50.0, 50.0, 50.0]  # initial tether length       [m]
+    elevation: 70.8                # initial elevation angle   [deg]
+    v_reel_outs: [0.0, 0.0, 0.0]   # initial reel out speed    [m/s]
 
 solver:
-    abs_tol: 0.006        # absolute tolerance of the DAE solver [m, m/s]
-    rel_tol: 0.01         # relative tolerance of the DAE solver [-]
-    solver: "DFBDF"        # DAE solver, IDA or DImplicitEuler, DFBDF
-    linear_solver: "GMRES" # can be GMRES or Dense or LapackDense (only for IDA)
-    max_order: 4           # maximal order, usually between 3 and 5
-    max_iter:  10000         # max number of iterations of the steady-state-solver
+    solver: "FBDF"
+    abs_tol: 0.01          # absolute tolerance of the DAE solver [m, m/s]
+    rel_tol: 0.01          # relative tolerance of the DAE solver [-]
+    relaxation: 0.6        # relaxation factor of inner linear Newton solver, needed for quasi-steady solver
 
 kite:
     model: "data/ram_air_kite_body.obj"     # 3D model of the kite
     foil_file: "data/ram_air_kite_foil.dat" # filename for the foil shape
-    physical_model: "RamAirKite"            # name of the kite model to use (KPS3, KPS4 or RamAirKite)
+    physical_model: "ram"            # name of the kite model to use (KPS3, KPS4 or SymbolicAWEModel)
     top_bridle_points:                      # top bridle points that are not on the kite body in CAD frame
         - [0.290199, 0.784697, -2.61305]
         - [0.392683, 0.785271, -2.61201]
@@ -33,7 +31,6 @@ kite:
         - [0.535543, 0.786175, -2.62148]
     crease_frac: 0.82                       # distance along normalized foil chord for the trailing edge deformation crease
     bridle_fracs: [0.088, 0.31, 0.58, 0.93] # distances along normalized foil chord for bridle attachment points
-    fixed_index: 1                          # the bridle frac index around which the kite twists
     mass: 0.9                               # kite mass [kg]
     quasi_static: false                     # whether to use quasi static kite points or not
 
@@ -49,7 +46,7 @@ tether:
                            # SK75: 109 to 132 GPa according to datasheet
 
 winch:
-    winch_model: "AsyncMachine" # or TorqueControlledMachine
+    winch_model: "TorqueControlledMachine" # or AsynchMachine
     max_force: 4000        # maximal (nominal) tether force; short overload allowed [N]
     v_ro_max:  8.0         # maximal reel-out speed                          [m/s]
     v_ro_min: -8.0         # minimal reel-out speed (=max reel-in speed)     [m/s]
@@ -72,7 +69,7 @@ environment:
     rho_0:  1.225            # air density at zero height and 15 °C    [kg/m³]
     alpha:  0.08163          # exponent of the wind profile law
     z0:     0.0002           # surface roughness                       [m]
-    profile_law: 3           # 1=EXP, 2=LOG, 3=EXPLOG, 4=FAST_EXP, 5=FAST_LOG, 6=FAST_EXPLOG
+    profile_law: 3           # 1=EXP, 2=LOG, 3=EXPLOG, 4=F
     # the following parameters are for calculating the turbulent wind field using the Mann model
     use_turbulence: 0.0      # turbulence intensity relative to Cabau, NL
     v_wind_gnds: [3.483, 5.324, 8.163] # wind speeds at ref height for calculating the turbulent wind field [m/s]

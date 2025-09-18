@@ -1,13 +1,85 @@
+<!--
+SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
+SPDX-License-Identifier: MIT
+-->
+### KiteModels v0.9.0 2025-07-14
+#### Changed
+- BREAKING: rename `init_sim!` to `init!`
+- removed the parameter `upwind_dir!` from `init!`; use set.upwind_dir instead. Careful: This is in degrees.
+- the function `init!` accepts (and ignores) the parameters `delta` and `stiffness_factor` if applied to a 
+  SymbolicAWEModel
+- bump `KiteUtils.jl` to v0.10.15
+- bump `AtmosphericModels` to v0.3.0, the first version that supports turbulent wind fields
+#### Added
+- add the test script test_interface.jl
+- add the field `integrator` to KPS4 and KPS3 structs
+
+### KiteModels v0.8.1 2025-06-20
+#### Changed
+- renamed POWER to POWER_LINE and STEERING to STEERING_LINE
+- improved documentation, fixed example
+
+### KiteModels v0.8.0 2025-06-19
+#### Added
+- add a tutorial for custom system structures
+- add documentation for `SystemStructure` components [#229](https://github.com/ufechner7/KiteModels.jl/pull/229)
+- add the `Transform` struct which defines initial orientation of the `SystemStructure` [#214](https://github.com/ufechner7/KiteModels.jl/pull/214)
+- add a custom amount of kites to the `SystemStructure` [#208](https://github.com/ufechner7/KiteModels.jl/pull/208)
+- make model initialization faster [#222](https://github.com/ufechner7/KiteModels.jl/pull/222)
+- implement missing methods for the `SymbolicAWEModel` [#198](https://github.com/ufechner7/KiteModels.jl/pull/198)
+#### Changed
+- fixed the performance regression when using the `KPS4` model with a winch model of type  `AsyncMachine`
+- improved the script `create_sys_image`; it is now also available if you install the package without using git
+- make model initialization faster [#222](https://github.com/ufechner7/KiteModels.jl/pull/222)
+- make next_step! return nothing [#213](https://github.com/ufechner7/KiteModels.jl/pull/213)
+- Change the names of `RamAirKite` to `SymbolicAWESystem` and `PointMassSystem` to `SystemStructure` [#208](https://github.com/ufechner7/KiteModels.jl/pull/208)
+
+### KiteModels v0.7.4 2025-06-08
+#### Added
+- added licenses to each file, the command `pipx run reuse lint` succeeds now
+- add the command above to the CI scripts
+- the script `create_xz_file`
+- the option to linearize the SymbolicAWEModel system using ModelingToolkit
+- a simplified ram air kite model for faster development and testing
+- the example `lin_ram_model.jl` to show how to linearize a model
+- add the page `Examples SymbolicAWEModel` do the documentation
+#### Changed
+- the example `ram_air_kite.jl` can now be run like this `SIMPLE=true; include("examples/ram_air_kite.jl")`
+- the package `Rotations` is no longer re-exported
+- improved documentation
+#### Fixed
+- small fixes of the SymbolicAWEModel model
+
+### KiteModels v0.7.3 2025-05-05
+#### Fixed
+- fix function update_sys_state!()
+
+### KiteModels v0.7.2 2025-05-05
+#### Changed
+- bump KiteUtils to v0.10.5, which provides much more fields for in the SysState
+
+### KiteModels v0.7.1 2025-04-28
+#### Changed
+- fixed or documented issues found by `Aqua.jl`
+- made `DSP` a test dependency
+- remove package `OrdinaryDiffEqSDIRK`
+- improve documentation for `SymbolicAWEModel`
+#### Added
+- the examples `calc_spectrum.jl` and `plot_spectrum.jl` to the menu
+- the quality insurance package `Aqua.jl`
+- added the script `update_default_manifest`
+- calculate `side_slip` angle in radian
+
 ### KiteModels v0.7.0 2025-04-20
 #### Fixed
 - fixed broken installation by freezing NLSolversBase to `~7.8.3` in Project.toml
 #### Added
 - added `mwe_26.jl` for debugging the initial state solver 
 - the example `ram_air_kite.jl`
-- the struct `PointMassSystem` for easy definition of the kite power system
+- the struct `SystemStructure` for easy definition of the kite power system
 #### Changed
-- BREAKING: the model KPS_3L was renamed to RamAirKite
-- the RamAirKite model is using the **VortexStepMethod** with a deforming wing now
+- BREAKING: the model KPS_3L was renamed to SymbolicAWEModel
+- the SymbolicAWEModel model is using the **VortexStepMethod** with a deforming wing now
 - bump KiteUtils to `v0.10`
 - bump ModellingToolkit to `9.72`
 - bump VortexStepMethod to `1.2.5`
@@ -51,16 +123,6 @@
 - fix #88: the function `init_sim!()` has the new parameter `upwind_dir` to define the
   initial wind direction 
 
-### Unreleased
-#### Changed
-- fixed or documented issues found by `Aqua.jl`
-- made `DSP` a test dependency
-- remove package `OrdinaryDiffEqSDIRK`
-#### Added
-- the examples `calc_spectrum.jl` and `plot_spectrum.jl` to the menu
-- the quality insurance package `Aqua.jl`
-- added the script `update_default_manifest`
-
 ### KiteModels v0.6.12 2024-12-01
 #### Changed
 - update the fields `set_torque`, `set_force`, `set_speed`, `alpha3`, `alpha4`, `roll`, `pitch`, `yaw`
@@ -97,7 +159,7 @@
 - added tests for calc_azimuth(s::AKM), the azimuth in wind reference frame
 - re-enable logging of the angles of attack of the three plates
 - `steering_test_4p.jl` now calculates both `c1` and `c2` of the turn-rate law
-- the environment variable `NO_MTK` disables the pre-compilation of the `RamAirKite` model
+- the environment variable `NO_MTK` disables the pre-compilation of the `SymbolicAWEModel` model
   to save time during development
 - the script `menu2.jl` for model verification was added
 
@@ -137,7 +199,7 @@
 - always specify the `system.yaml` file to use in the examples, always use `load_settings` instead of `se`. 
 This ensures that the settings are always freshly loaded from the file when the script is launched, so any changes 
 to the settings become immediately effective.
-- the RamAirKite model was replaced by the pure ModelingToolkit (MTK) based version. This allows not only a much faster simulation, but the results are also much more accurate.
+- the SymbolicAWEModel model was replaced by the pure ModelingToolkit (MTK) based version. This allows not only a much faster simulation, but the results are also much more accurate.
 
 ### KiteModels v0.6.5 - 2024-08-12
 #### Changed
@@ -216,7 +278,7 @@ to the settings become immediately effective.
 - update Documenter to v1.0
 
 #### Added
-- add type `RamAirKite`, which is now only a copy of `KPS4`, but shall implement a kite with the steering
+- add type `SymbolicAWEModel`, which is now only a copy of `KPS4`, but shall implement a kite with the steering
   lines going to the ground
 
 ### KiteModels v0.5.11 - 2024-04-04

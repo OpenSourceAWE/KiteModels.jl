@@ -1,24 +1,5 @@
-#= MIT License
-
-Copyright (c) 2020, 2021, 2022, 2024 Uwe Fechner
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. =#
+# Copyright (c) 2020, 2021, 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
 
 #= Model of a kite-power system in implicit form: residual = f(y, yd)
 
@@ -84,9 +65,11 @@ $(TYPEDFIELDS)
     "Reference to the KCU model (Kite Control Unit as implemented in the package KitePodModels"
     kcu::KCU
     "Reference to the atmospheric model as implemented in the package AtmosphericModels"
-    am::AtmosphericModel = AtmosphericModel()
+    am::AtmosphericModel = AtmosphericModel(set)
     "Reference to winch model as implemented in the package WinchModels"
     wm::AbstractWinchModel
+    "Integrator, storing the current state"
+    integrator::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing} = nothing
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
     "Function for calculation the lift coefficient, using a spline based on the provided value pairs."
@@ -109,6 +92,8 @@ $(TYPEDFIELDS)
     drag_force::T =       zeros(S, 3)
     "side_force acting on the kite"
     side_force::T =       zeros(S, 3)
+    f_d::T = zeros(S, 3)
+    f_s::T = zeros(S, 3)
     "max_steering angle in radian"
     ks::S =               0.0
     "lift force of the kite; output of calc_aero_forces!"
@@ -143,14 +128,12 @@ $(TYPEDFIELDS)
     pitch_rate::S =       0.0
     "aoa at particle B"
     alpha_2::S =           0.0
-    "aoa at particle B, corrected formula"
-    alpha_2b::S =          0.0
     "aoa at particle C"
     alpha_3::S =           0.0
-    alpha_3b::S =          0.0
     "aoa at particle D"
     alpha_4::S =           0.0
-    alpha_4b::S =          0.0
+    "side_slip angle [rad]"
+    side_slip::S = 0.0
     "relative start time of the current time interval"
     t_0::S =               0.0
     "reel out speed of the winch"
@@ -252,6 +235,10 @@ function KPS4(kcu::KCU)
     clear!(s)
     return s
 end
+function KPS4(set::Settings)
+    kcu = KCU(set)
+    KPS4(kcu)
+end
 
 """ 
     calc_particle_forces!(s::KPS4, pos1, pos2, vel1, vel2, spring, segments, d_tether, rho, i)
@@ -349,6 +336,10 @@ Updates the vector s.forces of the first parameter.
     va_xy3 = va_3 - (va_3 ⋅ z) * z
     va_xy4 = va_4 - (va_4 ⋅ z) * z
 
+    R_k_w = SMatrix{3,3}([x y z])
+    va_k = R_k_w' * SVector{3}(va_2)
+    s.side_slip = atan(va_k[2], -va_k[1])
+
     alpha_2 = rad2deg(π - acos2(normalize(va_xz2) ⋅ x) - alpha_depower)     + s.set.alpha_zero
     alpha_3 = rad2deg(π - acos2(normalize(va_xy3) ⋅ x) + rel_steering * s.ks) + s.set.alpha_ztip
     alpha_4 = rad2deg(π - acos2(normalize(va_xy4) ⋅ x) - rel_steering * s.ks) + s.set.alpha_ztip
@@ -380,11 +371,11 @@ Updates the vector s.forces of the first parameter.
         s.drag_force .= D2 + D3 + D4
         s.forces[s.set.segments + 3] .+= (L2 + D2)
     end
-    f_d = 0.5 * rho * s.set.area * norm(va_xz1)^2 * (s.set.cmq * s.pitch_rate * s.set.cord_length) * z
-    f_s = 0.5 * rho * s.set.area * (0.5*(norm(va_xy3)+norm(va_xy4)))^2 * (s.set.smc * rel_steering * s.ks) * x
-    s.forces[s.set.segments + 2] .+= f_d
-    s.forces[s.set.segments + 4] .+= (L3 + D3 -0.5*f_d + 0.5*f_s)
-    s.forces[s.set.segments + 5] .+= (L4 + D4 -0.5*f_d - 0.5*f_s)
+    s.f_d .= (0.5 * rho * s.set.area * norm(va_xz1)^2 * s.set.cmq * s.pitch_rate * s.set.cord_length) * s.z
+    s.f_s .= (0.5 * rho * s.set.area * (0.5*(norm(va_xy3)+norm(va_xy4)))^2 * s.set.smc * rel_steering * s.ks) * s.x
+    s.forces[s.set.segments + 2] .+= s.f_d
+    s.forces[s.set.segments + 4] .+= (L3 + D3 -0.5*s.f_d + 0.5*s.f_s)
+    s.forces[s.set.segments + 5] .+= (L4 + D4 -0.5*s.f_d - 0.5*s.f_s)
     s.side_force .= (L3 + L4)
 end
 
@@ -403,9 +394,9 @@ Output:
         p2 = s.springs[i].p2  # Second point nr.
         height = 0.5 * (pos[p1][3] + pos[p2][3])
         rho = calc_rho(s.am, height)
-        if height <= -1000.0
-            println("Error: height: $height")
-        end
+        # if height <= -1000.0
+            # println("Error: height: $height")
+        # end
         @assert height > -1000
         if height < 6
             height = 6
@@ -511,10 +502,12 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, time) where S
     if !isnothing(s.sync_speed) && s.sync_speed == 0.0
         use_brake = true
     end
-
-    res[end] = v_reel_outd - calc_acceleration(s.wm, v_reel_out, norm(s.forces[1]); set_speed=s.sync_speed, 
-               set_torque=s.set_torque, use_brake)
-
+    if s.wm isa AsyncMachine
+        res[end] = v_reel_outd - calc_acceleration(s.wm, s.sync_speed, v_reel_out, norm(s.forces[1]), true)       
+    else
+        res[end] = v_reel_outd - calc_acceleration(s.wm, v_reel_out, norm(s.forces[1]); set_speed=s.sync_speed, 
+            set_torque=s.set_torque, use_brake)
+    end
     # copy and flatten result
     for i in 2:div(T,6)+1
         for j in 1:3
@@ -525,7 +518,7 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, time) where S
     # copy the position and velocity vectors for easy debugging
     for i in 1:div(T,6)+1
         @inbounds s.pos[i] .= pos[i]
-        s.vel[i] .= vel[i]
+        @inbounds s.vel[i] .= vel[i]
     end
     s.vel_kite .= vel[end-2]
     s.v_reel_out = v_reel_out

@@ -1,26 +1,5 @@
+# Copyright (c) 2020, 2021, 2022, 2024 Uwe Fechner, Bart van de Lint and Daan van Wolffelaar
 # SPDX-License-Identifier: MIT
-
-#= MIT License
-
-Copyright (c) 2020, 2021, 2022, 2024 Uwe Fechner and Bart van de Lint
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. =#
 
 #= Models of a kite-power system in implicit form: residual = f(y, yd)
 
@@ -36,20 +15,19 @@ module KiteModels
 using PrecompileTools: @setup_workload, @compile_workload 
 using Dierckx, Interpolations, Serialization, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
       DocStringExtensions, OrdinaryDiffEqCore, OrdinaryDiffEqBDF, OrdinaryDiffEqNonlinearSolve,
-      NonlinearSolve
+      NonlinearSolve, SHA
 import Sundials
 using Reexport, Pkg
 using VortexStepMethod
+using KiteUtils
+import KiteUtils: init!, next_step!, update_sys_state!
+import KiteUtils: calc_elevation, calc_heading, calc_course, SysState
 @reexport using VortexStepMethod: RamAirWing, BodyAerodynamics, Solver, NONLIN
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
-@reexport using Rotations
+using Rotations
 import Base.zero
-import KiteUtils.calc_elevation
-import KiteUtils.calc_heading
-import KiteUtils.calc_course
-import KiteUtils.SysState
 import OrdinaryDiffEqCore.init
 import OrdinaryDiffEqCore.step!
 using ModelingToolkit, SymbolicIndexingInterface
@@ -57,23 +35,26 @@ using ModelingToolkit: t_nounits as t, D_nounits as D
 using ADTypes: AutoFiniteDiff
 import ModelingToolkit.SciMLBase: successful_retcode
 
-export KPS3, KPS4, RamAirKite, KVec3, SimFloat, Measurement, PointMassSystem, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
-export calc_set_cl_cd!, copy_examples, copy_bin, update_sys_state!                            # helper functions
-export clear!, find_steady_state!, residual!                                                  # low level workers
-export init_sim!, init!, reinit!, next_step!, init_pos_vel                                    # high level workers
+export KPS3, KPS4, SymbolicAWEModel, KVec3, SimFloat, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
+export calc_set_cl_cd!, copy_examples, copy_bin, update_sys_state!                     # helper functions
+export clear!, find_steady_state!, residual!                                           # low level workers
+export init!, reinit!, next_step!, init_pos_vel                                        # high level workers
 export pos_kite, calc_height, calc_elevation, calc_azimuth, calc_heading, calc_course, calc_orient_quat, calc_aoa  # getters
 export calc_azimuth_north, calc_azimuth_east
 export winch_force, lift_drag, cl_cd, lift_over_drag, unstretched_length, tether_length, v_wind_kite     # getters
 export calculate_rotational_inertia!
 export kite_ref_frame, orient_euler, spring_forces, upwind_dir, copy_model_settings, menu2
+export create_ram_sys_struct, create_simple_ram_sys_struct
 import LinearAlgebra: norm
+export SystemStructure, Point, Group, Segment, Pulley, Tether, Winch, Wing, Transform
+export DynamicsType, DYNAMIC, QUASI_STATIC, WING, STATIC
+export SegmentType, POWER_LINE, STEERING_LINE, BRIDLE
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
 
 # Constants
 const G_EARTH = 9.81            # gravitational acceleration
 const BRIDLE_DRAG = 1.1         # should probably be removed
-const SYS_3L = "system_3l.yaml" # default system project for the 3L model
 
 # Type definitions
 """
@@ -90,6 +71,7 @@ const SimFloat = Float64
 Basic 3-dimensional vector, stack allocated, mutable.
 """
 const KVec3    = MVector{3, SimFloat}
+const KVec4    = MVector{4, SimFloat}
 
 """
    const SVec3    = SVector{3, SimFloat}
@@ -99,19 +81,14 @@ Basic 3-dimensional vector, stack allocated, immutable.
 const SVec3    = SVector{3, SimFloat}  
 
 """
-    abstract type AbstractKiteModel
-
-All kite models must inherit from this type. All methods that are defined on this type must work
-with all kite models. All exported methods must work on this type. 
-"""
-abstract type AbstractKiteModel end
-
-"""
     const AKM = AbstractKiteModel
 
 Short alias for the AbstractKiteModel. 
 """
 const AKM = AbstractKiteModel
+
+# Defined in ext/KiteModelsControlPlotsExt.jl
+function plot end
 
 function __init__()
     if isdir(joinpath(pwd(), "data")) && isfile(joinpath(pwd(), "data", "system.yaml"))
@@ -120,11 +97,11 @@ function __init__()
 end
 
 include("KPS4.jl") # include code, specific for the four point kite model
-include("ram_air_kite.jl") # include code, specific for the four point 3 line kite model
+include("system_structure.jl")
+include("symbolic_awe_model.jl") # include code, specific for the ram air kite model
 include("mtk_model.jl")
 include("KPS3.jl") # include code, specific for the one point kite model
 include("init.jl") # functions to calculate the initial state vector, the initial masses and initial springs
-include("point_mass_system.jl")
 
 function menu2()
     Main.include("examples/menu2.jl")
@@ -211,7 +188,7 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
-    set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=0.0)
+    set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
 
 Set the vector of the wind-velocity at the height of the kite. As parameter the height,
 the ground wind speed [m/s] and the upwind direction [radians] are needed.
@@ -480,12 +457,12 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.orient .= calc_orient_quat(s)
     ss.elevation = calc_elevation(s)
     ss.azimuth = calc_azimuth(s)
-    ss.force = winch_force(s)
+    ss.force .= [winch_force(s); 0; 0; 0]
     ss.heading = calc_heading(s)
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
-    ss.l_tether = s.l_tether
-    ss.v_reelout = s.v_reel_out
+    ss.l_tether .= [s.l_tether; 0; 0; 0]
+    ss.v_reelout .= [s.v_reel_out; 0; 0; 0]
     ss.depower = s.depower
     ss.steering = s.steering/s.set.cs_4p
     ss.kcu_steering = s.kcu_steering/s.set.cs_4p
@@ -496,9 +473,9 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.alpha3 = deg2rad(s.alpha_3)
         ss.alpha4 = deg2rad(s.alpha_4)
         if isnothing(s.set_force)
-            ss.set_force = NaN
+            ss.set_force .= [NaN, 0, 0, 0]
         else
-            ss.set_force = s.set_force
+            ss.set_force .= [s.set_force, 0, 0, 0]
         end
         if isnothing(s.bearing)
             ss.bearing = NaN
@@ -513,14 +490,14 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     end
     ss.set_steering = s.kcu.set_steering
     if isnothing(s.set_torque)
-        ss.set_torque = NaN
+        ss.set_torque .= [NaN, 0, 0, 0]
     else
-        ss.set_torque = s.set_torque
+        ss.set_torque .= [s.set_torque, 0, 0, 0]
     end
     if isnothing(s.sync_speed)
-        ss.set_speed = NaN
+        ss.set_speed .= [NaN, 0, 0, 0]
     else
-        ss.set_speed = s.sync_speed
+        ss.set_speed .= [s.sync_speed, 0, 0, 0]
     end
     ss.roll, ss.pitch, ss.yaw = orient_euler(s)
     cl, cd = cl_cd(s)
@@ -560,24 +537,23 @@ function calc_pre_tension(s::AKM)
 end
 
 """
-    init_sim!(s::AKM; t_end=1.0, stiffness_factor=0.5, delta=0.001, upwind_dir=-pi/2, prn=false)
+    init!(s::AKM; stiffness_factor=0.5, delta=0.0001,
+                      prn=false) -> OrdinaryDiffEqCore.ODEIntegrator
 
-Initializes the integrator of the model.
+Initializes the integrator of the model (KPS3 and KPS4 only).
 
 Parameters:
 - s:     an instance of an abstract kite model
-- t_end: end time of the simulation; normally not needed
 - stiffness_factor: factor applied to the tether stiffness during initialization
 - delta: initial stretch of the tether during the steady state calculation
-- upwind_dir: upwind direction in radians, the direction the wind is coming from. Zero is at north; 
-              clockwise positive. Default: -pi/2, wind from west.
 - prn: if set to true, print the detailed solver results
 
 Returns:
-An instance of a DAE integrator.
+An instance of an `ODEIntegrator`.
 """
-function init_sim!(s::AKM; t_end=1.0, stiffness_factor=0.5, delta=0.0001, upwind_dir=-pi/2, prn=false)
+function init!(s::AKM; stiffness_factor=0.5, delta=0.0001, prn=false)
     clear!(s)
+    upwind_dir = deg2rad(s.set.upwind_dir)
     s.stiffness_factor = stiffness_factor
     
     try
@@ -585,7 +561,7 @@ function init_sim!(s::AKM; t_end=1.0, stiffness_factor=0.5, delta=0.0001, upwind
     catch e
         if e isa AssertionError
             println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
-                    "Try to increase the delta parameter or to decrease the initial_stiffness of the init_sim! function.")
+                    "Try to increase the delta parameter or to decrease the initial_stiffness of the init! function.")
             return nothing
         else
             rethrow(e)
@@ -620,7 +596,7 @@ function init_sim!(s::AKM; t_end=1.0, stiffness_factor=0.5, delta=0.0001, upwind
         set_initial_velocity!(s)
     end
     s.v_reel_out = s.set.v_reel_out
-    return integrator
+    s.integrator = integrator
 end
 
 
@@ -632,7 +608,7 @@ Calculates the next simulation step. Either `set_speed` or `set_torque` must be 
 
 Parameters:
 - s:            an instance of an abstract kite model
-- integrator:   an integrator instance as returned by the function [`init_sim!`](@ref)
+- integrator:   an integrator instance as returned by the function [`init!`](@ref)
 - set_speed:         set value of reel out speed in m/s or nothing
 - set_torque:   set value of the torque in Nm or nothing
 - set_force:    set value of the force in N or nothing (only for logging, not used otherwise)
@@ -644,7 +620,7 @@ Parameters:
 - dt:           time step in seconds
 
 Returns:
-The end time of the time step in seconds.
+`Nothing`
 """
 function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing,
                     attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq)
@@ -676,7 +652,7 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
         s.pitch_rate = (pitch - s.pitch) / dt
         s.pitch = pitch
     end
-    integrator.t
+    return nothing
 end
 
 """
@@ -706,15 +682,11 @@ end
 function install_examples(add_packages=true)
     copy_examples()
     copy_settings()
+    copy_bin()
     copy_model_settings()
     if add_packages
-        Pkg.add("KiteUtils")
-        Pkg.add("KitePodModels")
-        Pkg.add("WinchModels")
-        Pkg.add("ControlPlots")
-        Pkg.add("LaTeXStrings")
-        Pkg.add("StatsBase")
-        Pkg.add("Timers")
+        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots", 
+                 "LaTeXStrings", "StatsBase", "Timers", "Rotations"])
     end
 end
 
@@ -759,7 +731,7 @@ function copy_bin()
         mkdir(PATH)
     end
     src_path = joinpath(dirname(pathof(@__MODULE__)), "..", PATH)
-    cp(joinpath(src_path, "create_sys_image"), joinpath(PATH, "create_sys_image"), force=true)
+    cp(joinpath(src_path, "create_sys_image2"), joinpath(PATH, "create_sys_image"), force=true)
     cp(joinpath(src_path, "run_julia"), joinpath(PATH, "run_julia"), force=true)
     chmod(joinpath(PATH, "create_sys_image"), 0o774)
     chmod(joinpath(PATH, "run_julia"), 0o774)

@@ -1,3 +1,6 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 # plot the lift and drag coefficients as function of angle of attack
 
 using Printf
@@ -56,7 +59,7 @@ function simulate(kps4, integrator, logger, steps)
     cl = 0.0
     cd = 0.0
     for i in 1:steps
-        KiteModels.next_step!(kps4, integrator; set_speed=0, dt)
+        next_step!(kps4, integrator; set_speed=0, dt)
         sys_state = KiteModels.SysState(kps4)
         log!(logger, sys_state)
         iter += kps4.iter
@@ -94,7 +97,7 @@ for depower in DEPOWER
 
     kcu = KCU(set)
     kps4 = KPS4(kcu)
-    integrator = KiteModels.init_sim!(kps4; delta=0.03, stiffness_factor=0.05, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4; delta=0.03, stiffness_factor=0.05, prn=STATISTIC)
     if ! isnothing(integrator)
         try
             cl, cd = simulate(kps4, integrator, logger, STEPS)

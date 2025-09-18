@@ -1,3 +1,6 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 # apply different rel_steering values and plot turn rate
 using Printf
 using KiteModels, KitePodModels, KiteUtils, Pkg
@@ -10,9 +13,9 @@ end
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
-set.v_wind = 10
+set.v_wind = 10.0
 set.elevation = 69.4
-set.l_tether = 200
+set.l_tether = 200.0
 set.depower = set.depower_offset # fully powered kite
 # set.kcu_mass = 8.4
 # set.v_steering = 0.2*6
@@ -36,7 +39,7 @@ STATISTIC = false
 
 dt = 1/set.sample_freq
 particles = set.segments + 5
-logger::Logger = Logger(particles, STEPS)
+logger = Logger(particles, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
@@ -83,7 +86,7 @@ function simulate(integrator, steps; plot=false)
             end
         end
 
-        KiteModels.next_step!(kps4, integrator; set_speed=0, dt)
+        next_step!(kps4, integrator; set_speed=0, dt)
         iter += kps4.iter
         sys_state = SysState(kps4)
         sys_state.var_15 = rad2deg(heading - last_heading) / dt
@@ -93,14 +96,15 @@ function simulate(integrator, steps; plot=false)
         
         if plot
             if mod(i, 5) == 1
-                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments)                       
+                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
+                       fig="steering_test_4p")                       
             end
         end
     end
 end
 
 
-integrator = KiteModels.init_sim!(kps4;  delta=0.0, stiffness_factor=1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4;  delta=0.0, stiffness_factor=1, prn=STATISTIC)
 simulate(integrator, STEPS; plot=true)
 
 function delay(x, y, t_max = 10)

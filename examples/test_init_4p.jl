@@ -1,8 +1,10 @@
-# plot the lift and drag coefficients as function of angle of attack
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
 
+# plot the lift and drag coefficients as function of angle of attack
 using Printf
 using Pkg
-using KiteModels, KitePodModels, KiteUtils, LinearAlgebra
+using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
 
 set = deepcopy(load_settings("system.yaml"))
 
@@ -27,19 +29,20 @@ PLOT = true
 PRINT = true
 STATISTIC = false
 DEPOWER = 0.47:-0.005:0.355
-UPWIND_DIR = -pi/2 +deg2rad(10)
+UPWIND_DIR = -90 + 10
 # end of user parameter section #
 
 elev = set.elevation
 i = 1
 set.v_wind = V_WIND # 25
-logger::Logger = Logger(set.segments + 5, STEPS)
+set.upwind_dir = UPWIND_DIR
+logger = Logger(set.segments + 5, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
-integrator = KiteModels.init_sim!(kps4; delta=0.03, stiffness_factor=0.01, upwind_dir=UPWIND_DIR, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta=0.03, stiffness_factor=0.01, prn=STATISTIC)
 for i=1:80
-    KiteModels.next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, dt)
+    next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, dt)
 end
 lift, drag = lift_drag(kps4)
 sys_state = KiteModels.SysState(kps4)
