@@ -41,4 +41,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/OpenSourceAWE/KiteModels.jl",
     devbranch="main",
+    push_preview=true,
 )

@@ -29,16 +29,18 @@ PLOT = true
 PRINT = true
 STATISTIC = false
 DEPOWER = 0.47:-0.005:0.355
-UPWIND_DIR = -pi/2 +deg2rad(10)
+UPWIND_DIR = -90 + 10
 # end of user parameter section #
 
 elev = set.elevation
 i = 1
 set.v_wind = V_WIND # 25
+set.upwind_dir = UPWIND_DIR
 logger = Logger(set.segments + 5, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
+
 set.upwind_dir = UPWIND_DIR
 integrator = KiteModels.init!(kps4; delta=0.03, stiffness_factor=0.01, prn=STATISTIC)
 for i=1:80
