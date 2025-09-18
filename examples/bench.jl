@@ -1,3 +1,5 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
 using Printf
 using KiteModels
 
@@ -26,13 +28,13 @@ function simulate(integrator, steps)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        KiteModels.next_step!(kps4, integrator; set_speed=0, dt=dt)
+        next_step!(kps4, integrator; set_speed=0, dt=dt)
         iter += kps4.iter
     end
     iter / steps
 end
 
-integrator = KiteModels.init_sim!(kps4; delta=0, stiffness_factor=0.5, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta=0, stiffness_factor=0.5, prn=STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100)

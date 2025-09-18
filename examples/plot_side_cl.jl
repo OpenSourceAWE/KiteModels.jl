@@ -1,3 +1,6 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 # plot the side lift coefficient vs rel_steering
 using Printf
 using KiteModels
@@ -49,7 +52,7 @@ function simulate(integrator, steps, steering; plot=false)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        KiteModels.next_step!(kps4, integrator; set_speed=0, dt)
+        next_step!(kps4, integrator; set_speed=0, dt)
         iter += kps4.iter
         
         if plot
@@ -61,12 +64,12 @@ function simulate(integrator, steps, steering; plot=false)
     end
     set_depower_steering(kps4.kcu, kps4.depower, steering)
     for i in 1:20
-        KiteModels.next_step!(kps4, integrator; set_speed=0, dt)
+        next_step!(kps4, integrator; set_speed=0, dt)
         iter += kps4.iter
     end
     side_cl = 0 
     for i in 1:5
-        KiteModels.next_step!(kps4, integrator; set_speed=0, dt)
+        next_step!(kps4, integrator; set_speed=0, dt)
         side_cl += kps4.side_cl
         iter += kps4.iter
     end
@@ -78,10 +81,10 @@ STEERING = zeros(length(SET_STEERING))
 SIDE_CL  = zeros(length(SET_STEERING))
 for (i, set_steering) in pairs(SET_STEERING)
     local side_cl, integrator
-    integrator = KiteModels.init_sim!(kps4;  delta=0.001, stiffness_factor=1, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=1, prn=STATISTIC)
     side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
     if side_cl == 0.0
-        integrator = KiteModels.init_sim!(kps4;  delta=0.001, stiffness_factor=1, prn=STATISTIC)
+        integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=1, prn=STATISTIC)
         side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
     end
     SIDE_CL[i] = side_cl

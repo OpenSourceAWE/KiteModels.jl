@@ -1,3 +1,5 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
 using Printf
 using KiteModels, LinearAlgebra, SciMLBase
 
@@ -61,7 +63,7 @@ function simulate(integrator, steps, plot=false)
         v_speed[i] = kps4.v_reel_out
         v_force[i] = winch_force(kps4)
 
-        KiteModels.next_step!(kps4, integrator; set_torque, dt)
+        next_step!(kps4, integrator; set_torque, dt)
         if ! SciMLBase.successful_retcode(integrator.sol)
             println("Solver failed at time $(integrator.t)")
             force = norm(kps4.forces[1])
@@ -87,7 +89,7 @@ end
 
 kps4.sync_speed = set.v_reel_out
 kps4.wm.last_set_speed = set.v_reel_out
-integrator = KiteModels.init_sim!(kps4; delta=0.00015, stiffness_factor=0.8, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta=0.00015, stiffness_factor=0.8, prn=STATISTIC)
 
 if PLOT
     av_steps = simulate(integrator, STEPS, true)

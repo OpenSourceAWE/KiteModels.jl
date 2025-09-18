@@ -11,10 +11,18 @@ system:
     fixed_font: ""                 # name or filepath+filename of alternative fixed pitch font, e.g. Liberation Mono
 
 initial:
-    l_tether: 150.0        # initial tether length       [m]
-    elevation: 70.8        # initial elevation angle   [deg]
-    v_reel_out: 0.0        # initial reel out speed    [m/s]
-    depower:   25.0        # initial depower settings    [%]
+    elevations: [70.8]               # initial elevation angle   [deg]
+    elevation_rates: [0.0]           # initial elevation rate  [deg/s]
+    azimuths: [0.0]                  # initial azimuth angle     [deg]
+    azimuth_rates: [0.0]             # initial azimuth rate    [deg/s]
+    headings: [0.0]                  # initial heading angle     [deg]
+    heading_rates: [0.0]             # initial heading rate    [deg/s]
+    # three values are only needed for RamAirKite, for KPS3 and KPS4 use only the first value
+    l_tethers: [150.0]               # initial tether lengths      [m]
+    kite_distances: [51.0]           # initial kite distances     [m]
+    v_reel_outs: [0.0]               # initial reel out speeds   [m/s]
+    depowers: [25.0]                 # initial depower settings    [%]
+    steerings: [0.0]                 # initial steering settings   [%]
 
 solver:
     abs_tol: 0.0006        # absolute tolerance of the DAE solver [m, m/s]
@@ -114,7 +122,7 @@ environment:
     rho_0:  1.225            # air density at zero height and 15 °C    [kg/m³]
     alpha:  0.08163          # exponent of the wind profile law
     z0:     0.0002           # surface roughness                       [m]
-    profile_law: 3           # 1=EXP, 2=LOG, 3=EXPLOG, 4=FAST_EXP, 5=FAST_LOG, 6=FAST_EXPLOG
+    profile_law: 3           # 1=EXP, 2=LOG, 3=EXPLOG
     # the following parameters are for calculating the turbulent wind field using the Mann model
     use_turbulence: 0.0      # turbulence intensity relative to Cabauw, NL
     v_wind_gnds: [3.483, 5.324, 8.163] # wind speeds at ref height for calculating the turbulent wind field [m/s]

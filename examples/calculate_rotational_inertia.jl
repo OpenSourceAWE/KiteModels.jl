@@ -1,6 +1,7 @@
+# Copyright (c) 2023, 2024 Daan van Wolffelaar,
+# SPDX-License-Identifier: MIT
 using KiteUtils
 using KiteModels
-
 
 function print_inertia_matrix(Ixx, Ixy, Ixz, Iyy, Iyz, Izz)
     println("Inertia matrix [kgm²]:")
@@ -8,7 +9,6 @@ function print_inertia_matrix(Ixx, Ixy, Ixz, Iyy, Iyz, Izz)
     println(" Ixy Iyy Iyz: [$Ixy $Iyy $Iyz] ")
     println(" Ixz Iyz Izz: [$Ixz $Iyz $Izz] ")
 end
-
 
 function print_settings(include_kcu::Bool=true, around_kcu::Bool=false)
     out = ""
@@ -28,8 +28,7 @@ function print_settings(include_kcu::Bool=true, around_kcu::Bool=false)
     println(out)
 end
 
-
-SETFILE = "system_v9.yaml"
+SETFILE = "system.yaml"
 INCL_KCU = false
 AROUND_KCU = false
 

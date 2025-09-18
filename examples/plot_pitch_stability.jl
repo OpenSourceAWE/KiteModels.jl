@@ -1,4 +1,5 @@
-
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
 
 using Printf
 using KiteModels, StatsBase, LinearAlgebra, DSP
@@ -82,7 +83,7 @@ function simulate(kps4, integrator, logger, steps)
         v_set = 0.0
         set_torque = calc_set_torque(set, wcs, v_set, delayed_v_reelout, filtered_force)
         set_torque += AMP_EX*SIN[i]
-        KiteModels.next_step!(kps4, integrator; set_torque, dt)
+        next_step!(kps4, integrator; set_torque, dt)
         sys_state = KiteModels.SysState(kps4)
         aoa = kps4.alpha_2
         sys_state.var_01 = aoa
@@ -109,7 +110,7 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 set.elevation += 5
 set.v_wind = V_WIND_200
-integrator = KiteModels.init_sim!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
 if ! isnothing(integrator)
     simulate(kps4, integrator, logger, STEPS)
     set_depower_steering(kps4.kcu, depower, 0.0)

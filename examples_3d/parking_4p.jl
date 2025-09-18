@@ -1,4 +1,7 @@
 # Steer the kite to the side and then back until heading is about zero.
+# Copyright (c) 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 # To run this script, use the following commands:
 # julia --project
 # include("examples_3d/parking_4p.jl")
@@ -61,7 +64,7 @@ function simulate(integrator, steps, plot=PLOT)
         end
         set_depower_steering(kps4.kcu, kps4.depower, steering)
 
-        KiteModels.next_step!(kps4, integrator; set_speed, dt, upwind_dir=UPWIND_DIR2)
+        next_step!(kps4, integrator; set_speed, dt, upwind_dir=UPWIND_DIR2)
         iter += kps4.iter
         reltime = i*dt-dt
         if mod(i, 5) == 1
@@ -82,7 +85,7 @@ function simulate(integrator, steps, plot=PLOT)
     iter / steps
 end
 
-integrator = KiteModels.init_sim!(kps4, delta=0, stiffness_factor=0.5, prn=STATISTIC)
+integrator = KiteModels.init!(kps4, delta=0, stiffness_factor=0.5, prn=STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, STEPS)

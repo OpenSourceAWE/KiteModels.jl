@@ -6,12 +6,19 @@ Most of the functions work on a KPS3 or KPS4 object. For this, the variable s is
 Such a variable can be created with the lines:
 ```julia
 using KiteSimulators
-const s = KPS3(KCU(se()))
+set = load_settings("system.yaml")
+s = KPS3(KCU(set))
 ```
 Or, if you want to use the 4 point kite model:
 ```julia
 using KiteSimulators
-const s = KPS4(KCU(se()))
+set = load_settings("system.yaml")
+s = KPS4(KCU(set))
+```
+Or, if you want to use the ram-air kite model:
+```julia
+set = load_settings("system_ram.yaml")
+s = SymbolicAWEModel(set)
 ```
 Functions with an "!" as last character of the function name modify one of more of their
 parameters, in this context mostly the variable s.
@@ -27,6 +34,7 @@ set_v_wind_ground!
 unstretched_length
 tether_length
 pos_kite
+calc_aoa
 calc_height
 calc_elevation
 calc_azimuth
@@ -47,7 +55,7 @@ SysState
 
 ## High level simulation interface
 ```@docs
-init_sim!
+init!
 next_step!
 ```
 
@@ -63,6 +71,7 @@ residual!
 copy_examples
 copy_bin
 calc_drag
+calculate_rotational_inertia!
 calc_set_cl_cd!
 calc_aero_forces!
 calc_particle_forces!

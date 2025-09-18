@@ -1,6 +1,8 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 # plot the lift and drag coefficients as function of angle of attack
 # of any of the plates of the kite
-
 using KiteModels
 
 if haskey(ENV, "USE_V9")
@@ -16,7 +18,7 @@ end
 using ControlPlots, LaTeXStrings
 plt.close("all")
 
-set.v_wind = 14 # 25
+set.v_wind = 14.0 # 25
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 

@@ -1,24 +1,5 @@
-#= MIT License
-
-Copyright (c) 2020, 2021, 2022 Uwe Fechner
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. =#
+# Copyright (c) 2020, 2021, 2022 Uwe Fechner
+# SPDX-License-Identifier: MIT
 
 #= Model of a kite-power system in implicit form: residual = f(y, yd)
 
@@ -51,9 +32,11 @@ $(TYPEDFIELDS)
     "Reference to the KCU model (Kite Control Unit as implemented in the package KitePodModels"
     kcu::KCU
     "Reference to the atmospheric model as implemented in the package AtmosphericModels"
-    am::AtmosphericModel = AtmosphericModel()
+    am::AtmosphericModel = AtmosphericModel(set)
     "Reference to winch model as implemented in the package WinchModels"
     wm::Union{AbstractWinchModel, Nothing} = nothing
+    "Integrator, storing the current state"
+    integrator::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing} = nothing
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
     "Function for calculation the lift coefficent, using a spline based on the provided value pairs."
@@ -206,6 +189,10 @@ function KPS3(kcu::KCU)
     s.kcu = kcu  
     clear!(s)
     return s
+end
+function KPS3(set::Settings)
+    kcu = KCU(set)
+    KPS3(kcu)
 end
 
 """

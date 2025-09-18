@@ -1,25 +1,33 @@
+<!--
+SPDX-FileCopyrightText: 2025 Uwe Fechner
+SPDX-License-Identifier: MIT
+-->
+
 # KiteModels
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://ufechner7.github.io/KiteModels.jl/stable)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://ufechner7.github.io/KiteModels.jl/dev)
-[![CI](https://github.com/ufechner7/KiteModels.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/ufechner7/KiteModels.jl/actions/workflows/CI.yml)
-[![Coverage](https://codecov.io/gh/ufechner7/KiteModels.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/ufechner7/KiteModels.jl)
-[![DOI](https://zenodo.org/badge/443855286.svg)](https://zenodo.org/doi/10.5281/zenodo.13310253)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://OpenSourceAWE.github.io/KiteModels.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://OpenSourceAWE.github.io/KiteModels.jl/dev)
+[![CI](https://github.com/OpenSourceAWE/KiteModels.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/OpenSourceAWE/KiteModels.jl/actions/workflows/CI.yml)
+[![Coverage](https://codecov.io/gh/OpenSourceAWE/KiteModels.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenSourceAWE/KiteModels.jl)
+[![DOI](https://zenodo.org/badge/443855286.svg)](https://zenodo.org/doi/10.5281/zenodo.15836456)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 ## Kite power system models, consisting of tether and kite
-The model has the following subcomponents, implemented in separate packages:
+The models have the following subcomponents, implemented in separate packages:
 - AtmosphericModel from [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
 - WinchModel from [WinchModels](https://github.com/aenarete/WinchModels.jl) 
 - KitePodModel from  [KitePodModels](https://github.com/aenarete/KitePodModels.jl)
+- The aerodynamic forces and moments of some of the models are calculated using the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 
 This package is part of Julia Kite Power Tools, which consists of the following packages:
-<p align="center"><img src="./docs/src/kite_power_tools.png" width="500" /></p>
+<p align="center"><img src="https://github.com/aenarete/WinchModels.jl/blob/main/docs/kite_power_tools.png" width="500" /></p>
 
 ## News
 #### Work in progress
-- a much better aerodynamic model is being integrated using the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 - a new 5-point model based on ModelingToolkit (MTK) is in development;  
   this will allow to create linearized models around any operation point and to do analysis in the frequency domain.
+#### April 2025
+- a new model `SymbolicAWEModel` was contributed, based on the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 #### November 2024
 - the four point kite model KPS4 was extended to include aerodynamic damping of pitch oscillations;
   for this purpose, the parameters `cmq` and `cord_length` must be defined in `settings.yaml`
@@ -32,27 +40,17 @@ This package is part of Julia Kite Power Tools, which consists of the following 
 - many unit tests added by a new contributor
 - many tests for model verification added; they can be accessed using the `menu2.jl` script
 - the documentation was improved
-#### August 2024
-- a new kite model, KPS3_3L was contributed. It uses three lines to the ground and three winches for steering a ram-air foil kite.
-- a first [ModelingToolkit](https://docs.sciml.ai/ModelingToolkit/stable/) based model was added, which shows a much better performance and easier to read code
-- a new KCU model was added which assumes a linear relationship between the depower settings and the depower angle and thus is easier to configure than the original model.
-- the drag of the KCU is now taken into account
-- the drag of the bridle is now taken into account correctly, also if the real kite has more bridle lines than the model
-- the function to find the initial state is now much more robust
-#### July 2024
-- a new groundstation / winch type is now supported, the `TorqueControlledMachine`. It can be configured in the section `winch` of the `settings.yaml` file. It uses a set torque as input.
-- a Python interface is now provided, see: [pykitemodels](https://github.com/ufechner7/pykitemodels)
-#### April 2024
-- added support for the native Julia DAE solver DFBDF. It is much more accurate and faster than the IDA solver that was used before.
 
 ## What to install
 If you want to run simulations and see the results in 3D, please install the meta package  [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl) . If you are not interested in 3D visualization or control you can just install this package.
 
 ## Installation
-Install [Julia 1.10](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html) or later, if you haven't already. On Linux, make sure that Python3 and Matplotlib are installed:
+If possible, install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 is still supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
 ```
 sudo apt install python3-matplotlib
 ```
+ 
+Make sure that `ControlPlots.jl` works as explained [here](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
 
 Before installing this software it is suggested to create a new project, for example like this:
 ```bash
@@ -65,7 +63,7 @@ Then add KiteModels from  Julia's package manager, by typing:
 using Pkg
 pkg"add KiteModels"
 ``` 
-at the Julia prompt. You can run the unit tests with the command:
+at the Julia prompt. You can run the unit tests with the command (careful, can take 60 min):
 ```julia
 pkg"test KiteModels"
 ```
@@ -79,6 +77,17 @@ with some example input files. You can now run the examples with the command:
 ```julia
 include("examples/menu.jl")
 ```
+You can also run the ram-air-kite example like this:
+```julia
+include("examples/ram_air_kite.jl")
+```
+This might take two minutes. To speed up the model initialization, you can create a system image:
+```bash
+cd bin
+./create_sys_image
+```
+If you now launch Julia with `./bin/run_julia` and then run the above example again, it should be about three
+times faster.
 
 ## Advanced installation
 If you intend to modify or extend the code, it is suggested to fork the `KiteModels.jl` repository and to check out your fork:
@@ -89,16 +98,20 @@ where USERNAME is your github username.
 Then compile a system image:
 ```bash
 cd KiteModels.jl/bin
-./create_sys_image --update
+./create_sys_image
 ```
-If you know launch julia with:
+If you now launch julia with:
 ```bash
 cd ..
 ./bin/run_julia
 ```
-you can run the examples with
+You can run the examples with:
 ```julia
 menu()
+```
+You can also run the ram-air-kite example like this:
+```julia
+include("examples/ram_air_kite.jl")
 ```
 
 ## One point model
@@ -107,39 +120,41 @@ When combined with a controller for the turn rate it can be used to simulate a p
 
 ## Four point model
 This model assumes the kite to consist of four-point masses with aerodynamic forces acting on points B, C and D. It reacts much more realistically than the one-point model because it has rotational inertia in every axis.
-<p align="center"><img src="./docs/src/4-point-kite.png" width="200" /></p>
+<p align="center"><img src="https://github.com/OpenSourceAWE/KiteModels.jl/raw/main/docs/src/4-point-kite.png" width="200" /></p>
+
+## Ram air kite model
+This model represents the kite as a deforming rigid body, with orientation governed by quaternion dynamics. Aerodynamics are computed using the Vortex Step Method. The kite is controlled from the ground via four tethers.
 
 ## Tether
-The tether is modeled as point masses, connected by spring-damper elements. Aerodynamic drag is modeled realistically. When reeling out or in the unstreched length of the spring-damper elements
+The tether is modeled as point masses, connected by spring-damper elements. Aerodynamic drag is modeled realistically. When reeling out or in the unstretched length of the spring-damper elements
 is varied. This does not translate into physics directly, but it avoids adding point masses at run-time, which would be even worse because it would introduce discontinuities. When using
 Dyneema or similar high-strength materials for the tether the resulting system is very stiff which is a challenge for the solver.
 
 ## Further reading
-These models are described in detail in [Dynamic Model of a Pumping Kite Power System](http://arxiv.org/abs/1406.6218).
+The models KPS3 and KPS4 are described in detail in [Dynamic Model of a Pumping Kite Power System](http://arxiv.org/abs/1406.6218).
 
 ## Replaying log files
 If you want to replay old flight log files in 2D and 3D to understand and explain better how kite power systems work, please have a look at [KiteViewer](https://github.com/ufechner7/KiteViewer) . How new log files can be created and replayed is explained in the documentation of [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl) .
 
-## Licence
-This project is licensed under the MIT License. Please see the below WAIVER in association with the license.
+## License
+This project is licensed under the MIT and the MPL-2.0 License. The documentation is licensed under the CC-BY-4.0 License. Please see the below `Copyright notice` in association with the licenses that can be found in the file [LICENSE](LICENSE) in this folder.
 
-## WAIVER
+## Copyright notice
 Technische Universiteit Delft hereby disclaims all copyright interest in the package “KiteModels.jl” (models for airborne wind energy systems) written by the Author(s).
 
-Prof.dr. H.G.C. (Henri) Werij, Dean of Aerospace Engineering
+Prof.dr. H.G.C. (Henri) Werij, Dean of Aerospace Engineering, Technische Universiteit Delft.
+
+See the copyright notices in the source files, and the list of authors in [AUTHORS.md](AUTHORS.md).
 
 ## Donations
-If you like this software, please consider donating to [Flood in Kenya](https://www.climatejusticesolidarity.nl/solidarity/) .
+If you like this software, please consider donating to [Flood in Kenya](https://www.gofundme.com/f/climate-refugees-in-kenya) .
 
 ## See also
-- [Research Fechner](https://research.tudelft.nl/en/publications/?search=Fechner+wind&pageSize=50&ordering=rating&descending=true) for the scientic background of this code
+- [Research Fechner](https://research.tudelft.nl/en/publications/?search=Fechner+wind&pageSize=50&ordering=rating&descending=true) for the scientific background of this code
 - The meta-package  [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl)
-- the package [KiteUtils](https://github.com/ufechner7/KiteUtils.jl)
+- the package [KiteUtils](https://github.com/OpenSourceAWE/KiteUtils.jl)
 - the packages [WinchModels](https://github.com/aenarete/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
-- the packages [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/aenarete/KiteViewers.jl)
-- soon the [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl) will be used
+- the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/aenarete/KiteViewers.jl)
+- the [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 
-**Documentation** [Stable Version](https://ufechner7.github.io/KiteModels.jl/stable) --- [Development Version](https://ufechner7.github.io/KiteModels.jl/dev)
-
-
-Authors: Uwe Fechner (uwe.fechner.msc@gmail.com), Bart van de Lint (bart@vandelint.net)
+**Documentation** [Stable Version](https://OpenSourceAWE.github.io/KiteModels.jl/stable) --- [Development Version](https://OpenSourceAWE.github.io/KiteModels.jl/dev)

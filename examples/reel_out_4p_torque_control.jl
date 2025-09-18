@@ -1,3 +1,6 @@
+# Copyright (c) 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Printf
 using KiteModels, LinearAlgebra
 
@@ -53,7 +56,7 @@ function simulate(integrator, steps, plot=false)
         v_time[i] = kps4.t_0
         v_speed[i] = kps4.v_reel_out
         v_force[i] = winch_force(kps4)
-        KiteModels.next_step!(kps4, integrator; set_torque, dt)
+        next_step!(kps4, integrator; set_torque, dt)
         iter += kps4.iter
         
         if plot
@@ -67,7 +70,7 @@ function simulate(integrator, steps, plot=false)
     iter / steps
 end
 
-integrator = KiteModels.init_sim!(kps4; delta=0, stiffness_factor=1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta=0, stiffness_factor=1, prn=STATISTIC)
 kps4.sync_speed = 0.0
 
 if PLOT

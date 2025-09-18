@@ -1,7 +1,7 @@
-
-
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
 using Printf
-using KiteModels, StatsBase, LinearAlgebra, DSP
+using KiteModels, StatsBase, LinearAlgebra
 
 if haskey(ENV, "USE_V9")
     set = deepcopy(load_settings("system_v9.yaml"))
@@ -13,7 +13,7 @@ using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     using TestEnv; TestEnv.activate()
 end
-using ControlPlots, JLD2
+using ControlPlots, JLD2, DSP
 plt.close("all")
 
 set.abs_tol=0.0006
@@ -83,7 +83,7 @@ function simulate(kps4, integrator, logger, steps, f_ex)
         v_set = 0.0
         set_torque = calc_set_torque(set, wcs, v_set, delayed_v_reelout, filtered_force)
         set_torque += 200*SIN[i]
-        KiteModels.next_step!(kps4, integrator; set_torque, dt)
+        next_step!(kps4, integrator; set_torque, dt)
         # println(kps4.va_z)
         sys_state = KiteModels.SysState(kps4)
         aoa = kps4.alpha_2
@@ -100,7 +100,7 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     set.elevation = 67.0
     kcu::KCU = KCU(set)
     kps4::KPS4 = KPS4(kcu)
-    integrator = KiteModels.init_sim!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
     set_depower_steering(kps4.kcu, depower, 0.0)
     simulate(kps4, integrator, logger, STEPS, f_ex)
     save_log(logger, "tmp")

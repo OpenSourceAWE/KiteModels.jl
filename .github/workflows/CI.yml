@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-    tags: '*'
+    tags: ['*']
   pull_request:
 concurrency:
   # Skip intermediate builds: always.
@@ -11,10 +11,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
+  reuse-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run REUSE lint
+        run: |
+          docker run --rm --volume ${{ github.workspace }}:/data fsfe/reuse lint
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 50
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
@@ -33,34 +40,42 @@ jobs:
             version: 1
             build_is_production_build: true
           - os: macOS-latest
-            arch: x64
+            arch: aarch64
             version: 1
             build_is_production_build: true
     steps:
+      - name: Install matplotlib
+        run: if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get install -y python3-matplotlib; fi
+        shell: bash
+       
       - uses: actions/checkout@v4
+      
+      - name: Use default manifest
+        run: |
+          if [ -f Manifest.toml.default ]; then cp Manifest.toml.default Manifest.toml; fi
+        shell: bash
+        
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/cache@v4
-        env:
-          cache-name: cache-artifacts
-        with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-test-${{ env.cache-name }}-
-            ${{ runner.os }}-test-
-            ${{ runner.os }}-
+          
+      - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
+      
+      - name: Build PyCall
+        run: julia --project -e 'ENV["PYTHON"]=""; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
+        shell: bash
+        
       - uses: julia-actions/julia-runtest@v1
         env:
           BUILD_IS_PRODUCTION_BUILD: ${{ matrix.build_is_production_build }}
         with:
           coverage: false
+          
   test-with-code-coverage:
     name: Julia ${{ matrix.julia_version }} - ${{ matrix.os }} - ${{ matrix.julia_arch }} - with code coverage
-    timeout-minutes: 30
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
@@ -76,28 +91,51 @@ jobs:
     - name: Install matplotlib
       run: if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get install -y python3-matplotlib; fi
       shell: bash
+      
     - uses: actions/checkout@v4
+    
+    - name: Use default manifest
+      run: |
+        if [ -f Manifest.toml.default ]; then cp Manifest.toml.default Manifest.toml; fi
+      shell: bash
+      
     - uses: julia-actions/setup-julia@v2
       with:
         arch: ${{ matrix.julia_arch }}
         version: ${{ matrix.julia_version }}
+        
     - uses: julia-actions/cache@v2
+    - uses: julia-actions/julia-buildpkg@v1
+    
+    - name: Build PyCall
+      run: julia --project -e 'ENV["PYTHON"]=""; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
+      shell: bash
+      
     - uses: julia-actions/julia-runtest@v1
       env:
         BUILD_IS_PRODUCTION_BUILD: false
+        
     - uses: julia-actions/julia-processcoverage@v1
+    
     - uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: lcov.info
       continue-on-error: true
+      
   docs:
     name: Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
+      - name: Install matplotlib
+        run: sudo apt-get install -y python3-matplotlib
+        shell: bash
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
+      - name: Build PyCall
+        run: julia --project=docs/ -e 'ENV["PYTHON"]=""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build("PyCall")'
+        shell: bash
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1

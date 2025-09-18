@@ -1,3 +1,6 @@
+# Copyright (c) 2022, 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Printf
 # simple parking test without changing the control input
 # shows how to log, plot, and print the simulation results
@@ -32,7 +35,7 @@ if PLOT
     using ControlPlots
 end
 
-logger::Logger = Logger(set.segments + 5, STEPS)
+logger = Logger(set.segments + 5, STEPS)
 
 function simulate(integrator, steps, plot=false)
     iter = 0
@@ -43,12 +46,13 @@ function simulate(integrator, steps, plot=false)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        KiteModels.next_step!(kps4, integrator; set_speed=0, upwind_dir=UPWIND_DIR, dt)
+        next_step!(kps4, integrator; set_speed=0, upwind_dir=UPWIND_DIR, dt)
         iter += kps4.iter    
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                plot2d(kps4.pos, reltime; zoom=ZOOM, xlim=(40,60), front=FRONT_VIEW, segments=set.segments)                       
+                plot2d(kps4.pos, reltime; zoom=ZOOM, xlim=(40,60), front=FRONT_VIEW, 
+                segments=set.segments, fig="upwind_dir = $(rad2deg(UPWIND_DIR)) °")                       
             end
         end
         sys_state = SysState(kps4)
@@ -58,8 +62,8 @@ function simulate(integrator, steps, plot=false)
     end
     iter / steps
 end
-
-integrator = KiteModels.init_sim!(kps4;  delta=0.0, stiffness_factor=1, upwind_dir=UPWIND_DIR, prn=STATISTIC)
+kps4.set.upwind_dir = rad2deg(UPWIND_DIR)
+integrator = KiteModels.init!(kps4;  delta=0.0, stiffness_factor=1, prn=STATISTIC)
 
 if PLOT
     global flight_log
