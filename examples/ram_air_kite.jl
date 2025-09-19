@@ -13,6 +13,7 @@ end
 using ControlPlots, LaTeXStrings
 using KiteModels, LinearAlgebra, Statistics
 using KiteModels.SymbolicAWEModels: find_steady_state!
+using KiteUtils: load_log, save_log, log!, Logger
 
 if ! @isdefined SIMPLE
     SIMPLE = false

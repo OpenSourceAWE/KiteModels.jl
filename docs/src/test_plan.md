@@ -1,5 +1,5 @@
 ## Testing the develop branch before merging it
-On  AMD Ryzen 7 7840U.
+On  AMD Ryzen 7 7840U on power.
 
 ### Pass criteria for the performance:
 First run:
