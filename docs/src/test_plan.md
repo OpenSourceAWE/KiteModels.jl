@@ -102,3 +102,8 @@ include("mwes/mwe_26.jl")
 include("mwes/mwe_26.jl")
 ```
 Each time the force, that is printed must be > 9000 N.
+
+### Force precompilation
+cd ~
+rm -rf .julia/compiled/v1.11/KiteModels
+rm -rf .julia/compiled/v1.11/SymbolicAWEModels
