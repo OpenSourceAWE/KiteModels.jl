@@ -39,6 +39,10 @@ time = init!(sam; remake=false, reload=true, bench=true)
 sys = sam.sys
 nothing
 
-# Desktop, AMD Ryzen 9 7950X: 
+# Desktop, AMD Ryzen 9 7950X, Julia 1.11:
 # - first  run 34.5 seconds
 # - second run 21.1 seconds
+
+# Laptop, AMD Ryzen 7 7840U, Julia 1.11:
+# - first  run 36.5 seconds
+# - second run 24.3 seconds
