@@ -39,4 +39,6 @@ time = init!(sam; remake=false, reload=true, bench=true)
 sys = sam.sys
 nothing
 
-# Desktop, AMD Ryzen 9 7950X: 34.0 seconds
+# Desktop, AMD Ryzen 9 7950X: 
+# - first  run 34.5 seconds
+# - second run 21.1 seconds
