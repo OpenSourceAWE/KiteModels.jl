@@ -34,6 +34,7 @@ rm("data/model_1.11_ram_dynamic_3_seg.bin"; force=true)
 # Initialize at elevation
 set.l_tethers[2] += 0.2
 set.l_tethers[3] += 0.2
-init!(sam; remake=false, reload=true)
+time = init!(sam; remake=false, reload=true, bench=true)
+@info "Simplify took $time seconds"
 sys = sam.sys
 nothing
