@@ -324,15 +324,19 @@ function init!(s::SymbolicAWEModel;
         
         inputs = create_sys!(s, s.sys_struct; init_va_b)
         prn && @info "Simplifying the system"
-        prn ? (@time (sys, _) = structural_simplify(s.full_sys, (inputs, []))) :
-            ((sys, _) = structural_simplify(s.full_sys, (inputs, [])))
-        s.sys = sys
+        @suppress_err begin
+            prn ? (@time (sys, _) = structural_simplify(s.full_sys, (inputs, []))) :
+                ((sys, _) = structural_simplify(s.full_sys, (inputs, [])))
+            s.sys = sys
+        end
         dt = SimFloat(1/s.set.sample_freq)
-        if prn
-            @info "Creating ODEProblem"
-            @time s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
-        else
-            s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
+        prn && @info "Creating ODEProblem"
+        @suppress_err begin
+            if prn
+                @time s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
+            else
+                s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
+            end
         end
         if length(lin_outputs) > 0
             lin_fun, _ = linearization_function(s.full_sys, [inputs...], lin_outputs; op=s.defaults, guesses=s.guesses)
