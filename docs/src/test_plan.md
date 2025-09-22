@@ -10,12 +10,14 @@ Second run:
 - total time without plotting < 35s
 
 ## Results on Desktop, without SymbolicAWEModels 22.09.2025
+MTK: 9.73.0
+SymbolicUtils: v3.25.1
 First run
 - simplifying: 26.3 s
 - Info: Total time without plotting: 124 s
 Second run
-- system initialized: 5.8s
-- total time without plotting: 29.5 s
+- system initialized: 5.6s
+- total time without plotting: 26.4 s
 
 ## Results on Desktop, with SymbolicAWEModels 22.09.2025
 - simplifying the system: 169s
