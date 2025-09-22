@@ -8,7 +8,7 @@ end
 
 using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
 
-using KiteModels, KitePodModels, AtmosphericModels
+using KiteModels, KitePodModels
 
 const SEGMENTS = se().segments
 if ! @isdefined kcu

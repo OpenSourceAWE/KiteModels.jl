@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 using StaticArrays, LinearAlgebra, KiteUtils
-using KiteModels, KitePodModels, AtmosphericModels
+using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
 set = deepcopy(load_settings("system.yaml"))

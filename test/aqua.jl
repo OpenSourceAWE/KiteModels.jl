@@ -1,12 +1,7 @@
 # SPDX-FileCopyrightText: 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using Pkg
-if ! ("Aqua" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
-
-using KiteModels, Aqua, Test
+using Aqua
 @testset "Aqua.jl" begin
     Aqua.test_all(
       KiteModels;

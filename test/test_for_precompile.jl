@@ -113,7 +113,7 @@ if ! haskey(ENV, "NO_MTK")
 
     # Initialize at elevation
     KiteModels.init!(s; prn=false, precompile=true)
-    KiteModels.SymbolicAWEModels.find_steady_state!(s)
+    find_steady_state!(s)
     steps = Int(round(10 / 0.05))
     logger = Logger(length(s.sys_struct.points), steps)
     sys_state = SysState(s)
