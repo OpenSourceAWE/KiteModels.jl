@@ -9,6 +9,11 @@ Second run:
 - system initialized          < 15s
 - total time without plotting < 35s
 
+## Results on Desktop, 22.09.2025
+- simplifying the system: 169s
+- system initialized:   16.7 s
+- totla time without plotting: 36.9s
+
 ## Current results on main, 15.06.2025:
 ```
 julia> include("examples/ram_air_kite.jl")
