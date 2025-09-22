@@ -38,3 +38,5 @@ time = init!(sam; remake=false, reload=true, bench=true)
 @info "Simplify took $time seconds"
 sys = sam.sys
 nothing
+
+# Desktop, AMD Ryzen 9 7950X: 34.0 seconds
