@@ -34,8 +34,8 @@ rm("data/model_1.11_ram_dynamic_3_seg.bin"; force=true)
 # Initialize at elevation
 set.l_tethers[2] += 0.2
 set.l_tethers[3] += 0.2
-time = init!(sam; remake=false, reload=true, bench=true)
-@info "Simplify took $time seconds"
+@time time_ = init!(sam; remake=false, reload=true, bench=true)
+@info "Simplify took $time_ seconds"
 sys = sam.sys
 nothing
 
@@ -44,5 +44,5 @@ nothing
 # - second run 21.1 seconds
 
 # Laptop, AMD Ryzen 7 7840U, Julia 1.11:
-# - first  run 36.5 seconds
-# - second run 24.3 seconds
+# - first  run 35.0 seconds
+# - second run 24.0 seconds
