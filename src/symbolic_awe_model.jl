@@ -328,7 +328,10 @@ function init!(s::SymbolicAWEModel;
             if prn && !bench
                 @time (sys, _) = structural_simplify(s.full_sys, (inputs, []))
             elseif bench
-                return @elapsed structural_simplify(s.full_sys, (inputs, []))
+                local elapsed, sys
+                elapsed = @elapsed (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+                s.sys = sys
+                return elapsed
             else
                 (sys, _) = structural_simplify(s.full_sys, (inputs, []))
             end
