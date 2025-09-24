@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 SIMPLE = false
+T_REF = 35.0 # AMD Ryzen 7840U, Julia 1.11, 1 thread [s]
 
 using Pkg
-if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
     using TestEnv; TestEnv.activate()
 end
-using KiteModels, LinearAlgebra, Statistics
+using KiteModels, LinearAlgebra, Statistics, Test
+include("bench_ref.jl")
 
 # Simulation parameters
 dt = 0.05
@@ -36,6 +38,10 @@ set.l_tethers[2] += 0.2
 set.l_tethers[3] += 0.2
 time_ = init!(sam; remake=false, reload=true, bench=true)
 @info "Simplify took $time_ seconds"
+rel_performance = (T_REF / rel_cpu_performance())/time_
+@info "Relative performance: $rel_performance"
+@test rel_performance > 0.8
+
 sys = sam.sys
 nothing
 
@@ -46,3 +52,5 @@ nothing
 # Laptop, AMD Ryzen 7 7840U, Julia 1.11:
 # - first  run 35.0 seconds
 # - second run 24.0 seconds
+
+
