@@ -60,3 +60,4 @@ docs/src/.$kite_power_tools.drawio.bkp
 data/linear_model.arrow
 data/nonlinear_model.arrow
 coverage/lcov.info
+temp_benchmark.jl
