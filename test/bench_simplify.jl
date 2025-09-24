@@ -3,6 +3,7 @@
 
 SIMPLE = false
 T_REF = 48.0 # AMD Ryzen 7840U, Julia 1.11, no sys image [s]
+             # 37s with sys image
 
 using Pkg
 if ! ("Test" ∈ keys(Pkg.project().dependencies))
