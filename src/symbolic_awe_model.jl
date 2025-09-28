@@ -301,7 +301,7 @@ and only update the state variables. Otherwise, it will create a new model from 
 """
 function init!(s::SymbolicAWEModel; 
     solver=nothing, stiffness_factor = nothing, delta = nothing, adaptive=true, prn=true, 
-    precompile=false, remake=false, reload=false, 
+    precompile=false, remake=false, reload=false, bench=false,
     lin_outputs=Num[]
 )
     if isnothing(solver)
@@ -322,11 +322,19 @@ function init!(s::SymbolicAWEModel;
         init_Q_b_w, R_b_w, init_va_b = initial_orient(s)
         init!(s.sys_struct, s.set)
         
-        inputs = create_sys!(s, s.sys_struct; init_va_b)
+        inputs = create_sys!(s, s.sys_struct; init_va_b, bench)
         prn && @info "Simplifying the system"
         @suppress_err begin
-            prn ? (@time (sys, _) = structural_simplify(s.full_sys, (inputs, []))) :
-                ((sys, _) = structural_simplify(s.full_sys, (inputs, [])))
+            if prn && !bench
+                @time (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+            elseif bench
+                local elapsed, sys
+                elapsed = @elapsed (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+                s.sys = sys
+                return elapsed
+            else
+                (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+            end
             s.sys = sys
         end
         dt = SimFloat(1/s.set.sample_freq)
@@ -353,13 +361,19 @@ function init!(s::SymbolicAWEModel;
     end
     model_path = joinpath(KiteUtils.get_data_path(), get_model_name(s.set; precompile))
     if !ispath(model_path) || remake
-        init(s)
+        res = init(s)
+        if bench
+            return res
+        end
     end
     _, success = reinit!(s, solver; adaptive, precompile, reload, lin_outputs, prn)
     if !success
         rm(model_path)
         @info "Rebuilding the system. This can take some minutes..."
-        init(s)
+        res = init(s)
+        if bench
+            return res
+        end
         reinit!(s, solver; adaptive, precompile, lin_outputs, prn, reload=true)
     end
     return s.integrator
