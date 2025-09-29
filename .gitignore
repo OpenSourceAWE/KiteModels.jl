@@ -61,3 +61,4 @@ data/linear_model.arrow
 data/nonlinear_model.arrow
 coverage/lcov.info
 temp_benchmark.jl
+Manifest-v1.12.toml
