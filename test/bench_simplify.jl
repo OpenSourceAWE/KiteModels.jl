@@ -12,7 +12,7 @@ using Pkg
 if ! ("Test" ∈ keys(Pkg.project().dependencies))
     using TestEnv; TestEnv.activate()
 end
-using KiteModels, LinearAlgebra, Statistics, Test, Distributed
+using KiteModels, LinearAlgebra, Statistics, Test
 include("bench_ref.jl")
 
 # Simulation parameters
@@ -71,37 +71,39 @@ function run_benchmark_subprocess()
         write(f, benchmark_script)
     end
     
-    try
-        # Run the benchmark in a separate Julia process
-        result = run(`julia --project=. $temp_script`)
-        
-        if result.exitcode == 0
-            # Read results from temporary file
-            if isfile("benchmark_results.tmp")
-                lines = readlines("benchmark_results.tmp")
-                time_ = parse(Float64, lines[1])
-                rel_performance = parse(Float64, lines[2])
-                
-                @info "Simplify took $time_ seconds"
-                @info "Relative performance: $rel_performance"
-                @test rel_performance > 0.8
-                
-                # Clean up temporary files
-                rm("benchmark_results.tmp", force=true)
-                rm(temp_script, force=true)
-                
-                return time_, rel_performance
+    @testset "Testing performance of simplify..." begin
+        try
+            # Run the benchmark in a separate Julia process
+            result = run(`julia --project=. $temp_script`)
+            
+            if result.exitcode == 0
+                # Read results from temporary file
+                if isfile("benchmark_results.tmp")
+                    lines = readlines("benchmark_results.tmp")
+                    time_ = parse(Float64, lines[1])
+                    rel_performance = parse(Float64, lines[2])
+                    
+                    @info "Simplify took $time_ seconds"
+                    @info "Relative performance: $rel_performance"
+                    @test rel_performance > 0.8
+                    
+                    # Clean up temporary files
+                    rm("benchmark_results.tmp", force=true)
+                    rm(temp_script, force=true)
+                    
+                    return time_, rel_performance
+                else
+                    error("Benchmark results file not found")
+                end
             else
-                error("Benchmark results file not found")
+                error("Benchmark process failed with exit code $(result.exitcode)")
             end
-        else
-            error("Benchmark process failed with exit code $(result.exitcode)")
+        catch e
+            # Clean up temporary files in case of error
+            rm("benchmark_results.tmp", force=true)
+            rm(temp_script, force=true)
+            rethrow(e)
         end
-    catch e
-        # Clean up temporary files in case of error
-        rm("benchmark_results.tmp", force=true)
-        rm(temp_script, force=true)
-        rethrow(e)
     end
 end
 
