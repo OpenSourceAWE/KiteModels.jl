@@ -104,7 +104,11 @@ function run_benchmark_subprocess()
 end
 
 ok, time_, rel_performance, err_msg = run_benchmark_subprocess()
-push!(msg,  ("Rel performance of simplify:      $(round(rel_performance, digits=2))"))
+if isnan(rel_performance)
+    push!(msg,  ("Rel performance of simplify:      $(round(rel_performance, digits=2))"))
+else
+    push!(msg,  ("Error in simplify benchmark:      $(err_msg)"))
+end
 
 @testset "Testing performance of simplify..." begin
     if ok
