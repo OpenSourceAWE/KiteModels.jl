@@ -3,9 +3,7 @@
 
 # activate the test environment if needed
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
+# Removed TestEnv fallback; rely on project test target having ControlPlots.
 
 using KiteModels
 using KitePodModels

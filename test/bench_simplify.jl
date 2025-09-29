@@ -9,11 +9,14 @@ if VERSION.minor==12
 end
 
 using Pkg
-if ! ("Test" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
+# TestEnv was previously used to activate the test environment dynamically.
+# All required test dependencies are now listed under [targets] test in Project.toml,
+# so we can rely on the active project without pulling in TestEnv.
 using KiteModels, LinearAlgebra, Statistics, Test
 include("bench_ref.jl")
+
+# Repository root for subprocess scripts
+const REPO_ROOT = normpath(@__DIR__, "..")
 
 # Simulation parameters
 dt = 0.05
@@ -27,88 +30,93 @@ steering_magnitude = 10.0      # Magnitude of steering input [Nm]
 
 # Function to run benchmark in separate Julia process
 function run_benchmark_subprocess()
-    # Create a temporary script file for the benchmark
-    benchmark_script = """
-    using Pkg
-    if ! ("Test" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
-    end
-    using KiteModels, LinearAlgebra, Statistics
-    include("test/bench_ref.jl")
-    
-    SIMPLE = $SIMPLE
-    T_REF = $T_REF
-    
-    # Initialize model
-    set = load_settings("system_ram.yaml")
-    set.segments = 3
-    set_values = [-50, 0.0, 0.0]  # Set values of the torques of the three winches. [Nm]
-    set.quasi_static = false
-    set.physical_model = SIMPLE ? "simple_ram" : "ram"
-    
-    sam = SymbolicAWEModel(set)
-    sam.set.abs_tol = 1e-2
-    sam.set.rel_tol = 1e-2
-    rm("data/model_1.11_ram_dynamic_3_seg.bin"; force=true)
-    
-    # Initialize at elevation
-    set.l_tethers[2] += 0.2
-    set.l_tethers[3] += 0.2
-    time_ = init!(sam; remake=false, reload=true, bench=true)
-    @info "Simplify took \$time_ seconds"
-    rel_performance = (T_REF / rel_cpu_performance())/time_
-    
-    # Write results to file for parent process to read
-    open("benchmark_results.tmp", "w") do f
-        println(f, time_)
-        println(f, rel_performance)
-    end
-    """
-    
-    # Write the script to a temporary file
-    temp_script = "temp_benchmark.jl"
-    open(temp_script, "w") do f
-        write(f, benchmark_script)
-    end
-    
-    @testset "Testing performance of simplify..." begin
+    # Use an isolated temporary directory for all intermediate files
+    mktempdir() do tmpdir
+        results_file = joinpath(tmpdir, "benchmark_results.tmp")
+        temp_script  = joinpath(tmpdir, "temp_benchmark.jl")
+
+        # Create benchmark script with absolute results path embedded
+        benchmark_script = """
+        const REPO_ROOT = $(repr(REPO_ROOT))
+        const RESULTS_FILE = $(repr(results_file))
+        cd(REPO_ROOT)  # ensure consistent base directory
+        using Pkg
+        using KiteModels, LinearAlgebra, Statistics
+        include(joinpath(REPO_ROOT, "test", "bench_ref.jl"))
+
+        SIMPLE = $SIMPLE
+        T_REF = $T_REF
+
+        # Initialize model
+        set = load_settings("system_ram.yaml")
+        set.segments = 3
+        set_values = [-50, 0.0, 0.0]  # Set values of the torques of the three winches. [Nm]
+        set.quasi_static = false
+        set.physical_model = SIMPLE ? "simple_ram" : "ram"
+
+        sam = SymbolicAWEModel(set)
+        sam.set.abs_tol = 1e-2
+        sam.set.rel_tol = 1e-2
+        rm("data/model_1.11_ram_dynamic_3_seg.bin"; force=true)
+
+        # Initialize at elevation
+        set.l_tethers[2] += 0.2
+        set.l_tethers[3] += 0.2
+        time_ = init!(sam; remake=false, reload=true, bench=true)
+        @info "Simplify took \$time_ seconds"
+        rel_performance = (T_REF / rel_cpu_performance())/time_
+
+        # Write results to file for parent process to read
+        open(RESULTS_FILE, "w") do f
+            println(f, time_)
+            println(f, rel_performance)
+        end
+        """
+
+        # Write the script to the temporary directory
+        open(temp_script, "w") do f
+            write(f, benchmark_script)
+        end
+
+        success = false
+        time_ = NaN
+        relp = NaN
+        msg = nothing
         try
-            # Run the benchmark in a separate Julia process
             result = run(`julia --project=. $temp_script`)
-            
-            if result.exitcode == 0
-                # Read results from temporary file
-                if isfile("benchmark_results.tmp")
-                    lines = readlines("benchmark_results.tmp")
-                    time_ = parse(Float64, lines[1])
-                    rel_performance = parse(Float64, lines[2])
-                    
-                    @info "Simplify took $time_ seconds"
-                    @info "Relative performance: $rel_performance"
-                    @test rel_performance > 0.8
-                    
-                    # Clean up temporary files
-                    rm("benchmark_results.tmp", force=true)
-                    rm(temp_script, force=true)
-                    
-                    return time_, rel_performance
-                else
-                    error("Benchmark results file not found")
-                end
+            if result.exitcode == 0 && isfile(results_file)
+                lines = readlines(results_file)
+                time_ = parse(Float64, lines[1])
+                relp = parse(Float64, lines[2])
+                success = true
             else
-                error("Benchmark process failed with exit code $(result.exitcode)")
+                msg = "Benchmark subprocess exit=$(result.exitcode) file_exists=$(isfile(results_file))"
             end
         catch e
-            # Clean up temporary files in case of error
-            rm("benchmark_results.tmp", force=true)
-            rm(temp_script, force=true)
-            rethrow(e)
+            io = IOBuffer(); showerror(io, e); msg = String(take!(io))
+        finally
+            # temp dir and contents auto-removed after mktempdir do-block
         end
+        return success, time_, relp, msg
     end
 end
 
-# Run the benchmark in a separate process
-time_, rel_performance = run_benchmark_subprocess()
+ok, time_, rel_performance, err_msg = run_benchmark_subprocess()
+# strict = get(ENV, "STRICT_BENCH", "0") in ("1", "true", "TRUE")
+strict = true
+
+@testset "Testing performance of simplify..." begin
+    if ok
+        @info "Simplify took $(round(time_, digits=3)) seconds" rel_performance=rel_performance
+        @test rel_performance > 0.8
+    elseif strict
+        @error "Simplify benchmark failed (strict mode)" err_msg
+        @test ok  # will fail in strict mode
+    else
+        @warn "Simplify benchmark did not complete; marking as broken (set STRICT_BENCH=1 to enforce)." err_msg
+        @test_broken ok
+    end
+end
 
 # Note: sys object is not available when running in separate process
 # If you need sys, you would need to serialize it or run parts in the main process
