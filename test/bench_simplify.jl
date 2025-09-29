@@ -7,6 +7,9 @@ T_REF = 48.0 # AMD Ryzen 7840U, Julia 1.11, no sys image [s]
 if VERSION.minor==12
     T_REF /= 0.85 # Julia 1.12 is about 15% slower on AMD Ryzen 7 7840U
 end
+if Sys.iswindows()
+    T_REF /= 0.75 # Windows is about 25% slower than Linux on same hardware
+end
 msg = String[]
 
 # TestEnv was previously used to activate the test environment dynamically.
