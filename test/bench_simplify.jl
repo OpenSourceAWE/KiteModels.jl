@@ -7,8 +7,8 @@ T_REF = 48.0 # AMD Ryzen 7840U, Julia 1.11, no sys image [s]
 if VERSION.minor==12
     T_REF /= 0.85 # Julia 1.12 is about 15% slower on AMD Ryzen 7 7840U
 end
+msg = String[]
 
-using Pkg
 # TestEnv was previously used to activate the test environment dynamically.
 # All required test dependencies are now listed under [targets] test in Project.toml,
 # so we can rely on the active project without pulling in TestEnv.
@@ -63,7 +63,6 @@ function run_benchmark_subprocess()
         set.l_tethers[2] += 0.2
         set.l_tethers[3] += 0.2
         time_ = init!(sam; remake=false, reload=true, bench=true)
-        @info "Simplify took \$time_ seconds"
         rel_performance = (T_REF / rel_cpu_performance())/time_
 
         # Write results to file for parent process to read
@@ -102,21 +101,23 @@ function run_benchmark_subprocess()
 end
 
 ok, time_, rel_performance, err_msg = run_benchmark_subprocess()
-# strict = get(ENV, "STRICT_BENCH", "0") in ("1", "true", "TRUE")
-strict = true
+push!(msg,  ("Rel performance of simplify:      $(round(rel_performance, digits=2))"))
 
 @testset "Testing performance of simplify..." begin
     if ok
-        @info "Simplify took $(round(time_, digits=3)) seconds" rel_performance=rel_performance
+        push!(msg, ("Simplify took:                   $(round(time_, digits=3)) s"))
         @test rel_performance > 0.8
-    elseif strict
-        @error "Simplify benchmark failed (strict mode)" err_msg
-        @test ok  # will fail in strict mode
     else
-        @warn "Simplify benchmark did not complete; marking as broken (set STRICT_BENCH=1 to enforce)." err_msg
-        @test_broken ok
+        @error "Simplify benchmark failed" err_msg
+        @test ok  # will fail in strict mode
     end
 end
+
+printstyled("\nBenchmark results for simplify:\n"; bold = true)
+for i in eachindex(msg)
+    println(msg[i])
+end
+println()
 
 # Note: sys object is not available when running in separate process
 # If you need sys, you would need to serialize it or run parts in the main process
