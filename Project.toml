@@ -99,7 +99,7 @@ Test = "1"
 Timers = "0.1.5"
 VortexStepMethod = "1.2.6"
 WinchModels = "0.3.6"
-julia = "1.10, 1.11"
+julia = "1.10, 1.11, 1.12"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
