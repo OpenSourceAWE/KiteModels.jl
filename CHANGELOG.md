@@ -2,6 +2,10 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### Unreleased
+#### Changed
+- Support Julia 1.12
+
 ### KiteModels v0.9.0 2025-07-14
 #### Changed
 - BREAKING: rename `init_sim!` to `init!`

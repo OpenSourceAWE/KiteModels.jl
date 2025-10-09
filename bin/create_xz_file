@@ -31,14 +31,26 @@ if [[ $julia_major == "1.10" ]]; then
     julia --project -J $SOFILE -e 'using KiteModels; include("test/create_xz_file.jl")'
     cp data/model_1.10_ram_dynamic_3_seg.bin data/model_1.10_ram_dynamic_3_seg.bin.default
     xz data/model_1.10_ram_dynamic_3_seg.bin.default
-else
+elif [[ $julia_major == "1.11" ]]; then
     rm -f data/model_1.11_ram_dynamic_3_seg.bin.default
     rm -f data/model_1.11_ram_dynamic_3_seg.bin.default.xz
     echo "using KiteModels. Please ignore the error message about the missing input file!"
     printf ' ' >> src/precompile.jl
     julia --project -J $SOFILE -e 'using KiteModels; include("test/create_xz_file.jl")'
-    cp data/model_1.11_ram_dynamic_3_seg.bin data/model_1.11_ram_dynamic_3_seg.bin.default
+    cp data/model_1.11_ram_dynamic_3_seg.bin data/model_1.11_ram_dynamic_3_seg.bin.defaultRead create_xz_file
+    
+    Now I'll update the script to handle Julia 1.12:
+    
+    
     xz data/model_1.11_ram_dynamic_3_seg.bin.default
+else
+    rm -f data/model_1.12_ram_dynamic_3_seg.bin.default
+    rm -f data/model_1.12_ram_dynamic_3_seg.bin.default.xz
+    echo "using KiteModels. Please ignore the error message about the missing input file!"
+    printf ' ' >> src/precompile.jl
+    julia --project -J $SOFILE -e 'using KiteModels; include("test/create_xz_file.jl")'
+    cp data/model_1.12_ram_dynamic_3_seg.bin data/model_1.12_ram_dynamic_3_seg.bin.default
+    xz data/model_1.12_ram_dynamic_3_seg.bin.default
 fi
 
 echo "using KiteModels..."
