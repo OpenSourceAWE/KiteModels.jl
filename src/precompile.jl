@@ -73,6 +73,9 @@ end
         if VERSION.minor == 11
             m1 = "Manifest-v1.11.toml"
             m2 = "Manifest-v1.11.toml.default"
+        elseif VERSION.minor == 12
+            m1 = "Manifest-v1.12.toml"
+            m2 = "Manifest-v1.12.toml.default"
         else
             m1 = "Manifest-v1.10.toml"
             m2 = "Manifest-v1.10.toml.default"
