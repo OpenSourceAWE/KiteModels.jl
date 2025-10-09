@@ -1,11 +1,20 @@
 # Copyright (c) 2024, 2025 Bart van de Lint, Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+function is_running_on_github_ci()
+    return get(ENV, "CI", "") == "true" &&
+           get(ENV, "GITHUB_ACTIONS", "") == "true" &&
+           haskey(ENV, "GITHUB_RUN_ID")
+end
+
 SIMPLE = false
 T_REF = 48.0 # AMD Ryzen 7840U, Julia 1.11, no sys image [s]
              # 37s with sys image
 if VERSION.minor==12
     T_REF /= 0.70 # Julia 1.12 is about 30% slower on AMD Ryzen 7 7840U
+    if is_running_on_github_ci()
+        T_REF /= 0.85 # GitHub CI is about 15% slower than local Ryzen 7 7840U
+    end
 end
 if Sys.iswindows()
     T_REF /= 0.75 # Windows is about 25% slower than Linux on same hardware
