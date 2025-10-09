@@ -3,8 +3,8 @@
 
 using Pkg
 if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
-    # Previously attempted to activate a TestEnv fallback. Assume tests run in project.
-    Pkg.update() # keep update behaviour
+    using TestEnv; TestEnv.activate()
+    Pkg.update()
 end
 using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
 using KiteModels, KitePodModels

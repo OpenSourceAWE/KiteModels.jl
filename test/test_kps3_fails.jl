@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-# Removed TestEnv activation; assume the test target environment is active.
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    using TestEnv; TestEnv.activate()
+end
 
 using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
 
