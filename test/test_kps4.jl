@@ -27,7 +27,7 @@ function set_defaults()
     kps4.set.rel_side_area = 50.0
     kps4.set.v_wind = 8.0
     kps4.set.mass = 11.4
-    kps4.set.damping =  2 * 473.0
+    kps4.set.axial_damping =  2 * 473.0
     kps4.set.alpha = 1.0/7
     kps4.set.c_s = 0.6
     kps4.set.kcu_diameter = 0.0
@@ -53,8 +53,8 @@ function init_150()
     kps4.set.v_wind = 9.1
     kps4.set.mass = 6.21
     kps4.set.c_s = 0.6
-    kps4.set.damping = 473.0     # unit damping
-    kps4.set.c_spring = 614600.0 # unit spring coefficent
+    kps4.set.axial_damping = 473.0     # unit damping
+    kps4.set.axial_stiffness = 614600.0 # unit spring coefficent
     kps4.set.width = 4.9622
 end
 
@@ -66,8 +66,8 @@ function init3()
     kps4.set.rel_side_area = 30.6
     kps4.set.mass = 6.21
     kps4.set.c_s = 0.6
-    kps4.set.damping = 473.0     # unit damping coefficient
-    kps4.set.c_spring = 614600.0 # unit spring coefficent
+    kps4.set.axial_damping = 473.0     # unit damping coefficient
+    kps4.set.axial_stiffness = 614600.0 # unit spring coefficent
     kps4.set.width = 4.9622
     kps4.set.elevation = 70.7 
     kps4.set.profile_law = Int(EXPLOG)
@@ -117,21 +117,21 @@ end
     @test sp[1].p2 == 2
     for i in 1:6
         @test sp[i].length   ≈ 150.0/6
-        @test sp[i].c_spring ≈ 2.76460154e+04
-        @test sp[i].damping  ≈ 1.89200000e+01
+        @test sp[i].axial_stiffness ≈ 2.76460154e+04
+        @test sp[i].axial_damping  ≈ 1.89200000e+01
     end
     @test sp[6].p1 == 6
     @test sp[6].p2 == 7
     @test sp[7].p1 == 7 # bridle segment S1
     @test sp[7].p2 == 8
     @test sp[7].length ≈ 4.998493790987047
-    @test sp[7].c_spring ≈ 54012.39452466341
-    @test sp[7].damping ≈ 94.62850606174248
+    @test sp[7].axial_stiffness ≈ 54012.39452466341
+    @test sp[7].axial_damping ≈ 94.62850606174248
     @test sp[8].length ≈ 2.671692035300166       # S2
     @test sp[9].length ≈ 4.96120756              # S3
     @test sp[10].length ≈ 3.3353120022370204
     @test sp[11].length ≈ 5.4912468596622306
-    @test sp[11].c_spring ≈ 49165.631334315847
+    @test sp[11].axial_stiffness ≈ 49165.631334315847
     @test sp[15].length ≈  2.440379941126399     # S9 p11 p8
     # TODO also test spring 13 .. 15
 end

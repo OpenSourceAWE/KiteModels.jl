@@ -107,8 +107,8 @@ kcu:
 tether:
     d_tether:  4           # tether diameter                 [mm]
     cd_tether: 0.958       # drag coefficient of the tether
-    damping: 473.0         # unit damping coefficient        [Ns]
-    c_spring: 614600.0     # unit spring constant coefficient [N]
+    axial_damping: 473.0         # unit damping coefficient        [Ns]
+    axial_stiffness: 614600.0     # unit spring constant coefficient [N]
     rho_tether:  724.0     # density of Dyneema           [kg/m³]
     e_tether: 55000000000.0 # axial tensile modulus of Dyneema (M.B. Ruppert) [Pa]
                            # SK75: 109 to 132 GPa according to datasheet

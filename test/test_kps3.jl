@@ -24,7 +24,7 @@ function set_defaults()
     kps.set.rel_side_area = 50.0
     kps.set.v_wind = 8.0
     kps.set.mass = 11.4
-    kps.set.damping =  2 * 473.0
+    kps.set.axial_damping =  2 * 473.0
     kps.set.alpha = 1.0/7
     kps.set.c_s = 0.6
 end
@@ -105,8 +105,8 @@ end
     mass = 9.0
     veld = KVec3(0.1, 0.3, 0.4)
     result = KVec3(0, 0, 0)
-    kps.c_spring = 0.011
-    kps.damping = 0.01
+    kps.axial_stiffness = 0.011
+    kps.axial_damping = 0.01
     kps.last_tether_drag = KVec3(5.0,6,7)
     kps.last_force = KVec3(-1.0, -2, -3)
     kps.v_app_perp = KVec3(0.1,0.22,0.33)
@@ -126,8 +126,8 @@ end
     kps.v_app_perp = KVec3(0.1,0.22,0.33)
     kps.v_wind_tether .= [0.1, 0.2, 0.3]
     kps.segment_length = 10.0
-    kps.c_spring = kps.set.c_spring / kps.segment_length
-    kps.damping  = kps.set.damping / kps.segment_length
+    kps.axial_stiffness = kps.set.axial_stiffness / kps.segment_length
+    kps.axial_damping  = kps.set.axial_damping / kps.segment_length
     pos  = zeros(SVector{SEGMENTS+1, KVec3})
     for i in 1:SEGMENTS+1
         pos[i][3] = 5.0 * (i-1)
@@ -137,8 +137,8 @@ end
     veld = zeros(SVector{SEGMENTS+1, KVec3})
     res1 = zeros(SVector{SEGMENTS+1, KVec3})
     res2 = zeros(SVector{SEGMENTS+1, KVec3})
-    @test kps.c_spring ≈ 61460.0
-    @test kps.damping  ≈    94.6
+    @test kps.axial_stiffness ≈ 61460.0
+    @test kps.axial_damping  ≈    94.6
     KiteModels.loop(kps, pos, vel, posd, veld, res1, res2)
     @test sum(res1) ≈ [0.0, 0.0, 0.0]
     @test isapprox(res2[7], [ -5.02874357e-02, -1.00574871e-01, -7.62063430e+02])
@@ -264,8 +264,8 @@ z= nothing
     # println(norm(res))
 
     @test my_state.segment_length ≈ 65.33333333333333
-    @test my_state.c_spring ≈ 9407.142857142859
-    @test my_state.damping  ≈  14.479591836734695
+    @test my_state.axial_stiffness ≈ 9407.142857142859
+    @test my_state.axial_damping  ≈  14.479591836734695
     # @test isapprox(my_state.param_cl, 1.0641931441572074, atol=1e-4)
     # @test isapprox(my_state.param_cd, 0.22825898470541978, atol=1e-4)
     @test sum(my_state.res1) ≈ [0.0, 0.0, 0.0]

@@ -209,7 +209,7 @@ end
 
 Constructs a Segment object representing an elastic spring-damper connection between two points.
 
-The segment follows Hooke's law with damping and aerodynamic drag:
+The segment follows Hooke's law with axial_damping and aerodynamic drag:
 
 **Spring-Damper Force:**
 ```math

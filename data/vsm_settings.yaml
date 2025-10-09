@@ -27,9 +27,9 @@ solver_settings:
     rtol: 1e-5                       # relative error   [-]
     tol_reference_error: 0.001
     relaxation_factor: 0.03          # relaxation factor for convergence
-    artificial_damping: false        # whether to apply artificial damping
-    k2: 0.1                          # artificial damping parameter
-    k4: 0.0                          # artificial damping parameter
+    artificial_damping: false        # whether to apply artificial axial_damping
+    k2: 0.1                          # artificial axial_damping parameter
+    k4: 0.0                          # artificial axial_damping parameter
     type_initial_gamma_distribution: ELLIPTIC
     core_radius_fraction: 1e-20
     mu: 1.81e-5                      # dynamic viscosity [N·s/m²]

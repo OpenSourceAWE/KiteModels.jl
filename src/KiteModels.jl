@@ -5,7 +5,7 @@
 
 This model implements a 3D mass-spring system with reel-out. It uses six tether segments (the number can be
 configured in the file data/settings.yaml). Two kite models are provided, the one point and the four point
-kite model. The spring constant and the damping decrease with the segment length. The aerodynamic kite forces are
+kite model. The spring constant and the axial_damping decrease with the segment length. The aerodynamic kite forces are
 calculated, depending on reel-out speed, depower and steering settings. 
 
 Scientific background: http://arxiv.org/abs/1406.6218 =#
@@ -530,7 +530,7 @@ function calc_pre_tension(s::AKM)
         av_force += forces[i]
     end
     av_force /= s.set.segments
-    res = av_force/s.set.c_spring
+    res = av_force/s.set.axial_stiffness
     if res < 0.0 res = 0.0 end
     if isnan(res) res = 0.0 end
     return res + 1.0

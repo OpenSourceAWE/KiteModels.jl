@@ -7,7 +7,7 @@ A custom `SystemStructure` can be used to create models of kite power systems of
 - custom amount of tethers
 - custom bridle configurations
 - quasi-static or dynamic point masses
-- different amounts of stiffness, damping and diameter on different tether segments
+- different amounts of stiffness, axial_damping and diameter on different tether segments
 
 ## Precondition
 First, following the [Quickstart](@ref) section up to the installation of the examples. Make sure that
