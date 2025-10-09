@@ -39,6 +39,9 @@ if [[ $update == true ]]; then
     if test -f "Manifest-v1.11.toml"; then
         mv Manifest-v1.11.toml Manifest-v1.11.toml.bak
     fi
+    if test -f "Manifest-v1.12.toml"; then
+        mv Manifest-v1.12.toml Manifest-v1.12.toml.bak
+    fi
     julia --project -e "include(\"./test/update_packages.jl\");"
 else
     echo "Using existing manifest file!"

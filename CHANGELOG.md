@@ -2,12 +2,15 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### Unreleased
+#### Changed
+- Support Julia 1.12
+
 ### KiteModels v0.9.0 2025-07-14
 #### Changed
 - BREAKING: rename `init_sim!` to `init!`
 - removed the parameter `upwind_dir!` from `init!`; use set.upwind_dir instead. Careful: This is in degrees.
-- the function `init!` accepts (and ignores) the parameters `delta` and `stiffness_factor` if applied to a 
-  SymbolicAWEModel
+- the function `init!` accepts (and ignores) the parameters `delta` and `stiffness_factor` if applied to a SymbolicAWEModel
 - bump `KiteUtils.jl` to v0.10.15
 - bump `AtmosphericModels` to v0.3.0, the first version that supports turbulent wind fields
 #### Added
