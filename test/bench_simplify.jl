@@ -5,7 +5,7 @@ SIMPLE = false
 T_REF = 48.0 # AMD Ryzen 7840U, Julia 1.11, no sys image [s]
              # 37s with sys image
 if VERSION.minor==12
-    T_REF /= 0.85 # Julia 1.12 is about 15% slower on AMD Ryzen 7 7840U
+    T_REF /= 0.70 # Julia 1.12 is about 30% slower on AMD Ryzen 7 7840U
 end
 if Sys.iswindows()
     T_REF /= 0.75 # Windows is about 25% slower than Linux on same hardware
@@ -85,7 +85,7 @@ function run_benchmark_subprocess()
         relp = NaN
         msg = nothing
         try
-            result = run(`julia --project=. $temp_script`)
+            result = run(`julia --project -t 1 $temp_script`)
             if result.exitcode == 0 && isfile(results_file)
                 lines = readlines(results_file)
                 time_ = parse(Float64, lines[1])
