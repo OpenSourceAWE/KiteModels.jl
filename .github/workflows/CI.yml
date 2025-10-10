@@ -14,7 +14,7 @@ jobs:
   reuse-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run REUSE lint
         run: |
           docker run --rm --volume ${{ github.workspace }}:/data fsfe/reuse lint
@@ -48,7 +48,7 @@ jobs:
         run: if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get install -y python3-matplotlib; fi
         shell: bash
        
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Use default manifest
         run: |
@@ -92,7 +92,7 @@ jobs:
       run: if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get install -y python3-matplotlib; fi
       shell: bash
       
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Use default manifest
       run: |
@@ -131,7 +131,7 @@ jobs:
       - name: Install matplotlib
         run: sudo apt-get install -y python3-matplotlib
         shell: bash
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: julia-actions/setup-julia@v2
       - name: Build PyCall
         run: julia --project=docs/ -e 'ENV["PYTHON"]=""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build("PyCall")'
