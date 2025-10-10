@@ -23,9 +23,14 @@ if [[ $julia_major == "1.10" ]]; then
     rm -rf ~/.julia/compiled/v1.10/KiteModels/
     echo "Updated Manifest-v1.10.toml.default !"
     echo "Make sure to run the tests before committing the new version!"
-else
+elif [[ $julia_major == "1.11" ]]; then
     cp Manifest-v1.11.toml Manifest-v1.11.toml.default
     rm -rf ~/.julia/compiled/v1.11/KiteModels/
     echo "Updated Manifest-v1.11.toml.default !"
+    echo "Make sure to run the tests before committing the new version!"
+else
+    cp Manifest-v1.12.toml Manifest-v1.12.toml.default
+    rm -rf ~/.julia/compiled/v1.12/KiteModels/
+    echo "Updated Manifest-v1.12.toml.default !"
     echo "Make sure to run the tests before committing the new version!"
 fi

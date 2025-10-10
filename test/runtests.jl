@@ -30,6 +30,9 @@ KiteUtils.set_data_path("")
     if build_is_production_build
         include("bench3.jl")
         include("bench4.jl")
+        if ! haskey(ENV, "NO_MTK")  
+            include("bench_simplify.jl")
+        end
     end
     if ! haskey(ENV, "NO_MTK")  
         include("test_ram_air_kite.jl")

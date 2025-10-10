@@ -12,6 +12,7 @@ if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
 end
 using ControlPlots, LaTeXStrings
 using KiteModels, LinearAlgebra, Statistics
+using KiteUtils: load_log, save_log, log!, Logger
 
 if ! @isdefined SIMPLE
     SIMPLE = false
