@@ -2,6 +2,12 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+julia_version=$(julia --version | awk '{print($3)}')
+julia_major=${julia_version:0:3}
+if [[ $julia_major == "1.1" ]]; then
+    julia_major=${julia_version:0:4} 
+fi
+
 cd ~
-rm -rf .julia/compiled/v1.11/KiteModels
-rm -rf .julia/compiled/v1.11/SymbolicAWEModels
+rm -rf .julia/compiled/v${julia_major}/KiteModels
+rm -rf .julia/compiled/v${julia_major}/SymbolicAWEModels
