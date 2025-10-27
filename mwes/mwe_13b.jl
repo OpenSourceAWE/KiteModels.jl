@@ -50,4 +50,4 @@ function process_result(sol, get_decay2_f)
     @time get_decay2_f(sol)[end]
 end
 
-process_result(sol)
+process_result(sol, get_decay2_f)
