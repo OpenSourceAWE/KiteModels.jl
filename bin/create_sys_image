@@ -90,7 +90,7 @@ fi
 # Check memory and limit threads if needed
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
     # Windows: use wmic or PowerShell
-    export JULIA_IMAGE_THREADS=4
+    export JULIA_IMAGE_THREADS=6
     echo "Checking system memory on Windows..."
     totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
     if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
