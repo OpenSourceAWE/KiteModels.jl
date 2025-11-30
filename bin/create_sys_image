@@ -87,8 +87,17 @@ else
     exit 1
 fi
 
-# Check memory only on Linux (not available on Windows)
-if [[ "$OSTYPE" != "msys" && "$OSTYPE" != "win32" ]]; then
+# Check memory and limit threads if needed
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows: use wmic or PowerShell
+    export JULIA_IMAGE_THREADS=4
+    totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
+    if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
+        echo "Warning: Less than 27GB of memory detected on Windows. Using only one thread for sysimage compilation."
+        export JULIA_IMAGE_THREADS=1
+    fi
+else
+    # Linux: use /proc/meminfo
     totalmem=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
     if [[ $totalmem -lt 27000 ]]; then
         echo "Warning: Less than 27GB of memory detected. Using only one thread for sysimage compilation."
