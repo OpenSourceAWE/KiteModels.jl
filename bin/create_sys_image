@@ -91,6 +91,7 @@ fi
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
     # Windows: use wmic or PowerShell
     export JULIA_IMAGE_THREADS=4
+    echo "Checking system memory on Windows..."
     totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
     if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
         echo "Warning: Less than 27GB of memory detected on Windows. Using only one thread for sysimage compilation."
