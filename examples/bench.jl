@@ -3,8 +3,6 @@
 using Printf
 using KiteModels
 
-if false include("../src/KPS4.jl") end
-
 set = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
