@@ -438,7 +438,7 @@ function reinit!(
         !ispath(model_path) && error("$model_path not found. Run init!(s::SymbolicAWEModel) first.")
         try
             s.serialized_model = deserialize(model_path)
-        catch e
+        catch
             @warn "Failure to deserialize $model_path !"
             return s.integrator, false
         end
@@ -852,7 +852,7 @@ end
     set_v_wind_ground!(s::SymbolicAWEModel, v_wind_gnd=s.set.v_wind, upwind_dir=-π/2) -> Nothing
 
 Set ground wind speed (m/s) and upwind direction (radians). Direction: 0=north, π/2=east, 
-π=zouth, -π/2=west (default).
+π=south, -π/2=west (default).
 """
 function set_v_wind_ground!(s::SymbolicAWEModel, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2)
     s.set_wind(s.integrator, [v_wind_gnd, upwind_dir])
