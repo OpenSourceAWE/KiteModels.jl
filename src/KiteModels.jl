@@ -122,7 +122,7 @@ function set_cl_cd!(s::AKM, alpha)
     nothing
 end
 
-# Calculate the angle of attack alpha from the apparend wind velocity vector
+# Calculate the angle of attack alpha from the apparent wind velocity vector
 # v_app and the z unit vector of the kite reference frame.
 function calc_alpha(v_app, vec_z)
     π/2.0 - acos(-(v_app ⋅ vec_z) / norm(v_app))
@@ -353,14 +353,15 @@ end
 """
     calculate_rotational_inertia!(s::AKM, include_kcu::Bool=true, around_kcu::Bool=false)
 
-Calculate the rotational inertia (Ixx, Ixy, Ixz, Iyy, Iyz, Izz) for a kite model from settings. Modifies the kitemodel by initialising the masses.
+Calculate the rotational inertia (Ixx, Ixy, Ixz, Iyy, Iyz, Izz) for a kite model from settings. 
+Modifies the kite model by initializing the masses.
 
 Parameters:
 - X: x-coordinates of the point masses.
 - Y: y-coordinates of the point masses.
 - Z: z-coordinates of the point masses.
 - M: masses of the point masses.
-- `include_kcu`: Include the kcu in the rotational intertia calculation?
+- `include_kcu`: Include the kcu in the rotational inertia calculation?
 - `around_kcu`: Uses the kcu as the rotation point.
 
 Returns:  
@@ -403,7 +404,7 @@ end
 # mutable struct SysState{P}
 #     "time since start of simulation in seconds"
 #     time::Float64
-#     "time needed for one simulation timestep"
+#     "time needed for one simulation time-step"
 #     t_sim::Float64
 #     "state of system state control"
 #     sys_state::Int16
@@ -590,7 +591,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.0001, prn=false)
     integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
                                          initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
-        roll, pitch, yaw = orient_euler(s)
+        _, pitch, _ = orient_euler(s)
         s.pitch_rate = 0
         s.pitch = pitch
         set_initial_velocity!(s)
@@ -648,7 +649,7 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
         end
     end
     if isa(s, KPS4)
-        roll, pitch, yaw = orient_euler(s)
+        _, pitch, _ = orient_euler(s)
         s.pitch_rate = (pitch - s.pitch) / dt
         s.pitch = pitch
     end
