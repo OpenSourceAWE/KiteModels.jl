@@ -366,7 +366,9 @@ function init!(s::SymbolicAWEModel;
             return res
         end
     end
-    _, success = reinit!(s, solver; adaptive, precompile, reload, lin_outputs, prn)
+    t_reinit = @elapsed begin
+        _, success = reinit!(s, solver; adaptive, precompile, reload, lin_outputs, prn)
+    end
     if !success
         rm(model_path)
         @info "Rebuilding the system. This can take some minutes..."
@@ -375,6 +377,9 @@ function init!(s::SymbolicAWEModel;
             return res
         end
         reinit!(s, solver; adaptive, precompile, lin_outputs, prn, reload=true)
+    end
+    if bench
+        return t_reinit
     end
     return s.integrator
 end
@@ -433,6 +438,17 @@ function reinit!(
     # init_Q_b_w, R_b_w, init_va_b = initial_orient(s)
     init!(s.sys_struct, s.set)
     
+    # Check if settings or structure have changed
+    if !isnothing(s.prob) && !reload
+        if (get_set_hash(s.set) != s.serialized_model.set_hash)
+            @warn "The Settings have changed. Consider using reload=true."
+            reload = true
+        elseif (get_sys_struct_hash(s.sys_struct) != s.serialized_model.sys_struct_hash)
+            @warn "The SystemStructure has changed. Consider using reload=true."
+            reload = true
+        end
+    end
+    
     if isnothing(s.prob) || reload
         model_path = joinpath(KiteUtils.get_data_path(), get_model_name(s.set; precompile))
         !ispath(model_path) && error("$model_path not found. Run init!(s::SymbolicAWEModel) first.")
@@ -467,9 +483,8 @@ function reinit!(
     end
 
     init_unknowns_vec!(s, s.sys_struct, s.unknowns_vec)
-    s.set_unknowns(s.integrator, s.unknowns_vec)
     s.set_psys(s.integrator, s.sys_struct)
-    OrdinaryDiffEqCore.reinit!(s.integrator, s.integrator.u; reinit_dae=true)
+    OrdinaryDiffEqCore.reinit!(s.integrator, s.unknowns_vec; reinit_dae=true)
     linearize_vsm!(s)
     return s.integrator, true
 end
