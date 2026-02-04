@@ -209,9 +209,9 @@ const BUILD_SYS = true
         KiteModels.init!(s; prn=true, reload=false)
         sys_state_before = KiteModels.SysState(s)
 
-        # Run a simulation step with zero set values
-        set_values = [0.0, 0.0, 0.0]
+        # Run a simulation step with balanced torque values (to avoid instability)
         dt = 1/s.set.sample_freq
+        set_values = -s.set.drum_radius * s.integrator[s.sys.winch_force]
         next_step!(s; set_values, dt=dt)
         # Update sys_state_before *after* the step to compare with the state *before* the loop
         KiteModels.update_sys_state!(sys_state_before, s)
@@ -220,6 +220,7 @@ const BUILD_SYS = true
         # Run multiple steps
         num_steps = 10
         for _ in 1:num_steps
+            set_values = -s.set.drum_radius * s.integrator[s.sys.winch_force]
             next_step!(s; set_values, dt=dt)
         end
         sys_state_after = KiteModels.SysState(s) # Get state after the loop
