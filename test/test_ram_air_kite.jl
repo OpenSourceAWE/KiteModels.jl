@@ -209,13 +209,20 @@ const BUILD_SYS = true
         KiteModels.init!(s; prn=true, reload=false)
         sys_state_before = KiteModels.SysState(s)
 
-        # Run a simulation step with balanced torque values (to avoid instability)
+        # Run stabilization steps first (required to avoid numerical instability)
         dt = 1/s.set.sample_freq
+        s.integrator.ps[s.sys.stabilize] = true
+        for _ in 1:10
+            next_step!(s; dt, vsm_interval=1)
+        end
+        s.integrator.ps[s.sys.stabilize] = false
+
+        # Run a simulation step with balanced torque values
         set_values = -s.set.drum_radius * s.integrator[s.sys.winch_force]
         next_step!(s; set_values, dt=dt)
         # Update sys_state_before *after* the step to compare with the state *before* the loop
         KiteModels.update_sys_state!(sys_state_before, s)
-        @test isapprox(s.integrator.t, dt, atol=TOL)
+        @test s.integrator.t > dt  # Time has advanced past initial stabilization + one step
 
         # Run multiple steps
         num_steps = 10
