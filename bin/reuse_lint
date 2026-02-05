@@ -1,0 +1,5 @@
+# Copyright (c) 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+cd ..
+pipx run reuse lint
