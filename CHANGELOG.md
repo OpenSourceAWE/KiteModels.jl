@@ -12,6 +12,7 @@ SPDX-License-Identifier: MIT
 - Make tests more robust by deleting unused files from the temporary directory and by increasing tolerances
 ### Added
 - the configuration file `.JETLSConfig.toml`
+- the script `reuse_lint` to check the licenses
 
 ### KiteModels v0.9.0 2025-07-14
 #### Changed
