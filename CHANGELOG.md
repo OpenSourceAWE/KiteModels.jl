@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### Unreleased
+### KiteModels v0.10.0 2026-02-05
 #### Changed
 - Support Julia 1.12
 - Bump KitePodModels to 0.4.0
