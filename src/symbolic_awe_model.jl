@@ -208,7 +208,7 @@ function update_sys_state!(ss::SysState, s::SymbolicAWEModel, zoom=1.0)
     num_winches = length(s.sys_struct.winches)
     ss.l_tether[1:num_winches] .= tether_length
     ss.v_reelout[1:num_winches] .= tether_vel
-    ss.force[1:num_winches] .= winch_force
+    ss.winch_force[1:num_winches] .= winch_force
 
     # Depower and Steering from twist angles
     num_groups = length(s.sys_struct.wings[1].group_idxs)
