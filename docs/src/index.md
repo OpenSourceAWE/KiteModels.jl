@@ -64,9 +64,8 @@ If you now launch Julia with `./bin/run_julia` and then run the above example ag
 times faster.
 
 ## News
-#### Work in progress
-- a new 5-point model based on ModelingToolkit (MTK) is in development;  
-  this will allow to create linearized models around any operation point and to do analysis in the frequency domain.
+#### February 2026
+- a symbolic model of a RAM air kite is now included, but it is a bit outdated, you can find the latest code in the package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl)
 #### April 2025
 - a new model `SymbolicAWEModel` was contributed, based on the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 #### November 2024
