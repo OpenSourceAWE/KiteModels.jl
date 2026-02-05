@@ -2,7 +2,7 @@
 
 julia_version = "1.11.8"
 manifest_format = "2.0"
-project_hash = "e7ac8df9ddf8ca60a678500df1c5281c8ac21435"
+project_hash = "c468ed3fc35692d4efed0dc00cac5fad21365578"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -955,15 +955,15 @@ version = "9.18.0"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
-git-tree-sha1 = "1b89d3131caa3510d35fb5f523c4596b3cc13a67"
+git-tree-sha1 = "57f6f71a75d2d26f199a64c03a03796139c540f4"
 uuid = "9de5dc81-f971-414a-927b-652b2f41c539"
-version = "0.3.8"
+version = "0.4.0"
 
 [[deps.KiteUtils]]
 deps = ["Arrow", "CSV", "DocStringExtensions", "LinearAlgebra", "OrderedCollections", "Parameters", "Parsers", "Pkg", "PrecompileTools", "RecursiveArrayTools", "ReferenceFrameRotations", "Rotations", "StaticArrays", "StructArrays", "StructTypes", "YAML"]
-git-tree-sha1 = "42341d242037a85396650f19169b0d21789f46f5"
+git-tree-sha1 = "81d08d559d5c59533a2affff5c25d353a765ac3b"
 uuid = "90980105-b163-44e5-ba9f-8b1c83bb0533"
-version = "0.10.16"
+version = "0.11.1"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
