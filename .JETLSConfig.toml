@@ -1,0 +1,2 @@
+[diagnostic]
+all_files = false                   # boolean, default: true
