@@ -14,6 +14,13 @@ old_path = get_data_path()
 package_data_path = joinpath(dirname(dirname(pathof(KiteModels))), "data")
 temp_data_path = joinpath(tempdir(), "data")
 Base.Filesystem.cptree(package_data_path, temp_data_path; force=true)
+# Remove any non-default model files that might have been copied from previous test runs
+# This ensures tests start with a clean state and don't use stale cached models
+for f in readdir(temp_data_path)
+    if endswith(f, ".bin") && !endswith(f, ".default") && !endswith(f, ".xz")
+        rm(joinpath(temp_data_path, f); force=true)
+    end
+end
 set_data_path(temp_data_path)
 
 # Testing tolerance
