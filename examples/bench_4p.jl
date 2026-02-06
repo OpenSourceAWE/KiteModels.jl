@@ -1,6 +1,7 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-using KiteModels, KitePodModels
+using KiteModels: KPS4, init!, lift_drag, next_step!, winch_force
+using KitePodModels: KCU
 using KiteUtils: load_settings
 using Printf
 
@@ -41,7 +42,7 @@ function simulate(integrator, steps, offset=0)
         v_force[i] = winch_force(kps4)
         set_speed = kps4.sync_speed+acc*dt
         if PRINT
-            lift, drag = KiteModels.lift_drag(kps4)
+            lift, drag = lift_drag(kps4)
             @printf "%.2f: " round(integrator.t, digits=2)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
@@ -52,7 +53,7 @@ function simulate(integrator, steps, offset=0)
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4, delta=0, stiffness_factor=0.5, prn=STATISTIC)
+integrator = init!(kps4, delta=0, stiffness_factor=0.5, prn=STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100, 100)
@@ -66,7 +67,7 @@ if PLOT
     p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
     display(p)
 end
-lift, drag = KiteModels.lift_drag(kps4)
+lift, drag = lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $av_steps")
 
