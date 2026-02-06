@@ -27,7 +27,7 @@ All models inherit from `AbstractKiteModel` (defined in KiteUtils.jl). The main 
 
 ### Running Tests
 ```julia
-cd("test"); include("runtests.jl")  # Full test suite (~60 min)
+include("test/runtests.jl")  # Full test suite (~60 min)
 ```
 Skip slow MTK tests: `ENV["NO_MTK"] = "1"` before testing.
 
