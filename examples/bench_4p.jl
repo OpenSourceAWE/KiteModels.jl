@@ -1,6 +1,8 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-using Printf, KiteModels, KitePodModels, KiteUtils
+using KiteModels, KitePodModels
+using KiteUtils: load_settings
+using Printf
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
@@ -17,7 +19,7 @@ set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
 STEPS = 200
 PRINT = false
 STATISTIC = false
-PLOT=true
+const PLOT=true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -60,6 +62,7 @@ println("Total simulation time: $(round(runtime, digits=3)) s")
 speed = (STEPS-100) / runtime * dt
 println("Simulation speed: $(round(speed, digits=2)) times realtime.")
 if PLOT
+    local p
     p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
     display(p)
 end
