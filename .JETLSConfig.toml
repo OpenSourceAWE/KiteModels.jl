@@ -1,3 +1,5 @@
+formatter = "JuliaFormatter"
+
 [full_analysis]
 auto_instantiate = false            # boolean, default: true
 
