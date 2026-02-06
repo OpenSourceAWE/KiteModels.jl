@@ -33,7 +33,7 @@ v_force = zeros(STEPS)
 
 function simulate(integrator, steps, offset = 0)
     iter = 0
-    for i = 1:steps
+    for i in 1:steps
         acc = 0.0
         if kps4.t_0 > 3.0 + offset
             acc = 0.1
