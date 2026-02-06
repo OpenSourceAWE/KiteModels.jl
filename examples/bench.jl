@@ -19,20 +19,20 @@ kps4::KPS4 = KPS4(kcu)
 
 function simulate(integrator, steps)
     iter = 0
-    for i in 1:steps
+    for _ = 1:steps
         if PRINT
             lift, drag = KiteModels.lift_drag(kps4)
-            @printf "%.2f: " round(integrator.t, digits=2)
+            @printf "%.2f: " round(integrator.t, digits = 2)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        next_step!(kps4, integrator; set_speed=0, dt=dt)
+        next_step!(kps4, integrator; set_speed = 0, dt = dt)
         iter += kps4.iter
     end
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4; delta=0, stiffness_factor=0.5, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta = 0, stiffness_factor = 0.5, prn = STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100)
