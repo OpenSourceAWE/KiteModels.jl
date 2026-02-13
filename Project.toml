@@ -33,7 +33,6 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
-Timers = "21f18d07-b854-4dab-86f0-c15a3821819a"
 WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
 
 [weakdeps]
@@ -78,7 +77,6 @@ StatsBase = "0.34"
 Sundials = "4.24"
 Suppressor = "0.2.8"
 Test = "1"
-Timers = "0.1.5"
 WinchModels = "0.3.6"
 julia = "1.10, 1.11, 1.12"
 
