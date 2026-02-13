@@ -5,6 +5,7 @@
 # of any of the plates of the kite
 using KiteModels
 
+set = nothing
 if haskey(ENV, "USE_V9")
     set = deepcopy(load_settings("system_v9.yaml"))
 else
@@ -12,8 +13,8 @@ else
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
 end
 using ControlPlots, LaTeXStrings
 plt.close("all")
