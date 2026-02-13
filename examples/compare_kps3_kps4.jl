@@ -3,9 +3,9 @@
 using Printf
 using KiteModels: KPS3, KPS4, init!, lift_drag, next_step!, winch_force
 using KitePodModels: KCU
-using KiteUtils: load_settings
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 set.abs_tol=0.00006
 set.rel_tol=0.000001
 
@@ -20,20 +20,15 @@ PRINT = false
 STATISTIC = false
 # end of user parameter section #
 
+if PLOT
+    using ControlPlots
+end
+
 set.version = 2
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 kps3::KPS3 = KPS3(kcu)
-
-if PLOT
-    using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv;
-        TestEnv.activate()
-    end
-    using ControlPlots
-end
 
 function simulate(s, integrator, steps, plot = false; fig = "")
     iter = 0
