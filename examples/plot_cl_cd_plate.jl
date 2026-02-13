@@ -4,12 +4,12 @@
 # plot the lift and drag coefficients as function of angle of attack
 # of any of the plates of the kite
 using KiteModels
+using KiteUtils: load_settings, Settings
 
-set = nothing
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
