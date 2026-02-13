@@ -13,7 +13,7 @@ set.rel_tol=0.00001
 # the following values can be changed to match your interest
 dt = 0.05
 STEPS = 600
-PLOT = true
+const PLOT = true
 FRONT_VIEW = true
 ZOOM = false
 PRINT = false

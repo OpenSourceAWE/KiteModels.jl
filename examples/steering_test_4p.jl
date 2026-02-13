@@ -30,7 +30,7 @@ if set.kcu_model == "KCU2"
 else
     STEPS = 2400
 end
-PLOT = true
+const PLOT = true
 FRONT_VIEW = true
 ZOOM = true
 PRINT = false
