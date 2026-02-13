@@ -8,11 +8,6 @@ using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
 
 set = deepcopy(load_settings("system.yaml"))
 
-using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
-
 using ControlPlots
 plt.close("all")
 

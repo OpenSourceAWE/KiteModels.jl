@@ -6,10 +6,6 @@ using KiteUtils: load_settings
 using Printf
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv;
-    TestEnv.activate()
-end
 using ControlPlots
 
 set = deepcopy(load_settings("system.yaml"))
