@@ -41,7 +41,7 @@ set.rel_tol=0.00001
 dt = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 550# 740
-PLOT = true
+const PLOT = true
 PRINT = true
 STATISTIC = false
 # end of user parameter section #

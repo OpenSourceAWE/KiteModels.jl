@@ -16,7 +16,7 @@ using Timers
 tic()
 @info "Loading packages "
 
-PLOT = true
+const PLOT = true
 if PLOT
     using Pkg
     if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
