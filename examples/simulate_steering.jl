@@ -4,8 +4,9 @@
 using Printf
 # simulate the effect of steering the kite using the one point kite model
 using KiteModels
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
@@ -26,7 +27,7 @@ kps3::KPS3 = KPS3(kcu)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
 end
@@ -50,7 +51,7 @@ function simulate(integrator, steps, plot=false)
         end
 
 
-        next_step!(kps3, integrator; set_speed=0, dt)
+        next_step!(kps3, integrator; set_speed=0, dt=dt)
         iter += kps3.iter
 
         if plot
@@ -66,8 +67,8 @@ end
 
 integrator = KiteModels.init!(kps3; delta=0, stiffness_factor=0.04, prn=STATISTIC)
 
-if PLOT
-    av_steps = simulate(integrator, STEPS, true)
+av_steps = if PLOT
+    simulate(integrator, STEPS, true)
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
@@ -75,6 +76,7 @@ else
     println("\nTotal simulation time: $(round(runtime, digits=3)) s")
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
+    av_steps
 end
 lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")

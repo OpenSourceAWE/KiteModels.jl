@@ -6,8 +6,9 @@ using Printf
 # shows how to log, plot, and print the simulation results
 
 using KiteModels, LinearAlgebra
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
