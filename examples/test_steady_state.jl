@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 using KiteModels, KitePodModels
+using KiteUtils: Settings, load_settings
 
 set_data_path("data")
-set = load_settings("system_v9.yaml")
+set::Settings = load_settings("system_v9.yaml")
 set.elevation = 70.8
 
 kcu::KCU = KCU(set)

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 using KiteModels: KPS4, init!, lift_drag, next_step!, winch_force
 using KitePodModels: KCU
-using KiteUtils: load_settings
+using KiteUtils: Settings, load_settings
 using Printf
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
@@ -11,7 +11,7 @@ end
 
 using ControlPlots
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 using Printf
 using KiteModels
+using KiteUtils: Settings, load_settings
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
@@ -9,7 +10,7 @@ if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
 end
 using ControlPlots
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05

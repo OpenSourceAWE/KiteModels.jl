@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MIT
 using Printf
 using KiteModels
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05

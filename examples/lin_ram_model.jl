@@ -20,12 +20,13 @@ PLOT = true
 if PLOT
     using Pkg
     if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots, LaTeXStrings, ControlSystemsBase
 end
 
 using KiteModels, LinearAlgebra, Statistics, OrdinaryDiffEqCore 
+using KiteUtils: Settings, load_settings
 using ModelingToolkit
 using ModelingToolkit: t_nounits
 toc()
@@ -43,7 +44,7 @@ steering_freq = 1/2  # Hz - full left-right cycle frequency
 steering_magnitude = 5.0      # Magnitude of steering input [Nm]
 
 # Initialize model
-set = load_settings("system_ram.yaml")
+set::Settings = load_settings("system_ram.yaml")
 set.segments = 3
 set_values = [-50.0, 0.0, 0.0]  # Set values of the torques of the three winches. [Nm]
 set.quasi_static = false

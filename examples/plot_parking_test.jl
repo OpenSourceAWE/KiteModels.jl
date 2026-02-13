@@ -29,7 +29,7 @@ end
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate("examples")
 end
 using ControlPlots
 plt.close("all")
@@ -62,7 +62,7 @@ set_tether_diameter!(set, set.d_tether)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
 end

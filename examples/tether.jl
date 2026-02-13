@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: MPL-2.0
 
 using KiteModels, VortexStepMethod, ControlPlots
+using KiteUtils: Settings
 
-set = se("system_ram.yaml")
+set::Settings = se("system_ram.yaml")
 set.segments = 20
 dynamics_type = DYNAMIC
 
