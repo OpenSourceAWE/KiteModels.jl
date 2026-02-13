@@ -18,7 +18,7 @@ set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
 STEPS = 200
 PRINT = false
 STATISTIC = false
-PLOT=true
+const PLOT = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -41,7 +41,6 @@ function simulate(integrator, steps, offset=0)
         v_speed[i] = kps4.v_reel_out
         v_force[i] = winch_force(kps4)
         alpha_2[i] = kps4.alpha_2
-        alpha_2b[i] = kps4.alpha_2b
         set_speed = kps4.sync_speed+acc*dt
         if PRINT
             lift, drag = KiteModels.lift_drag(kps4)
@@ -65,10 +64,9 @@ println("Total simulation time: $(round(runtime, digits=3)) s")
 speed = (STEPS-100) / runtime * dt
 println("Simulation speed: $(round(speed, digits=2)) times realtime.")
 if PLOT
+    local p
     p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
     p = plot(v_time[1:STEPS-100], alpha_2[1:STEPS-100], fig="alpha_2")
-    display(p)
-    p = plot(v_time[1:STEPS-100], alpha_2b[1:STEPS-100], fig="alpha_2b")
     display(p)
 end
 lift, drag = KiteModels.lift_drag(kps4)
