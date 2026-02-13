@@ -3,8 +3,9 @@
 
 using Printf
 using KiteModels
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05
@@ -24,13 +25,13 @@ set.version = 2
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
-# if PLOT
+if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
-# end
+end
 
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
