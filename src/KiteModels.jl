@@ -13,16 +13,14 @@ Scientific background: http://arxiv.org/abs/1406.6218 =#
 module KiteModels
 
 using PrecompileTools: @setup_workload, @compile_workload 
-using Dierckx, Interpolations, Serialization, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
+using Dierckx, Interpolations, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
       DocStringExtensions, OrdinaryDiffEqCore, OrdinaryDiffEqBDF, OrdinaryDiffEqNonlinearSolve,
-      NonlinearSolve, SHA, Suppressor
+      NonlinearSolve, Suppressor
 import Sundials
 using Reexport, Pkg
-using VortexStepMethod
 using KiteUtils
 import KiteUtils: init!, next_step!, update_sys_state!
 import KiteUtils: calc_elevation, calc_heading, calc_course, SysState
-@reexport using VortexStepMethod: RamAirWing, BodyAerodynamics, Solver, NONLIN
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
@@ -30,10 +28,6 @@ using Rotations
 import Base.zero
 import OrdinaryDiffEqCore.init
 import OrdinaryDiffEqCore.step!
-using ModelingToolkit, SymbolicIndexingInterface
-using ModelingToolkit: t_nounits as t, D_nounits as D
-using ADTypes: AutoFiniteDiff
-import ModelingToolkit.SciMLBase: successful_retcode
 
 export KPS3, KPS4, SymbolicAWEModel, KVec3, SimFloat, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
 export calc_set_cl_cd!, copy_examples, copy_bin, update_sys_state!                     # helper functions
@@ -97,9 +91,6 @@ function __init__()
 end
 
 include("KPS4.jl") # include code, specific for the four point kite model
-include("system_structure.jl")
-include("symbolic_awe_model.jl") # include code, specific for the ram air kite model
-include("mtk_model.jl")
 include("KPS3.jl") # include code, specific for the one point kite model
 include("init.jl") # functions to calculate the initial state vector, the initial masses and initial springs
 
@@ -216,7 +207,6 @@ function upwind_dir(v_wind_gnd)
     wind_dir = atan(v_wind_gnd[2], v_wind_gnd[1])
     -(wind_dir + π/2)
 end
-@register_symbolic upwind_dir(v_wind_gnd)
 
 """
     tether_length(s::AKM)
