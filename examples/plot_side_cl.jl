@@ -37,7 +37,7 @@ kps4::KPS4 = KPS4(kcu)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
     plt.close("all")
@@ -64,12 +64,12 @@ function simulate(integrator, steps, steering; plot=false)
         end
     end
     set_depower_steering(kps4.kcu, kps4.depower, steering)
-    for i in 1:20
+    for _ in 1:20
         next_step!(kps4, integrator; set_speed=0, dt)
         iter += kps4.iter
     end
     side_cl = 0 
-    for i in 1:5
+    for _ in 1:5
         next_step!(kps4, integrator; set_speed=0, dt)
         side_cl += kps4.side_cl
         iter += kps4.iter

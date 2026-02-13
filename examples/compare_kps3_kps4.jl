@@ -21,6 +21,10 @@ STATISTIC = false
 # end of user parameter section #
 
 if PLOT
+    using Pkg
+    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+        Pkg.activate("examples")
+    end
     using ControlPlots
 end
 
