@@ -5,9 +5,12 @@
 
 using Printf
 using Pkg
+if ! ("Rotations" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
 using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 using ControlPlots
 plt.close("all")

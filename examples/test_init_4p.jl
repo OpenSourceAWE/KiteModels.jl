@@ -4,9 +4,12 @@
 # plot the lift and drag coefficients as function of angle of attack
 using Printf
 using Pkg
+if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
 using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 using ControlPlots
 plt.close("all")

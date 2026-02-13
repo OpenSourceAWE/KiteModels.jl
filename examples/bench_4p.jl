@@ -4,8 +4,11 @@ using KiteModels: KPS4, init!, lift_drag, next_step!, winch_force
 using KitePodModels: KCU
 using KiteUtils: load_settings
 using Printf
-
 using Pkg
+if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
+
 using ControlPlots
 
 set = deepcopy(load_settings("system.yaml"))
