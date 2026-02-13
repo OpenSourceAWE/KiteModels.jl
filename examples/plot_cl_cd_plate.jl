@@ -30,7 +30,7 @@ function plot_cl_cd(alpha)
         cd[i] = kps4.calc_cd(alpha)
     end
     display(plot(ALPHA, [cl, cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="CL, CD", labels=["CL", "CD"], fig="CL_CD"))
-    display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", fig="LoD"))
+    display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", labels=["LoD"], fig="LoD"))
 end
 
 ALPHA = -10:0.1:20
