@@ -4,11 +4,12 @@
 # plot the side lift coefficient vs rel_steering
 using Printf
 using KiteModels
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 set.abs_tol=0.0006
