@@ -51,10 +51,6 @@ with some example input files. You can now run the examples with the command:
 ```julia
 include("examples/menu.jl")
 ```
-You can also run the ram-air-kite example like this:
-```julia
-include("examples/ram_air_kite.jl")
-```
 This might take two minutes. To speed up the model initialization, you can create a system image:
 ```bash
 cd bin
