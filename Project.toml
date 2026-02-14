@@ -1,7 +1,10 @@
 name = "KiteModels"
 uuid = "b94af626-7959-4878-9336-2adc27959007"
 authors = ["Uwe Fechner <fechner@aenarete.eu> and contributors"]
-version = "0.9.0"
+version = "0.10.0"
+
+[workspace]
+projects = ["examples"]
 
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
@@ -66,8 +69,8 @@ DocStringExtensions = "0.9.4"
 Documenter = "1.10.1"
 Interpolations = "0.15.1"
 JLD2 = "0.5"
-KitePodModels = "0.3.8"
-KiteUtils = "0.10.15"
+KitePodModels = "0.4.0"
+KiteUtils = "0.11.1"
 LaTeXStrings = "1.4.0"
 LinearAlgebra = "1.10, 1.11"
 LinearSolve = "~2.39.0, 3"
@@ -86,7 +89,7 @@ REPL = "1.10.0, 1.11.0"
 Reexport = "1.1, 1.2"
 Rotations = "1.7"
 SHA = "0.7.0"
-SciMLBase = "<2.115"
+SciMLBase = "~2.114"
 Serialization = "1.10, 1.11"
 StaticArrays = "1.9.7"
 Statistics = "1"

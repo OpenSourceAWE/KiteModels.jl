@@ -5,7 +5,7 @@
 
 This model implements a 3D mass-spring system with reel-out. It uses six tether segments (the number can be
 configured in the file data/settings.yaml). The kite is modelled as additional mass at the end of the tether.
-The spring constant and the damping decrease with the segment length. The aerodynamic kite forces are
+The spring constant and the axial_damping decrease with the segment length. The aerodynamic kite forces are
 calculated, depending on reel-out speed, depower and steering settings. 
 
 One point kite model, included from KiteModels.jl.
@@ -92,11 +92,11 @@ $(TYPEDFIELDS)
     "total actual bridle area [m²]"
     bridle_area::S =      zero(S)
     "spring constant, depending on the length of the tether segment"
-    c_spring::S =         zero(S)
+    axial_stiffness::S =         zero(S)
     "unstressed segment length [m]"
     segment_length::S =           0.0
-    "damping factor, depending on the length of the tether segment"
-    damping::S =          zero(S)
+    "axial_damping factor, depending on the length of the tether segment"
+    axial_damping::S =          zero(S)
     "last norm of the apparent wind speed at a tether segment [m/s]"
     last_v_app_norm_tether::S = zero(S)
     "lift coefficient of the kite, depending on the angle of attack"
@@ -170,8 +170,8 @@ function clear!(s::KPS3)
     for i in 1:s.set.segments + 1 
         s.forces[i] .= zeros(3)
     end
-    s.c_spring = s.set.c_spring / s.segment_length
-    s.damping  = s.set.damping / s.segment_length
+    s.axial_stiffness = s.set.axial_stiffness / s.segment_length
+    s.axial_damping  = s.set.axial_damping / s.segment_length
     s.kcu.depower = s.set.depower/100.0
     s.kcu.set_depower = s.kcu.depower
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
@@ -276,11 +276,11 @@ function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
     # # calculate the relative velocity in the direction of the spring (=segment)
     spring_vel = s.unit_vector ⋅ rel_vel
 
-    k2 = 0.05 * s.c_spring * s.stiffness_factor             # compression stiffness tether segments
+    k2 = 0.05 * s.axial_stiffness * s.stiffness_factor             # compression stiffness tether segments
     if norm1 - s.segment_length > 0.0
-        s.spring_force .= (s.c_spring * s.stiffness_factor * (norm1 - s.segment_length) + s.damping * spring_vel) .* s.unit_vector
+        s.spring_force .= (s.axial_stiffness * s.stiffness_factor * (norm1 - s.segment_length) + s.axial_damping * spring_vel) .* s.unit_vector
     else
-        s.spring_force .= k2 * ((norm1 - s.segment_length) + (s.damping * spring_vel)) .* s.unit_vector
+        s.spring_force .= k2 * ((norm1 - s.segment_length) + (s.axial_damping * spring_vel)) .* s.unit_vector
     end
     s.seg_area = norm1 * s.set.d_tether/1000.0
     s.last_v_app_norm_tether = calc_drag(s, s.av_vel, s.unit_vector, rho, s.v_app_perp, s.seg_area)
@@ -393,8 +393,8 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, time) where S
     s.l_tether = length
     s.segment_length = length / segments
 
-    s.c_spring = s.set.c_spring / s.segment_length
-    s.damping  = s.set.damping / s.segment_length
+    s.axial_stiffness = s.set.axial_stiffness / s.segment_length
+    s.axial_damping  = s.set.axial_damping / s.segment_length
     s.beta = calc_elevation(s)
 
     # call core calculation routines
@@ -491,7 +491,7 @@ Return an array of the scalar spring forces of all tether segements.
 function spring_forces(s::KPS3)
     forces = zeros(SimFloat, s.set.segments)
     for i in 1:s.set.segments
-        forces[i] =  s.c_spring * s.stiffness_factor * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length)
+        forces[i] =  s.axial_stiffness * s.stiffness_factor * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length)
     end
     forces
 end

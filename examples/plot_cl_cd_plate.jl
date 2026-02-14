@@ -4,16 +4,17 @@
 # plot the lift and drag coefficients as function of angle of attack
 # of any of the plates of the kite
 using KiteModels
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
 end
 using ControlPlots, LaTeXStrings
 plt.close("all")
@@ -30,7 +31,7 @@ function plot_cl_cd(alpha)
         cd[i] = kps4.calc_cd(alpha)
     end
     display(plot(ALPHA, [cl, cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="CL, CD", labels=["CL", "CD"], fig="CL_CD"))
-    display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", fig="LoD"))
+    display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", labels=["LoD"], fig="LoD"))
 end
 
 ALPHA = -10:0.1:20

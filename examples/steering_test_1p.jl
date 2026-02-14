@@ -3,9 +3,10 @@
 
 # apply different rel_steering values and plot turn rate
 using Printf
-using KiteModels, KitePodModels, KiteUtils, Pkg
+using KiteModels, KitePodModels, Pkg
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
@@ -21,12 +22,12 @@ set.depower = set.depower_offset # fully powered kite
 # the following values can be changed to match your interest
 set.sample_freq = 50
 set.solver="DFBDF" # IDA or DFBDF
-if set.kcu_model == "KCU2"
-    STEPS = 2600
+STEPS = if set.kcu_model == "KCU2"
+    2600
 else
-    STEPS = 2400
+    2400
 end
-PLOT = true
+const PLOT = true
 FRONT_VIEW = true
 ZOOM = true
 PRINT = false
@@ -43,7 +44,7 @@ kps3::KPS3 = KPS3(kcu)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots, StatsBase
     close("all")

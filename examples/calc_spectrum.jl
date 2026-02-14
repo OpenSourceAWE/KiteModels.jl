@@ -11,7 +11,7 @@ end
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate("examples")
 end
 using ControlPlots, JLD2, DSP
 plt.close("all")
@@ -29,7 +29,7 @@ use_butter  = true
 order = 4         # order of the Butterworth filter
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 640
-PLOT = false
+const PLOT = false
 PRINT = true
 STATISTIC = false
 DEPOWER       = 0.38
@@ -43,8 +43,8 @@ F_EX = zeros(N_EX)
 
 function set_tether_diameter!(se, d; c_spring_4mm = 614600, damping_4mm = 473)
     set.d_tether = d
-    set.c_spring = c_spring_4mm * (d/4.0)^2
-    set.damping = damping_4mm * (d/4.0)^2
+    set.axial_stiffness = c_spring_4mm * (d/4.0)^2
+    set.axial_damping = damping_4mm * (d/4.0)^2
 end
 
 set_tether_diameter!(set, set.d_tether)
@@ -52,7 +52,7 @@ set_tether_diameter!(set, set.d_tether)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
 end

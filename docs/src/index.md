@@ -19,7 +19,7 @@ This package is part of Julia Kite Power Tools, which consist of the following p
 If you want to run simulations and see the results in 3D, please install the meta package  [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl) which contains all other packages. If you are not interested in 3D visualization or control you can just install this package. When you have installed the package KiteSimulators, use the command `using KiteSimulators` instead of `using KiteModels` when this is mentioned in the documentation.
 
 ## Installation
-Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 is still supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
+Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 and 1.12 are also supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
 ```
 sudo apt install python3-matplotlib
 ```
@@ -64,9 +64,8 @@ If you now launch Julia with `./bin/run_julia` and then run the above example ag
 times faster.
 
 ## News
-#### Work in progress
-- a new 5-point model based on ModelingToolkit (MTK) is in development;  
-  this will allow to create linearized models around any operation point and to do analysis in the frequency domain.
+#### February 2026
+- a symbolic model of a RAM air kite is now included, but it is a bit outdated, you can find the latest code in the package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl)
 #### April 2025
 - a new model `SymbolicAWEModel` was contributed, based on the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 #### November 2024

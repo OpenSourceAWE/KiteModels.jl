@@ -4,14 +4,12 @@
 # plot the lift and drag coefficients as function of angle of attack
 using Printf
 using Pkg
+if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
 using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
 
-set = deepcopy(load_settings("system.yaml"))
-
-using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 using ControlPlots
 plt.close("all")
@@ -25,7 +23,7 @@ dt = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
-PLOT = true
+const PLOT = true
 PRINT = true
 STATISTIC = false
 DEPOWER = 0.47:-0.005:0.355

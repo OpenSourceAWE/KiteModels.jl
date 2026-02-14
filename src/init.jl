@@ -14,7 +14,7 @@ function init_springs!(s::KPS4)
         if j == 1
             for i in 1:s.set.segments
                 k = s.set.e_tether * (s.set.d_tether/2000.0)^2 * pi  / l_0  # Spring stiffness for this spring [N/m]
-                c = s.set.damping/l_0                                       # Damping coefficient [Ns/m]
+                c = s.set.axial_damping/l_0                                       # Damping coefficient [Ns/m]
                 s.springs[i] = SP(i, i+1, l_0, k, c)
             end
         # build the bridle segments
@@ -25,7 +25,7 @@ function init_springs!(s::KPS4)
                 k = s.set.e_tether * (s.set.d_line/2000.0)^2 * pi / l_0
                 p0 += s.set.segments - 1 # correct the index for the start and end particles of the bridle
                 p1 += s.set.segments - 1
-                c = s.set.damping/ l_0
+                c = s.set.axial_damping/ l_0
                 s.springs[j+s.set.segments-1] = SP(Int(p0), Int(p1), l_0, k, c)
             end
         end

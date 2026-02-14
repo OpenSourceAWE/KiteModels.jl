@@ -3,14 +3,15 @@
 
 using Printf
 using KiteModels, LinearAlgebra
+using KiteUtils: load_settings, Settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600
-PLOT = true
+const PLOT = true
 FRONT_VIEW = false
 ZOOM = true
 PRINT = false
@@ -25,13 +26,13 @@ set.winch_model = "TorqueControlledMachine"
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
-# if PLOT
+if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
-# end
+end
 
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
@@ -73,8 +74,8 @@ end
 integrator = KiteModels.init!(kps4; delta=0, stiffness_factor=1, prn=STATISTIC)
 kps4.sync_speed = 0.0
 
-if PLOT
-    av_steps = simulate(integrator, STEPS, true)
+av_steps = if PLOT
+    simulate(integrator, STEPS, true)
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
@@ -83,12 +84,14 @@ else
     println("Total simulation time: $(round(runtime, digits=3)) s")
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
+    av_steps
 end
 lift, drag = KiteModels.lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
 if PLOT
+    local p
     p = plotx(v_time, v_speed, v_force; 
     ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
     display(p)

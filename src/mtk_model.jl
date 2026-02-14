@@ -334,7 +334,7 @@ function force_eqs!(s, system, eqs, defaults, guesses;
         spring_vel(t)[eachindex(segments)]
         spring_force(t)[eachindex(segments)]
         stiffness(t)[eachindex(segments)]
-        damping(t)[eachindex(segments)]
+        axial_damping(t)[eachindex(segments)]
 
         height(t)[eachindex(segments)]
         segment_vel(t)[1:3, eachindex(segments)]
@@ -423,7 +423,7 @@ function force_eqs!(s, system, eqs, defaults, guesses;
         @parameters stiffness_frac = 0.01
         (segment.type == BRIDLE) && (stiffness_m = stiffness_frac * stiffness_m)
 
-        damping_m = (s.set.damping / s.set.c_spring) * stiffness_m
+        damping_m = (s.set.axial_damping / s.set.axial_stiffness) * stiffness_m
         
         if segment.compression_frac ≈ 1.0
             eqs = [eqs; stiffness[segment.idx]       ~ stiffness_m / len[segment.idx]]
@@ -440,9 +440,9 @@ function force_eqs!(s, system, eqs, defaults, guesses;
             unit_vec[:, segment.idx]  ~ segment_vec[:, segment.idx]/len[segment.idx]
             rel_vel[:, segment.idx]      ~ vel[:, p1] - vel[:, p2]
             spring_vel[segment.idx]      ~ rel_vel[:, segment.idx] ⋅ unit_vec[:, segment.idx]
-            damping[segment.idx]         ~ damping_m / len[segment.idx]
+            axial_damping[segment.idx]         ~ damping_m / len[segment.idx]
             spring_force[segment.idx] ~  (stiffness[segment.idx] * (len[segment.idx] - l0[segment.idx]) - 
-                            damping[segment.idx] * spring_vel[segment.idx])
+                            axial_damping[segment.idx] * spring_vel[segment.idx])
             spring_force_vec[:, segment.idx]  ~ spring_force[segment.idx] * unit_vec[:, segment.idx]
             
             # drag force equations

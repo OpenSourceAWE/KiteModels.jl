@@ -12,7 +12,7 @@ end
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate("examples")
 end
 using ControlPlots, JLD2, DSP
 plt.close("all")
