@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 using Printf
-using KiteModels, StatsBase, LinearAlgebra
+using KiteModels, LinearAlgebra, StatsBase
 
 if haskey(ENV, "USE_V9")
     set = deepcopy(load_settings("system_v9.yaml"))

@@ -14,8 +14,8 @@ set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05
-set.solver="DFBDF"              # IDA or DFBDF
-set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
+set.solver = "DFBDF"              # IDA or DFBDF
+set.linear_solver = "GMRES"       # GMRES, LapackDense or Dense
 STEPS = 200
 PRINT = false
 STATISTIC = false

@@ -6,8 +6,13 @@ using KiteModels
 using KitePodModels
 
 using LinearAlgebra
-using StaticArrays
 using Test
+
+using Pkg
+if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+    using StaticArrays
+end
 
 function calc_heading2(s::KiteModels.AKM; upwind_dir_=upwind_dir(s))
     orientation = orient_euler(s)
@@ -16,7 +21,6 @@ function calc_heading2(s::KiteModels.AKM; upwind_dir_=upwind_dir(s))
     azimuth = calc_azimuth(s)
     calc_heading(orientation, elevation, azimuth; upwind_dir=upwind_dir_)
 end
-
 
 """
     create_kite_model(x, y, z, pos)

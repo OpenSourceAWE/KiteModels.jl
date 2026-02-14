@@ -4,11 +4,12 @@
 # apply different rel_steering values and plot turn rate
 using Printf
 using KiteModels, KitePodModels, KiteUtils, Pkg
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 set.abs_tol=0.00006
@@ -25,10 +26,10 @@ set.depower = set.depower_offset # fully powered kite
 set.sample_freq = 50
 # set.smc = 0
 set.solver="DFBDF" # IDA or DFBDF
-if set.kcu_model == "KCU2"
-    STEPS = 3200 # 2600
+STEPS = if set.kcu_model == "KCU2"
+    3200 # 2600
 else
-    STEPS = 2400
+    2400
 end
 const PLOT = true
 FRONT_VIEW = true
@@ -67,7 +68,6 @@ function simulate(integrator, steps; plot=false)
         end
         last_heading = heading
         if reltime > 10.05
-            az = calc_azimuth(kps4)
             heading = calc_heading(kps4)
             if heading > pi
                 heading -= 2*pi
@@ -140,7 +140,7 @@ function plot_steering_vs_turn_rate()
     println("delay of turnrate: $(delta*dt) s")
     delayed_steering = shift_vector(sl.steering, delta)    
     G = psi_dot ./ sl.v_app ./ delayed_steering # °/s / m/s = °/m
-    for (i, g) in enumerate(G)
+    for (i, _) in enumerate(G)
         if abs(delayed_steering[i]) < 0.1
             G[i] = NaN
         end
@@ -161,7 +161,7 @@ end
 function calc_c1_c2(v_app, psi, beta, psi_dot, steering)
     # c1 * v_app * u_s + c2/v_app * sin(psi) * cos(beta) - psi_dot = 0
     # Ac=b where c=[c1,c2] is a vector of the unknown coefficients.
-    # A is a n×2 matrix whose columns are v_app*u_s and sin(ψ)cos(β)/vapp, and b is the vector psi_dot.
+    # A is a n×2 matrix whose columns are v_app*u_s and sin(ψ)cos(β)/v_app, and b is the vector psi_dot.
     col1 = v_app .* steering
     col2 = sin.(psi) .* cos.(beta) ./ v_app
     A = [col1 col2]

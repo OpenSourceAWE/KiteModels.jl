@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: MIT
 
 using Printf
-using KiteModels, StatsBase, LinearAlgebra, DSP
+using DSP, KiteModels, LinearAlgebra, StatsBase
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
@@ -42,7 +43,7 @@ F_EX = 2.45 # frequency of excitation
 TIME = 0.0:dt:(STEPS-1)*dt
 SIN = sin.(2π*TIME*F_EX)
 
-function set_tether_diameter!(se, d; c_spring_4mm = 614600, damping_4mm = 473)
+function set_tether_diameter!(set, d; c_spring_4mm = 614600, damping_4mm = 473)
     set.d_tether = d
     set.axial_stiffness = c_spring_4mm * (d/4.0)^2
     set.axial_damping = damping_4mm * (d/4.0)^2
@@ -62,7 +63,7 @@ FORCE = zeros(STEPS)
 
 include("filters.jl")
 include("winch_controller.jl")
-wcs = WinchSpeedController(dt=dt)
+wcs::WinchSpeedController = WinchSpeedController(dt=dt)
 
 function simulate(kps4, integrator, logger, steps)
     local filtered_force
