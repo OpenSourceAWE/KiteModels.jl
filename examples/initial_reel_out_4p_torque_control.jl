@@ -22,18 +22,16 @@ ALPHA_ZERO = 8.8
 set.alpha_zero = ALPHA_ZERO
 set.version = 2
 set.winch_model = "TorqueControlledMachine"
-set.sample_freq = round(1/dt)
+set.sample_freq = Int64(round(1/dt))
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
-if PLOT
-    using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
-    end
-    using ControlPlots
+using Pkg
+if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
 end
+using ControlPlots, SciMLBase
 
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
@@ -92,8 +90,8 @@ kps4.sync_speed = set.v_reel_out
 kps4.wm.last_set_speed = set.v_reel_out
 integrator = KiteModels.init!(kps4; delta=0.00015, stiffness_factor=0.8, prn=STATISTIC)
 
-if PLOT
-    av_steps = simulate(integrator, STEPS, true)
+av_steps = if PLOT
+    simulate(integrator, STEPS, true)
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
@@ -102,12 +100,14 @@ else
     println("Total simulation time: $(round(runtime, digits=3)) s")
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
+    av_steps
 end
 lift, drag = KiteModels.lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
 if PLOT
+    local p
     p = plotx(v_time, v_speed, v_force; 
               ylabels=["v_reelout  [m/s]","tether_force [N]"], 
               fig="winch")

@@ -65,8 +65,8 @@ end
 integrator = KiteModels.init!(kps3, delta=0, stiffness_factor=0.04, prn=STATISTIC)
 kps3.sync_speed = 0.0
 
-if PLOT
-    av_steps = simulate(integrator, STEPS, true)
+av_steps = if PLOT
+    simulate(integrator, STEPS, true)
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
@@ -74,6 +74,7 @@ else
     println("\nTotal simulation time: $(round(runtime, digits=3)) s")
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
+    av_steps
 end
 lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")

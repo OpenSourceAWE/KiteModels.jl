@@ -1,19 +1,20 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 using Printf
-using KiteModels, StatsBase, LinearAlgebra
+using KiteModels, LinearAlgebra, StatsBase
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using ControlPlots, JLD2, DSP
+using ControlPlots, DSP, JLD2
 plt.close("all")
 
 set.abs_tol=0.0006
@@ -34,14 +35,14 @@ PRINT = true
 STATISTIC = false
 DEPOWER       = 0.38
 F_EX_MIN = 0.1
-N_EX = 260 # number of frequencies to be tested
+const N_EX = 260 # number of frequencies to be tested
 # end of user parameter section #
 
 TIME = 0.0:dt:(STEPS-1)*dt
 AOA_EFF = zeros(N_EX)
 F_EX = zeros(N_EX)
 
-function set_tether_diameter!(se, d; c_spring_4mm = 614600, damping_4mm = 473)
+function set_tether_diameter!(set, d; c_spring_4mm = 614600, damping_4mm = 473)
     set.d_tether = d
     set.axial_stiffness = c_spring_4mm * (d/4.0)^2
     set.axial_damping = damping_4mm * (d/4.0)^2
@@ -49,19 +50,11 @@ end
 
 set_tether_diameter!(set, set.d_tether)
 
-if PLOT
-    using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
-    end
-    using ControlPlots
-end
-
 FORCE = zeros(STEPS)
 
 include("filters.jl")
 include("winch_controller.jl")
-wcs = WinchSpeedController(dt=dt)
+wcs::WinchSpeedController = WinchSpeedController(dt=dt)
 
 function simulate(kps4, integrator, logger, steps, f_ex)
     local filtered_force

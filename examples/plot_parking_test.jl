@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 # plot the lift and drag coefficients as function of angle of attack
+# TODO: fix JETLS warnings
 
 # t_start  t_stop   duration  depower  height   av_elevation std_elevation av_pitch  av_wind_200 
 # ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -20,11 +21,12 @@ DEPOWER       = [0.40, 0.44, 0.4799, 0.5198]
 
 using Printf
 using KiteModels, LinearAlgebra
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
@@ -51,7 +53,7 @@ println("bridle_length: $bridle_length")
 bridle_area = (set.d_line/2000) * bridle_length
 println("bridle_area: $bridle_area")
 
-function set_tether_diameter!(se, d; c_spring_4mm = 614600, damping_4mm = 473)
+function set_tether_diameter!(set, d; c_spring_4mm = 614600, damping_4mm = 473)
     set.d_tether = d
     set.axial_stiffness = c_spring_4mm * (d/4.0)^2
     set.axial_damping = damping_4mm * (d/4.0)^2
@@ -103,7 +105,7 @@ elev = set.elevation
 i = 1
 for depower in DEPOWER
     global elev, i, kps4
-    local cl, cd, aoa, kcu, integrator, logger, v_app
+    local cl, cd, aoa, kcu, integrator, logger
 
     logger = Logger(set.segments + 5, STEPS)
     DEP[i] = depower
@@ -156,7 +158,6 @@ for depower in DEPOWER
     orient_vec = orient_euler(kps4)
     alpha_depower = rad2deg(kps4.alpha_depower)
     pitch = rad2deg(orient_vec[2]) + alpha_depower
-    v_app = norm(kps4.v_apparent)
     # v_200 = calc_wind_factor(kps4.am, 200) * V_WIND
     height = logger.Z_vec[end][end-2]
     CL[i] = cl

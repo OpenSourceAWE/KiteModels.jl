@@ -1,9 +1,14 @@
 # Copyright (c) 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using KiteModels, Rotations, LinearAlgebra, StaticArrays
+using KiteModels, LinearAlgebra, Pkg, Rotations
 
-# kite reference frame; postions in ENU coordinates
+if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+    using StaticArrays
+end
+
+# kite reference frame; positions in ENU coordinates
 # wind from west, nose to west, kite at zenith
 
 z = [0, 0, -1]

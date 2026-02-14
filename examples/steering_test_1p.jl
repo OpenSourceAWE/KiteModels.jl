@@ -65,7 +65,6 @@ function simulate(integrator, steps; plot=false)
         end
         last_heading = heading
         if reltime > 10.05
-            az = calc_azimuth(kps3)
             heading = calc_heading(kps3)
             if heading > pi
                 heading -= 2*pi
@@ -128,14 +127,13 @@ function plot_steering_vs_turn_rate()
     close("all")
     lg = load_log("tmp")
     sl = lg.syslog
-    psi = rad2deg.(wrap2pi.(sl.heading))
 
     # p2=plot(sl.time, sl.v_app; ylabel="v_app [m/s]", fig="v_app")
     delta = delay(sl.var_16, sl.var_15./sl.v_app)
     println("delay of turnrate: $(delta*dt) s")
     delayed_steering = shift_vector(sl.var_16, delta)    
     G = sl.var_15./sl.v_app./delayed_steering
-    for (i, g) in enumerate(G)
+    for (i, _) in enumerate(G)
         if abs(delayed_steering[i]) < 0.1
             G[i] = NaN
         end

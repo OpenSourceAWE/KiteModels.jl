@@ -118,7 +118,6 @@ fi
 if test -f "kps-image-${julia_major}-${branch}.so"; then
     mv bin/kps-image-${julia_major}-${branch}.so kps-image-${julia_major}-${branch}.so.bak
 fi
-$JULIA_CMD --startup-file=no -e "using Pkg; Pkg.add(\"TestEnv\")"
 
 if [[ $julia_major == "1.10" ]]; then
     rm -f data/model_1.10_*.bin.default
@@ -150,9 +149,9 @@ if [[ $update == true ]]; then
             mv Manifest-v1.12.toml Manifest-v1.12.toml.bak
         fi
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using TestEnv; TestEnv.activate(); using Pkg; Pkg.add(\"PyCall\"); Pkg.build(\"PyCall\")"
+    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"PyCall\"); Pkg.build(\"PyCall\")"
     if [[ $PYTHON == "" ]]; then
-        $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using TestEnv; TestEnv.activate(); using Pkg; Pkg.add(\"Conda\"); using Conda; Conda.add(\"matplotlib\"); using ControlPlots"
+        $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"Conda\"); using Conda; Conda.add(\"matplotlib\"); using ControlPlots"
     fi
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.update()"
     if [[ $julia_major == "1.10" ]]; then
@@ -178,7 +177,7 @@ if [[ $update == true ]]; then
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "include(\"./test/create_sys_image.jl\");"
 else
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.instantiate();"
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using TestEnv; TestEnv.activate(); include(\"./test/create_sys_image.jl\");"
+    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
 fi
 
 if [[ $branch != "" ]]; then
@@ -203,8 +202,8 @@ echo "Precompiling package KiteModels..."
 $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using KiteModels, KitePodModels, KiteUtils"
 echo "Precompiling package ControlPlots and KiteModelsControlPlotsExt ..."
 if [[ $branch != "" ]]; then
-    $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using TestEnv; TestEnv.activate(); using ControlPlots, VortexStepMethod, KiteModels"
+    $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using Pkg; Pkg.activate(\"test\"); using ControlPlots, KiteModels"
 else
-    $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using ControlPlots, VortexStepMethod, KiteModels"
+    $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using ControlPlots, KiteModels"
 fi
 

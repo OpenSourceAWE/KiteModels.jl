@@ -13,16 +13,14 @@ Scientific background: http://arxiv.org/abs/1406.6218 =#
 module KiteModels
 
 using PrecompileTools: @setup_workload, @compile_workload 
-using Dierckx, Interpolations, Serialization, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
+using Dierckx, Interpolations, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
       DocStringExtensions, OrdinaryDiffEqCore, OrdinaryDiffEqBDF, OrdinaryDiffEqNonlinearSolve,
-      NonlinearSolve, SHA, Suppressor
+      NonlinearSolve, Suppressor
 import Sundials
 using Reexport, Pkg
-using VortexStepMethod
 using KiteUtils
 import KiteUtils: init!, next_step!, update_sys_state!
 import KiteUtils: calc_elevation, calc_heading, calc_course, SysState
-@reexport using VortexStepMethod: RamAirWing, BodyAerodynamics, Solver, NONLIN
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
@@ -30,25 +28,17 @@ using Rotations
 import Base.zero
 import OrdinaryDiffEqCore.init
 import OrdinaryDiffEqCore.step!
-using ModelingToolkit, SymbolicIndexingInterface
-using ModelingToolkit: t_nounits as t, D_nounits as D
-using ADTypes: AutoFiniteDiff
-import ModelingToolkit.SciMLBase: successful_retcode
 
-export KPS3, KPS4, SymbolicAWEModel, KVec3, SimFloat, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
+export KPS3, KPS4, KVec3, SimFloat, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
 export calc_set_cl_cd!, copy_examples, copy_bin, update_sys_state!                     # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
 export init!, reinit!, next_step!, init_pos_vel                                        # high level workers
-export pos_kite, calc_height, calc_elevation, calc_azimuth, calc_heading, calc_course, calc_orient_quat, calc_aoa  # getters
+export pos_kite, calc_height, calc_elevation, calc_azimuth, calc_heading, calc_course, calc_orient_quat # getters
 export calc_azimuth_north, calc_azimuth_east
 export winch_force, lift_drag, cl_cd, lift_over_drag, unstretched_length, tether_length, v_wind_kite     # getters
 export calculate_rotational_inertia!
 export kite_ref_frame, orient_euler, spring_forces, upwind_dir, copy_model_settings, menu2
-export create_ram_sys_struct, create_simple_ram_sys_struct
 import LinearAlgebra: norm
-export SystemStructure, Point, Group, Segment, Pulley, Tether, Winch, Wing, Transform
-export DynamicsType, DYNAMIC, QUASI_STATIC, WING, STATIC
-export SegmentType, POWER_LINE, STEERING_LINE, BRIDLE
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
 
@@ -94,9 +84,6 @@ function __init__()
 end
 
 include("KPS4.jl") # include code, specific for the four point kite model
-include("system_structure.jl")
-include("symbolic_awe_model.jl") # include code, specific for the ram air kite model
-include("mtk_model.jl")
 include("KPS3.jl") # include code, specific for the one point kite model
 include("init.jl") # functions to calculate the initial state vector, the initial masses and initial springs
 
@@ -213,7 +200,6 @@ function upwind_dir(v_wind_gnd)
     wind_dir = atan(v_wind_gnd[2], v_wind_gnd[1])
     -(wind_dir + π/2)
 end
-@register_symbolic upwind_dir(v_wind_gnd)
 
 """
     tether_length(s::AKM)
@@ -669,8 +655,7 @@ function copy_examples()
 end
 
 function copy_model_settings()
-    files = ["settings.yaml", "ram_air_kite_body.obj", "ram_air_kite_foil.dat", "system.yaml", "settings_ram.yaml", 
-             "system_ram.yaml", "ram_air_kite_foil_cd_polar.csv", "ram_air_kite_foil_cl_polar.csv", "ram_air_kite_foil_cm_polar.csv"]
+    files = ["settings.yaml", "system.yaml"]
     dst_path = abspath(joinpath(pwd(), "data"))
     copy_files("data", files)
     set_data_path(joinpath(pwd(), "data"))
