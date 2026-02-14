@@ -87,10 +87,22 @@ else
     exit 1
 fi
 
-totalmem=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
-if [[ $totalmem -lt 27000 ]]; then
-    echo "Warning: Less than 27GB of memory detected. Using only one thread for sysimage compilation."
-    export JULIA_IMAGE_THREADS=1
+# Check memory and limit threads if needed
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows: use wmic or PowerShell
+    echo "Checking system memory on Windows..."
+    totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
+    if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
+        echo "Warning: Less than 27GB of memory detected on Windows. Using only one thread for sysimage compilation."
+        export JULIA_IMAGE_THREADS=1
+    fi
+else
+    # Linux: use /proc/meminfo
+    totalmem=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
+    if [[ $totalmem -lt 26674 ]]; then
+        echo "Warning: Less than 27GB of memory detected. Using only one thread for sysimage compilation."
+        export JULIA_IMAGE_THREADS=1
+    fi
 fi
 
 julia_version=$($JULIA_CMD --version | awk '{print($3)}')
@@ -111,9 +123,12 @@ $JULIA_CMD --startup-file=no -e "using Pkg; Pkg.add(\"TestEnv\")"
 if [[ $julia_major == "1.10" ]]; then
     rm -f data/model_1.10_*.bin.default
     rm -f data/model_1.10_*.bin
-else
+elif [[ $julia_major == "1.11" ]]; then
     rm -f data/model_1.11_*.bin.default
     rm -f data/model_1.11_*.bin
+else
+    rm -f data/model_1.12_*.bin.default
+    rm -f data/model_1.12_*.bin
 fi
 
 if [[ $update == true ]]; then
@@ -126,9 +141,13 @@ if [[ $update == true ]]; then
         if test -f "Manifest-v1.10.toml"; then
             mv Manifest-v1.10.toml Manifest-v1.10.toml.bak
         fi
-    else
+    elif [[ $julia_major == "1.11" ]]; then
         if test -f "Manifest-v1.11.toml"; then
             mv Manifest-v1.11.toml Manifest-v1.11.toml.bak
+        fi
+    else
+        if test -f "Manifest-v1.12.toml"; then
+            mv Manifest-v1.12.toml Manifest-v1.12.toml.bak
         fi
     fi
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using TestEnv; TestEnv.activate(); using Pkg; Pkg.add(\"PyCall\"); Pkg.build(\"PyCall\")"
@@ -138,16 +157,21 @@ if [[ $update == true ]]; then
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.update()"
     if [[ $julia_major == "1.10" ]]; then
         mv Manifest.toml Manifest-v1.10.toml
-    else
+    elif [[ $julia_major == "1.11" ]]; then
         mv Manifest.toml Manifest-v1.11.toml
+    else
+        mv Manifest.toml Manifest-v1.12.toml
     fi
 else
     if [[ $julia_major == "1.10" ]]; then
         cp Manifest-v1.10.toml.default Manifest-v1.10.toml
         echo "Using Manifest-v1.10.toml.default ..."        
-    else
+    elif [[ $julia_major == "1.11" ]]; then
         cp Manifest-v1.11.toml.default Manifest-v1.11.toml
         echo "Using Manifest-v1.11.toml.default ..."
+    else
+        cp Manifest-v1.12.toml.default Manifest-v1.12.toml
+        echo "Using Manifest-v1.12.toml.default ..."
     fi
 fi
 if [[ $update == true ]]; then

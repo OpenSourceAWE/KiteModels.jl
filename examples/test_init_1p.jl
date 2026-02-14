@@ -5,14 +5,12 @@
 
 using Printf
 using Pkg
+if ! ("Rotations" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
 using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
 
-set = deepcopy(load_settings("system.yaml"))
-
-using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 using ControlPlots
 plt.close("all")
@@ -25,7 +23,7 @@ V_WIND = 14.5
 dt = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 1
-PLOT = true
+const PLOT = true
 PRINT = true
 STATISTIC = false
 DEPOWER = 0.47:-0.005:0.355

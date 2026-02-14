@@ -2,15 +2,16 @@
 # SPDX-License-Identifier: MIT
 using Printf
 using KiteModels, LinearAlgebra
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05
 set.solver="DFBDF"   # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 600
-PLOT = true
+const PLOT = true
 FRONT_VIEW = false
 ZOOM = true
 PRINT = false
@@ -27,7 +28,7 @@ kps4::KPS4 = KPS4(kcu)
 # if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
 # end

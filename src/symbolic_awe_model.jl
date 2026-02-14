@@ -208,7 +208,7 @@ function update_sys_state!(ss::SysState, s::SymbolicAWEModel, zoom=1.0)
     num_winches = length(s.sys_struct.winches)
     ss.l_tether[1:num_winches] .= tether_length
     ss.v_reelout[1:num_winches] .= tether_vel
-    ss.force[1:num_winches] .= winch_force
+    ss.winch_force[1:num_winches] .= winch_force
 
     # Depower and Steering from twist angles
     num_groups = length(s.sys_struct.wings[1].group_idxs)
@@ -301,7 +301,7 @@ and only update the state variables. Otherwise, it will create a new model from 
 """
 function init!(s::SymbolicAWEModel; 
     solver=nothing, stiffness_factor = nothing, delta = nothing, adaptive=true, prn=true, 
-    precompile=false, remake=false, reload=false, 
+    precompile=false, remake=false, reload=false, bench=false,
     lin_outputs=Num[]
 )
     if isnothing(solver)
@@ -322,17 +322,29 @@ function init!(s::SymbolicAWEModel;
         init_Q_b_w, R_b_w, init_va_b = initial_orient(s)
         init!(s.sys_struct, s.set)
         
-        inputs = create_sys!(s, s.sys_struct; init_va_b)
+        inputs = create_sys!(s, s.sys_struct; init_va_b, bench)
         prn && @info "Simplifying the system"
-        prn ? (@time (sys, _) = structural_simplify(s.full_sys, (inputs, []))) :
-            ((sys, _) = structural_simplify(s.full_sys, (inputs, [])))
-        s.sys = sys
+        @suppress_err begin
+            if prn && !bench
+                @time (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+            elseif bench
+                local elapsed, sys
+                elapsed = @elapsed (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+                s.sys = sys
+                return elapsed
+            else
+                (sys, _) = structural_simplify(s.full_sys, (inputs, []))
+            end
+            s.sys = sys
+        end
         dt = SimFloat(1/s.set.sample_freq)
-        if prn
-            @info "Creating ODEProblem"
-            @time s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
-        else
-            s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
+        prn && @info "Creating ODEProblem"
+        @suppress_err begin
+            if prn
+                @time s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
+            else
+                s.prob = ODEProblem(s.sys, s.defaults, (0.0, dt); s.guesses)
+            end
         end
         if length(lin_outputs) > 0
             lin_fun, _ = linearization_function(s.full_sys, [inputs...], lin_outputs; op=s.defaults, guesses=s.guesses)
@@ -349,14 +361,25 @@ function init!(s::SymbolicAWEModel;
     end
     model_path = joinpath(KiteUtils.get_data_path(), get_model_name(s.set; precompile))
     if !ispath(model_path) || remake
-        init(s)
+        res = init(s)
+        if bench
+            return res
+        end
     end
-    _, success = reinit!(s, solver; adaptive, precompile, reload, lin_outputs, prn)
+    t_reinit = @elapsed begin
+        _, success = reinit!(s, solver; adaptive, precompile, reload, lin_outputs, prn)
+    end
     if !success
         rm(model_path)
         @info "Rebuilding the system. This can take some minutes..."
-        init(s)
+        res = init(s)
+        if bench
+            return res
+        end
         reinit!(s, solver; adaptive, precompile, lin_outputs, prn, reload=true)
+    end
+    if bench
+        return t_reinit
     end
     return s.integrator
 end
@@ -415,12 +438,23 @@ function reinit!(
     # init_Q_b_w, R_b_w, init_va_b = initial_orient(s)
     init!(s.sys_struct, s.set)
     
+    # Check if settings or structure have changed
+    if !isnothing(s.prob) && !reload
+        if (get_set_hash(s.set) != s.serialized_model.set_hash)
+            @warn "The Settings have changed. Consider using reload=true."
+            reload = true
+        elseif (get_sys_struct_hash(s.sys_struct) != s.serialized_model.sys_struct_hash)
+            @warn "The SystemStructure has changed. Consider using reload=true."
+            reload = true
+        end
+    end
+    
     if isnothing(s.prob) || reload
         model_path = joinpath(KiteUtils.get_data_path(), get_model_name(s.set; precompile))
         !ispath(model_path) && error("$model_path not found. Run init!(s::SymbolicAWEModel) first.")
         try
             s.serialized_model = deserialize(model_path)
-        catch e
+        catch
             @warn "Failure to deserialize $model_path !"
             return s.integrator, false
         end
@@ -449,9 +483,8 @@ function reinit!(
     end
 
     init_unknowns_vec!(s, s.sys_struct, s.unknowns_vec)
-    s.set_unknowns(s.integrator, s.unknowns_vec)
     s.set_psys(s.integrator, s.sys_struct)
-    OrdinaryDiffEqCore.reinit!(s.integrator, s.integrator.u; reinit_dae=true)
+    OrdinaryDiffEqCore.reinit!(s.integrator, s.unknowns_vec; reinit_dae=true)
     linearize_vsm!(s)
     return s.integrator, true
 end
@@ -834,7 +867,7 @@ end
     set_v_wind_ground!(s::SymbolicAWEModel, v_wind_gnd=s.set.v_wind, upwind_dir=-π/2) -> Nothing
 
 Set ground wind speed (m/s) and upwind direction (radians). Direction: 0=north, π/2=east, 
-π=zouth, -π/2=west (default).
+π=south, -π/2=west (default).
 """
 function set_v_wind_ground!(s::SymbolicAWEModel, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2)
     s.set_wind(s.integrator, [v_wind_gnd, upwind_dir])

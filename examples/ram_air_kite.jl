@@ -5,13 +5,14 @@ using Timers
 tic()
 @info "Loading packages "
 
-PLOT = true
+const PLOT = true
 using Pkg
 if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate("examples")
 end
 using ControlPlots, LaTeXStrings
 using KiteModels, LinearAlgebra, Statistics
+using KiteUtils: Settings, load_settings, load_log, save_log, log!, Logger
 
 if ! @isdefined SIMPLE
     SIMPLE = false
@@ -30,7 +31,7 @@ steering_freq = 1/2  # Hz - full left-right cycle frequency
 steering_magnitude = 10.0      # Magnitude of steering input [Nm]
 
 # Initialize model
-set = load_settings("system_ram.yaml")
+set::Settings = load_settings("system_ram.yaml")
 set.segments = 3
 set_values = [-50, 0.0, 0.0]  # Set values of the torques of the three winches. [Nm]
 set.quasi_static = false

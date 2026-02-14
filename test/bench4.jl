@@ -25,7 +25,7 @@ msg = String[]
         kps4.set.rel_side_area = 50.0
         kps4.set.v_wind = 8.0
         kps4.set.mass = 11.4
-        kps4.set.damping =  2 * 473.0
+        kps4.set.axial_damping =  2 * 473.0
         kps4.set.alpha = 1.0/7
         kps4.set.c_s = 0.6
     end
@@ -50,8 +50,8 @@ msg = String[]
         kps4.set.v_wind = 9.1
         kps4.set.mass = 6.21
         kps4.set.c_s = 0.6
-        kps4.set.damping = 473.0     # unit damping coefficient
-        kps4.set.c_spring = 614600.0 # unit spring coefficent
+        kps4.set.axial_damping = 473.0     # unit axial_damping coefficient
+        kps4.set.axial_stiffness = 614600.0 # unit spring coefficent
         kps4.set.width = 4.9622
     end
 

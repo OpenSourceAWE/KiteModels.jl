@@ -14,7 +14,7 @@ end
 
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate("examples")
 end
 using ControlPlots
 plt.close("all")
@@ -27,7 +27,7 @@ V_WIND = 14.5
 dt = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 500
-PLOT = true
+const PLOT = true
 PRINT = true
 STATISTIC = false
 DEPOWER = 0.47:-0.005:0.355
@@ -40,8 +40,8 @@ println("bridle_area: $bridle_area")
 
 function set_tether_diameter!(se, d; c_spring_4mm = 614600, damping_4mm = 473)
     set.d_tether = d
-    set.c_spring = c_spring_4mm * (d/4.0)^2
-    set.damping = damping_4mm * (d/4.0)^2
+    set.axial_stiffness = c_spring_4mm * (d/4.0)^2
+    set.axial_damping = damping_4mm * (d/4.0)^2
 end
 
 set_tether_diameter!(set, set.d_tether)
@@ -49,7 +49,7 @@ set_tether_diameter!(set, set.d_tether)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
 end

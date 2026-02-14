@@ -1,5 +1,5 @@
 ## Testing the develop branch before merging it
-On  AMD Ryzen 7 7840U.
+On  AMD Ryzen 7 7840U on power.
 
 ### Pass criteria for the performance:
 First run:
@@ -9,7 +9,22 @@ Second run:
 - system initialized          < 15s
 - total time without plotting < 35s
 
-## Current results on main, 15.06.2025:
+## Results on Desktop, without SymbolicAWEModels 22.09.2025
+MTK: 9.73.0
+SymbolicUtils: v3.25.1
+First run
+- simplifying: 26.3 s
+- Info: Total time without plotting: 124 s
+Second run
+- system initialized: 5.6s
+- total time without plotting: 26.4 s
+
+## Results on Desktop, with SymbolicAWEModels 22.09.2025
+- simplifying the system: 169s
+- system initialized:   16.7 s
+- total time without plotting: 36.9s
+
+## Results on Desktop with SymbolicAWEModels, 15.06.2025:
 ```
 julia> include("examples/ram_air_kite.jl")
 [ Info: Loading packages 
@@ -102,3 +117,6 @@ include("mwes/mwe_26.jl")
 include("mwes/mwe_26.jl")
 ```
 Each time the force, that is printed must be > 9000 N.
+
+### Force precompilation
+./bin/force_precompile

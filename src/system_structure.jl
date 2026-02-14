@@ -209,7 +209,7 @@ end
 
 Constructs a Segment object representing an elastic spring-damper connection between two points.
 
-The segment follows Hooke's law with damping and aerodynamic drag:
+The segment follows Hooke's law with axial_damping and aerodynamic drag:
 
 **Spring-Damper Force:**
 ```math
@@ -229,7 +229,7 @@ The segment follows Hooke's law with damping and aerodynamic drag:
 where:
 - ``k = \\frac{E \\pi d^2/4}{l}`` is the axial stiffness
 - ``l`` is current length, ``l_0`` is unstretched length
-- ``c = \\frac{\\xi}{c_{spring}} k`` is damping coefficient
+- ``c = \\frac{\\xi}{c_{spring}} k`` is axial_damping coefficient
 - ``\\hat{\\mathbf{u}} = \\frac{\\mathbf{r}_2 - \\mathbf{r}_1}{l}`` is unit vector along segment
 - ``\\dot{l} = (\\mathbf{v}_1 - \\mathbf{v}_2) \\cdot \\hat{\\mathbf{u}}`` is extension rate
 - ``\\mathbf{v}_{a,\\perp}`` is apparent wind velocity perpendicular to segment

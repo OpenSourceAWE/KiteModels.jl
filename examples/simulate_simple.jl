@@ -6,8 +6,9 @@ using Printf
 # shows how to log, plot, and print the simulation results
 
 using KiteModels, LinearAlgebra
+using KiteUtils: Settings, load_settings
 
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
@@ -16,7 +17,7 @@ set.rel_tol=0.00001
 dt = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600
-PLOT = true
+const PLOT = true
 FRONT_VIEW = false
 ZOOM = true
 PRINT = false
@@ -30,7 +31,7 @@ kps4::KPS4 = KPS4(kcu)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
 end
@@ -46,7 +47,7 @@ function simulate(integrator, steps, plot=false)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        next_step!(kps4, integrator; set_speed=0, upwind_dir=UPWIND_DIR, dt)
+        next_step!(kps4, integrator; set_speed=0, upwind_dir=UPWIND_DIR, dt=dt)
         iter += kps4.iter    
         if plot
             reltime = i*dt-dt
@@ -65,15 +66,15 @@ end
 kps4.set.upwind_dir = rad2deg(UPWIND_DIR)
 integrator = KiteModels.init!(kps4;  delta=0.0, stiffness_factor=1, prn=STATISTIC)
 
-if PLOT
-    global flight_log
-    av_steps = simulate(integrator, STEPS, true)
-    flight_log = KiteUtils.sys_log(logger)
-    p = plotx(flight_log.syslog.time, flight_log.z, 
+av_steps = if PLOT
+    local av_steps_local = simulate(integrator, STEPS, true)
+    local flight_log = KiteUtils.sys_log(logger)
+    local p = plotx(flight_log.syslog.time, flight_log.z, 
               rad2deg.(flight_log.syslog.var_01), rad2deg.(flight_log.syslog.var_02);
               xlabel="time [s]", ylabels=["z [m]", "pitch [°]", "pitch_rate [°/s]"], 
               fig="plot_height_pitch")
     display(p)
+    av_steps_local
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
@@ -81,6 +82,7 @@ else
     println("\nTotal simulation time: $(round(runtime, digits=3)) s")
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
+    av_steps
 end
 lift, drag = KiteModels.lift_drag(kps4)
 println("Ground wind speed: $(round(set.v_wind, digits=2)) m/s")

@@ -30,7 +30,7 @@ function set_defaults()
     kps.set.rel_side_area = 50.0
     kps.set.v_wind = 8.0
     kps.set.mass = 11.4
-    kps.set.damping =  2 * 473.0
+    kps.set.axial_damping =  2 * 473.0
     kps.set.alpha = 1.0/7
     kps.set.c_s = 0.6
 end

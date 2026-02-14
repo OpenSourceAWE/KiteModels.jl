@@ -30,7 +30,7 @@ if set.kcu_model == "KCU2"
 else
     STEPS = 2400
 end
-PLOT = true
+const PLOT = true
 FRONT_VIEW = true
 ZOOM = true
 PRINT = false
@@ -47,7 +47,7 @@ kps4::KPS4 = KPS4(kcu)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots, StatsBase
     close("all")

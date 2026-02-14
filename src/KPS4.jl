@@ -5,7 +5,7 @@
 
 This model implements a 3D mass-spring system with reel-out. It uses six tether segments (the number can be
 configured in the file data/settings.yaml). The kite is modelled using 4 point masses and 3 aerodynamic 
-surfaces. The spring constant and the damping decrease with the segment length. The aerodynamic kite forces
+surfaces. The spring constant and the axial_damping decrease with the segment length. The aerodynamic kite forces
 are acting on three of the four kite point masses. 
 
 Four point kite model, included from KiteModels.jl.
@@ -32,8 +32,8 @@ const SPRINGS_INPUT = [0.    1.  150.
     p1::I = 1         # number of the first point
     p2::I = 2         # number of the second point
     length::S = 1.0   # current unstressed spring length
-    c_spring::S = 1.0 # spring constant [N/m]
-    damping::S  = 0.1 # damping coefficent [Ns/m]
+    axial_stiffness::S = 1.0 # spring constant [N/m]
+    axial_damping::S  = 0.1 # axial_damping coefficent [Ns/m]
 end
 
 const SP = Spring{Int16, SimFloat}
@@ -249,8 +249,8 @@ The result is stored in the array s.forces.
 """
 @inline function calc_particle_forces!(s::KPS4, pos1, pos2, vel1, vel2, spring, segments, d_tether, rho, i)
     l_0 = spring.length # Unstressed length
-    k = spring.c_spring * s.stiffness_factor  # Spring constant
-    c = spring.damping                        # Damping coefficient    
+    k = spring.axial_stiffness * s.stiffness_factor  # Spring constant
+    c = spring.axial_damping                        # Damping coefficient    
     segment = pos1 - pos2
     rel_vel = vel1 - vel2
     av_vel = 0.5 * (vel1 + vel2)
@@ -259,7 +259,7 @@ The result is stored in the array s.forces.
 
     k1 = s.set.rel_compr_stiffness * k # compression stiffness kite springs
     k2 = 0.1 * k                       # compression stiffness tether springs
-    c1 = s.set.rel_damping * c         # damping kite springs
+    c1 = s.set.rel_damping * c         # axial_damping kite springs
     spring_vel   = unit_vector ⋅ rel_vel
     if (norm1 - l_0) > 0.0
         if i > segments  # kite springs
@@ -431,11 +431,11 @@ function loop!(s::KPS4, pos, vel, posd, veld)
     m_tether_particle = mass_per_meter * s.segment_length
     s.masses[s.set.segments+1] = s.set.kcu_mass + 0.5 * m_tether_particle
     # TODO: check if the next two lines are correct
-    damping  = s.set.damping / L_0
-    c_spring = s.set.c_spring/L_0 
+    axial_damping  = s.set.axial_damping / L_0
+    axial_stiffness = s.set.axial_stiffness/L_0 
     for i in 1:s.set.segments
         @inbounds s.masses[i] = m_tether_particle
-        @inbounds s.springs[i] = SP(s.springs[i].p1, s.springs[i].p2, s.segment_length, c_spring, damping)
+        @inbounds s.springs[i] = SP(s.springs[i].p1, s.springs[i].p2, s.segment_length, axial_stiffness, axial_damping)
     end
     inner_loop!(s, pos, vel, s.v_wind_gnd, s.set.segments, s.set.d_tether/1000.0)
     for i in 2:particles
@@ -600,7 +600,7 @@ end
 function spring_forces(s::KPS4; prn=true)
     forces = zeros(SimFloat, s.set.segments+KITE_SPRINGS)
     for i in 1:s.set.segments
-        forces[i] =  s.springs[i].c_spring * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length) * s.stiffness_factor
+        forces[i] =  s.springs[i].axial_stiffness * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length) * s.stiffness_factor
         if forces[i] > s.set.max_force && prn
             println("Tether raptures for segment $i !")
         end
@@ -611,7 +611,7 @@ function spring_forces(s::KPS4; prn=true)
         pos1, pos2 = s.pos[p1], s.pos[p2]
         spring = s.springs[i+s.set.segments]
         l_0 = spring.length # Unstressed length
-        k = spring.c_spring * s.stiffness_factor       # Spring constant 
+        k = spring.axial_stiffness * s.stiffness_factor       # Spring constant 
         segment = pos1 - pos2
         norm1 = norm(segment)
         k1 = 0.25 * k # compression stiffness kite segments

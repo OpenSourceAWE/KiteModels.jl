@@ -334,7 +334,7 @@ function force_eqs!(s, system, eqs, defaults, guesses;
         spring_vel(t)[eachindex(segments)]
         spring_force(t)[eachindex(segments)]
         stiffness(t)[eachindex(segments)]
-        damping(t)[eachindex(segments)]
+        axial_damping(t)[eachindex(segments)]
 
         height(t)[eachindex(segments)]
         segment_vel(t)[1:3, eachindex(segments)]
@@ -423,7 +423,7 @@ function force_eqs!(s, system, eqs, defaults, guesses;
         @parameters stiffness_frac = 0.01
         (segment.type == BRIDLE) && (stiffness_m = stiffness_frac * stiffness_m)
 
-        damping_m = (s.set.damping / s.set.c_spring) * stiffness_m
+        damping_m = (s.set.axial_damping / s.set.axial_stiffness) * stiffness_m
         
         if segment.compression_frac ≈ 1.0
             eqs = [eqs; stiffness[segment.idx]       ~ stiffness_m / len[segment.idx]]
@@ -440,9 +440,9 @@ function force_eqs!(s, system, eqs, defaults, guesses;
             unit_vec[:, segment.idx]  ~ segment_vec[:, segment.idx]/len[segment.idx]
             rel_vel[:, segment.idx]      ~ vel[:, p1] - vel[:, p2]
             spring_vel[segment.idx]      ~ rel_vel[:, segment.idx] ⋅ unit_vec[:, segment.idx]
-            damping[segment.idx]         ~ damping_m / len[segment.idx]
+            axial_damping[segment.idx]         ~ damping_m / len[segment.idx]
             spring_force[segment.idx] ~  (stiffness[segment.idx] * (len[segment.idx] - l0[segment.idx]) - 
-                            damping[segment.idx] * spring_vel[segment.idx])
+                            axial_damping[segment.idx] * spring_vel[segment.idx])
             spring_force_vec[:, segment.idx]  ~ spring_force[segment.idx] * unit_vec[:, segment.idx]
             
             # drag force equations
@@ -876,7 +876,7 @@ function linear_vsm_eqs!(s, eqs, guesses; aero_force_b, aero_moment_b, group_aer
     return eqs, guesses
 end
 
-function create_sys!(s::SymbolicAWEModel, system::SystemStructure; init_va_b)
+function create_sys!(s::SymbolicAWEModel, system::SystemStructure; init_va_b, bench=false)
     eqs = []
     defaults = Pair{Num, Any}[]
     guesses = Pair{Num, Any}[]
@@ -916,31 +916,15 @@ function create_sys!(s::SymbolicAWEModel, system::SystemStructure; init_va_b)
     eqs, defaults = wing_eqs!(s, eqs, defaults; tether_wing_force, tether_wing_moment, aero_force_b, aero_moment_b, 
         ω_b, α_b, R_b_w, wing_pos, wing_vel, wing_acc, stabilize, fix_nonstiff)
     eqs = scalar_eqs!(s, eqs; R_b_w, wind_vec_gnd, va_wing_b, wing_pos, wing_vel, wing_acc, twist_angle, twist_ω, ω_b, α_b)
-    
-    # te_I = (1/3 * (s.set.mass/8) * te_length^2)
-    # # -damping / I * ω = α_damping
-    # # solve for c: (c * (k*m/s^2) / (k*m^2)) * (m/s)=m/s^2 in wolframalpha
-    # # damping should be in N*m*s
-    # rot_damping = 0.1s.damping * te_length
-
-    # eqs = [
-    #     eqs
-    #     trailing_edge_α[1] ~ (force[:, s.i_A]) ⋅ e_te_A * te_length / te_I - (rot_damping[1] / te_I) * trailing_edge_ω[1] # TODO: add trailing edge
-    #     trailing_edge_α[2] ~ (force[:, s.i_B]) ⋅ e_te_B * te_length / te_I - (rot_damping[2] / te_I) * trailing_edge_ω[2]
-    # ]
-    
+        
     eqs = Symbolics.scalarize.(reduce(vcat, Symbolics.scalarize.(eqs)))
 
-    # discrete_events = [
-    #     true => [
-    #         [Q_b_w[i] ~ normalize(Q_b_w)[i] for i in 1:4]
-    #         [twist_angle[i] ~ clamp(twist_angle[i], -π/2, π/2) for i in eachindex(s.point_groups)]
-    #         ]
-    #     ]
-
-    @info "Creating ODESystem"
-    # @named sys = ODESystem(eqs, t; discrete_events)
-    @time @named sys = ODESystem(eqs, t)
+    ! bench && @info "Creating ODESystem"
+    if bench
+        @named sys = ODESystem(eqs, t)
+    else
+        @time @named sys = ODESystem(eqs, t)
+    end
 
     defaults = [
         defaults

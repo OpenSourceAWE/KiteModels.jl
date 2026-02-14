@@ -1,35 +1,36 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-using Printf, KiteModels, KitePodModels, KiteUtils
-
+using KiteModels: KPS4, init!, lift_drag, next_step!, winch_force
+using KitePodModels: KCU
+using KiteUtils: Settings, load_settings
+using Printf
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate("examples")
 end
+
 using ControlPlots
 
-if false include("../src/KPS4.jl") end
-
-set = deepcopy(load_settings("system.yaml"))
+set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05
-set.solver="DFBDF"              # IDA or DFBDF
-set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
+set.solver = "DFBDF"              # IDA or DFBDF
+set.linear_solver = "GMRES"       # GMRES, LapackDense or Dense
 STEPS = 200
 PRINT = false
 STATISTIC = false
-PLOT=true
+const PLOT = true
 # end of user parameter section #
 
-kcu::KCU = KCU(set)
+kcu::KCU   = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
-v_time = zeros(STEPS)
+v_time  = zeros(STEPS)
 v_speed = zeros(STEPS)
 v_force = zeros(STEPS)
 
-function simulate(integrator, steps, offset=0)
+function simulate(integrator, steps, offset = 0)
     iter = 0
     for i in 1:steps
         acc = 0.0
@@ -41,18 +42,18 @@ function simulate(integrator, steps, offset=0)
         v_force[i] = winch_force(kps4)
         set_speed = kps4.sync_speed+acc*dt
         if PRINT
-            lift, drag = KiteModels.lift_drag(kps4)
-            @printf "%.2f: " round(integrator.t, digits=2)
+            lift, drag = lift_drag(kps4)
+            @printf "%.2f: " round(integrator.t, digits = 2)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        next_step!(kps4, integrator; set_speed, dt=dt)
+        next_step!(kps4, integrator; set_speed, dt = dt)
         iter += kps4.iter
     end
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4, delta=0, stiffness_factor=0.5, prn=STATISTIC)
+integrator = init!(kps4, delta = 0, stiffness_factor = 0.5, prn = STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100, 100)
@@ -62,10 +63,17 @@ println("Total simulation time: $(round(runtime, digits=3)) s")
 speed = (STEPS-100) / runtime * dt
 println("Simulation speed: $(round(speed, digits=2)) times realtime.")
 if PLOT
-    p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
+    local p
+    p = plotx(
+        v_time[1:(STEPS-100)],
+        v_speed[1:(STEPS-100)],
+        v_force[1:(STEPS-100)];
+        ylabels = ["v_reelout  [m/s]", "tether_force [N]"],
+        fig = "winch",
+    )
     display(p)
 end
-lift, drag = KiteModels.lift_drag(kps4)
+lift, drag = lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $av_steps")
 

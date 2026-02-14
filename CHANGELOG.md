@@ -2,12 +2,23 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.10.0 2026-02-06
+#### Changed
+- Support Julia 1.12
+- Bump KitePodModels to 0.4.0
+- Bump KiteUtils to 0.11.1
+- Breaking: rename `c_spring` to `axial_stiffness` and `damping` to `axial_damping
+- Breaking: rename `force` to `winch_force` when SysState is referred to
+- Make tests more robust by deleting unused files from the temporary directory and by increasing tolerances
+### Added
+- the configuration file `.JETLSConfig.toml`
+- the script `reuse_lint` to check the licenses
+
 ### KiteModels v0.9.0 2025-07-14
 #### Changed
 - BREAKING: rename `init_sim!` to `init!`
 - removed the parameter `upwind_dir!` from `init!`; use set.upwind_dir instead. Careful: This is in degrees.
-- the function `init!` accepts (and ignores) the parameters `delta` and `stiffness_factor` if applied to a 
-  SymbolicAWEModel
+- the function `init!` accepts (and ignores) the parameters `delta` and `stiffness_factor` if applied to a SymbolicAWEModel
 - bump `KiteUtils.jl` to v0.10.15
 - bump `AtmosphericModels` to v0.3.0, the first version that supports turbulent wind fields
 #### Added

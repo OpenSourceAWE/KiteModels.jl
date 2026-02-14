@@ -4,11 +4,12 @@
 # plot the side lift coefficient vs rel_steering
 using Printf
 using KiteModels
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 set.abs_tol=0.0006
@@ -23,7 +24,7 @@ set.depower = 38.0
 dt = 0.02
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 100
-PLOT = true
+const PLOT = true
 FRONT_VIEW = false
 ZOOM = true
 PRINT = false
@@ -36,7 +37,7 @@ kps4::KPS4 = KPS4(kcu)
 if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
+        Pkg.activate("examples")
     end
     using ControlPlots
     plt.close("all")
@@ -63,12 +64,12 @@ function simulate(integrator, steps, steering; plot=false)
         end
     end
     set_depower_steering(kps4.kcu, kps4.depower, steering)
-    for i in 1:20
+    for _ in 1:20
         next_step!(kps4, integrator; set_speed=0, dt)
         iter += kps4.iter
     end
     side_cl = 0 
-    for i in 1:5
+    for _ in 1:5
         next_step!(kps4, integrator; set_speed=0, dt)
         side_cl += kps4.side_cl
         iter += kps4.iter

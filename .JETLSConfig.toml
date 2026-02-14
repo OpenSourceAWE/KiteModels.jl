@@ -1,0 +1,7 @@
+formatter = "JuliaFormatter"
+
+[full_analysis]
+auto_instantiate = false            # boolean, default: true
+
+[diagnostic]
+all_files = false                   # boolean, default: true
