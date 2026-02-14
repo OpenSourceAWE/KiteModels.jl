@@ -54,7 +54,7 @@ FORCE = zeros(STEPS)
 
 include("filters.jl")
 include("winch_controller.jl")
-wcs = WinchSpeedController(dt=dt)
+wcs::WinchSpeedController = WinchSpeedController(dt=dt)
 
 function simulate(kps4, integrator, logger, steps, f_ex)
     local filtered_force
