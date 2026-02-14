@@ -4,7 +4,7 @@
 # activate the test environment if needed
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate(joinpath(@__DIR__, "..", "test"))
 end
 
 using KiteModels

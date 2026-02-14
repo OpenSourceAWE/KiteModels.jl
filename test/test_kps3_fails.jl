@@ -3,7 +3,7 @@
 
 using Pkg
 if ! ("Test" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
+    Pkg.activate(joinpath(@__DIR__, "..", "test"))
 end
 
 using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
