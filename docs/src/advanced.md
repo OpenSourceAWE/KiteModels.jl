@@ -72,7 +72,6 @@ Good: `norm1        ~ norm(segment)`
 
 The next steps:
 - finish and merge the KPS5 kite power system model, based on ModellingToolkit
-- use VortexStepMethod.jl for KPS5 
 - add a rigid wing model
 - add a Matlab/ Simulink wrapper similar to the Python wrapper [pykitemodels](https://github.com/ufechner7/pykitemodels)
 

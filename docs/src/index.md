@@ -9,7 +9,6 @@ The models have the following subcomponents, implemented in separate packages:
 - AtmosphericModel from [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
 - WinchModel from [WinchModels](https://github.com/aenarete/WinchModels.jl) 
 - KitePodModel from  [KitePodModels](https://github.com/aenarete/KitePodModels.jl)
-- The aerodynamic forces and moments of some of the models are calculated using the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 
 This package is part of Julia Kite Power Tools, which consist of the following packages:
 
@@ -51,16 +50,12 @@ with some example input files. You can now run the examples with the command:
 ```julia
 include("examples/menu.jl")
 ```
-You can also run the ram-air-kite example like this:
-```julia
-include("examples/ram_air_kite.jl")
-```
-This might take two minutes. To speed up the model initialization, you can create a system image:
+To speed up the model initialization, you can create a system image:
 ```bash
 cd bin
 ./create_sys_image
 ```
-If you now launch Julia with `./bin/run_julia` and then run the above example again, it should be about three
+If you now launch Julia with `./bin/run_julia` and then run the examples, they should be about three
 times faster.
 
 ## News
@@ -117,6 +112,5 @@ The one point and four point kite models are described in detail in [Dynamic Mod
 - the package [KiteUtils](https://github.com/ufechner7/KiteUtils.jl)
 - the packages [WinchModels](https://github.com/aenarete/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
 - the packages [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/aenarete/KiteViewers.jl)
-- the [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 
 Authors: Uwe Fechner (uwe.fechner.msc@gmail.com), Bart van de Lint (bart@vandelint.net)
