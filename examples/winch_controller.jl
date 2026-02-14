@@ -1,6 +1,9 @@
 # Copyright (c) 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-
+using Pkg
+if ! ("DiscretePIDs" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
 using DiscretePIDs
 # low level winch controller; this code will be moved to WinchControllers.jl in the future
 

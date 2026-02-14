@@ -3,7 +3,7 @@
 
 using Printf
 using KiteModels, LinearAlgebra
-using KiteUtils: load_settings, Settings
+using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 

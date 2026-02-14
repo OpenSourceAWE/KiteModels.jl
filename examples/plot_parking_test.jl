@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 # plot the lift and drag coefficients as function of angle of attack
+# TODO: fix JETLS warnings
 
 # t_start  t_stop   duration  depower  height   av_elevation std_elevation av_pitch  av_wind_200 
 # ────────────────────────────────────────────────────────────────────────────────────────────────
