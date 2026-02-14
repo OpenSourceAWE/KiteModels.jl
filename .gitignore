@@ -63,3 +63,4 @@ coverage/lcov.info
 temp_benchmark.jl
 Manifest-v1.12.toml
 Manifest-v1.12.toml.bak
+.JETLSConfig.toml
