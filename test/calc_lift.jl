@@ -1,9 +1,14 @@
 # SPDX-FileCopyrightText: 2024 Bart van de Lint
 # SPDX-License-Identifier: MIT
 
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
 using LinearAlgebra
 using Dierckx
-using Plots
+using ControlPlots
 
 # Define constants
 rho = 1.0
@@ -99,7 +104,12 @@ function calc_lift(; n=10, left_line=150.0, right_line=150.0)
     return plot(1:n*2, norm.(dL_dα(α_0 + dα/2 + i*dα) * dα for i in 1:n*2), title="Lift per segment")
 end
 
-# println(calc_lift())
-# println(calc_lift(n=10, left_line=149, right_line=149.9))
-savefig(calc_lift(n=100, left_line=149.9, right_line=149), "n=100")
-savefig(calc_lift(n=5, left_line=149.9, right_line=149), "n=5")
+display(calc_lift())
+sleep(1)
+display(calc_lift(n=10, left_line=149, right_line=149.9))
+sleep(1)
+plt.close("all")
+
+# TODO: figure out how the results shall be tested
+# save("n_100.jld2", calc_lift(n=100, left_line=149.9, right_line=149))
+# save("n_5.jld2", calc_lift(n=5, left_line=149.9, right_line=149))

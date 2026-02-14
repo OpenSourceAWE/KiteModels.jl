@@ -1,7 +1,12 @@
 # SPDX-FileCopyrightText: 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using Aqua
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
+using Aqua, KiteModels, Test
 @testset "Aqua.jl" begin
     Aqua.test_all(
       KiteModels;
@@ -11,3 +16,4 @@ using Aqua
       persistent_tasks=false                           # disable persistent tasks test due to Julia 1.10 issues
     )
 end
+nothing

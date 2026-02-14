@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner, Daan van Wolffelaar
 # SPDX-License-Identifier: MIT
 
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
 using KiteUtils
 using KiteModels
 using KitePodModels

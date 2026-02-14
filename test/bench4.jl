@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate(joinpath(@__DIR__, "..", "test"))
-    Pkg.update()
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
 end
-using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
+
+using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))

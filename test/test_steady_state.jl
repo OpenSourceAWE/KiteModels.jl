@@ -1,7 +1,12 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using StaticArrays, LinearAlgebra, KiteUtils
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
+using KiteUtils, LinearAlgebra, StaticArrays
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
@@ -12,12 +17,12 @@ kps4::KPS4 = KPS4(kcu)
 
 dt = 0.05
 
-clear!(kps)
-KiteModels.set_depower_steering!(kps, kps.set.depower_offset/100.0, 0.0)
-kps.stiffness_factor = 0.5
+clear!(kps4)
+KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
+kps4.stiffness_factor = 0.5
 
-@time KiteModels.find_steady_state!(kps, prn=true)
+@time KiteModels.find_steady_state!(kps4, prn=true)
 
-println("\nlift, drag    [N]  : $(KiteModels.lift_drag(kps))")
+println("\nlift, drag    [N]  : $(KiteModels.lift_drag(kps4))")
 # println("\nSpring forces:")
-# spring_forces(kps)
+# spring_forces(kps4)
