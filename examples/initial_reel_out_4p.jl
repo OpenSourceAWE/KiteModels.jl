@@ -8,8 +8,8 @@ set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
 dt = 0.05
-set.solver="DFBDF"   # IDA or DFBDF
-set.v_reel_out = 1.0 # initial reel-out speed [m/s]
+set.solver = "DFBDF"   # IDA or DFBDF
+set.v_reel_out = 1.0   # initial reel-out speed [m/s]
 STEPS = 600
 const PLOT = true
 FRONT_VIEW = false
