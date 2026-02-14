@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2022 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
 const reference = 4.826620521958565e7 # AMD Ryzen 7840U, Julia 1.11, 1 thread
 
 """
@@ -22,7 +27,7 @@ function cpu_benchmark_scalar(target_time=1.0)
     x = 1.23456789
     y = 9.87654321
     
-    for i in 1:calibrate_ops
+    for _ in 1:calibrate_ops
         # Mix of operations to avoid compiler optimizations
         x = x * 1.000001 + sin(y * 0.001)
         y = y * 0.999999 + cos(x * 0.001)

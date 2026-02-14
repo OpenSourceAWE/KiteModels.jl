@@ -1,12 +1,15 @@
 # SPDX-FileCopyrightText: 2022 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
+using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
-if ! @isdefined SEGMENTS
-    const SEGMENTS = se().segments
-end
+const SEGMENTS = se().segments
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
 set = load_settings("system.yaml")
