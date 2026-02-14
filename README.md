@@ -24,9 +24,7 @@ This package is part of Julia Kite Power Tools, which consists of the following 
 
 ## News
 #### February 2026
-- a symbolic model of a RAM air kite is now included, but it is a bit outdated, you can find the latest code in the package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl)
-#### April 2025
-- a new model `SymbolicAWEModel` was contributed, based on the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
+- the `SymbolicAWEModel` has been moved to a separate package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) for better maintainability
 #### November 2024
 - the four point kite model KPS4 was extended to include aerodynamic damping of pitch oscillations;
   for this purpose, the parameters `cmq` and `cord_length` must be defined in `settings.yaml`
