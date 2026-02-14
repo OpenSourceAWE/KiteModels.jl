@@ -4,7 +4,7 @@ using Pkg
 if ! ("DiscretePIDs" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using DiscretePIDs
+using DiscretePIDs, KiteUtils
 # low level winch controller; this code will be moved to WinchControllers.jl in the future
 
 mutable struct WinchSpeedController
@@ -35,5 +35,5 @@ function calc_set_torque(set::Settings, wcs::WinchSpeedController, v_set, v_reel
     # calculate the set torque
     r = set.drum_radius
     n = set.gear_ratio
-    set_torque = -r/n * (0.0*set_force-err)
+    -r/n * (0.0*set_force-err)
 end
