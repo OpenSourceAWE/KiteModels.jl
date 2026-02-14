@@ -3,7 +3,12 @@
 
 # unittest for StaticArrays
 # fails for v1.5.13 and v1.5.14
-using StaticArrays, LinearAlgebra, BenchmarkTools, Test
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
+using BenchmarkTools, LinearAlgebra, StaticArrays, Test
 
 const KVec3    = MVector{3, Float64}
 

@@ -3,6 +3,11 @@
 
 # unittest for Sundials.jl, works fine with 4.11.4 and older
 # also requires v6.115.4 of DiffEqBase or older
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
 using StaticArrays, Sundials, Test
 
 const KVec3    = MVector{3, Float64}
@@ -11,7 +16,7 @@ Base.@kwdef mutable struct KPS4{S, T, P}
     v_apparent::T =       zeros(S, 3)
 end
 
-const kps4 = KPS4{Float64, KVec3, 6+4+1}()
+kps4::KPS4 = KPS4{Float64, KVec3, 6+4+1}()
 
 function residual!(res, yd, y::MVector{S, Float64}, s::KPS4, time) where S
 end
