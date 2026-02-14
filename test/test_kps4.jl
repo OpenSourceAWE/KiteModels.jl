@@ -3,10 +3,9 @@
 
 using Pkg
 if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-    Pkg.update()
+    Pkg.activate("test")
 end
-using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
+using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
@@ -54,7 +53,7 @@ function init_150()
     kps4.set.mass = 6.21
     kps4.set.c_s = 0.6
     kps4.set.axial_damping = 473.0     # unit axial_damping
-    kps4.set.axial_stiffness = 614600.0 # unit spring coefficent
+    kps4.set.axial_stiffness = 614600.0 # unit spring coefficient
     kps4.set.width = 4.9622
 end
 
@@ -67,7 +66,7 @@ function init3()
     kps4.set.mass = 6.21
     kps4.set.c_s = 0.6
     kps4.set.axial_damping = 473.0     # unit axial_damping coefficient
-    kps4.set.axial_stiffness = 614600.0 # unit spring coefficent
+    kps4.set.axial_stiffness = 614600.0 # unit spring coefficient
     kps4.set.width = 4.9622
     kps4.set.elevation = 70.7 
     kps4.set.profile_law = Int(EXPLOG)
@@ -482,7 +481,7 @@ end
     pre_tension = KiteModels.calc_pre_tension(kps4)
     @test pre_tension > 1.0001
     @test pre_tension < 1.01
-    @test unstretched_length(kps4) ≈ 392.0              # initial, unstretched tether lenght
+    @test unstretched_length(kps4) ≈ 392.0              # initial, unstretched tether length
     # println("length: ", tether_length(kps4))
     @test isapprox(tether_length(kps4), 401.9975294637118, rtol=1e-2) # real, stretched tether length was: 406.4
 #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
