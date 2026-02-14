@@ -5,11 +5,12 @@
 
 using Printf
 using KiteModels, LinearAlgebra
+using KiteUtils: Settings, load_settings
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
@@ -30,7 +31,7 @@ STEPS = 500
 const PLOT = true
 PRINT = true
 STATISTIC = false
-DEPOWER = 0.47:-0.005:0.355
+DEPOWER::StepRangeLen = 0.47:-0.005:0.355
 # end of user parameter section #
 
 bridle_length = KiteModels.bridle_length(set)
@@ -38,7 +39,7 @@ println("bridle_length: $bridle_length")
 bridle_area = (set.d_line/2000) * bridle_length
 println("bridle_area: $bridle_area")
 
-function set_tether_diameter!(se, d; c_spring_4mm = 614600, damping_4mm = 473)
+function set_tether_diameter!(set, d; c_spring_4mm = 614600, damping_4mm = 473)
     set.d_tether = d
     set.axial_stiffness = c_spring_4mm * (d/4.0)^2
     set.axial_damping = damping_4mm * (d/4.0)^2
@@ -75,7 +76,7 @@ end
 
 CL = zeros(length(DEPOWER))
 CD = zeros(length(DEPOWER))
-AOA = zeros(length(DEPOWER))
+const AOA = zeros(length(DEPOWER))
 DEP = zeros(length(DEPOWER))
 
 elev = set.elevation
