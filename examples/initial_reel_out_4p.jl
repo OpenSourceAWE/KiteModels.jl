@@ -1,7 +1,7 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-using Printf
-using KiteModels, LinearAlgebra
+using LinearAlgebra, Printf
+using KiteModels: KCU, KPS4, OrdinaryDiffEqCore.ODEIntegrator, init!, lift_drag, next_step!, winch_force
 using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))
@@ -25,13 +25,13 @@ set.version = 2
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
-# if PLOT
+if PLOT
     using Pkg
     if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
         Pkg.activate("examples")
     end
     using ControlPlots
-# end
+end
 
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
@@ -41,7 +41,7 @@ function simulate(integrator, steps, plot=false)
     iter = 0
     for i in 1:steps
         if PRINT
-            lift, drag = KiteModels.lift_drag(kps4)
+            lift, drag = lift_drag(kps4)
             @printf "%.2f: " round(integrator.t, digits=2)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
@@ -70,7 +70,7 @@ function simulate(integrator, steps, plot=false)
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4; delta=0.000, stiffness_factor=0.25, prn=STATISTIC)
+integrator::ODEIntegrator = init!(kps4; delta=0.000, stiffness_factor=0.25, prn=STATISTIC)
 kps4.sync_speed = set.v_reel_out
 
 av_steps = if PLOT
@@ -85,7 +85,7 @@ else
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
 end
-lift, drag = KiteModels.lift_drag(kps4)
+lift, drag = lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
