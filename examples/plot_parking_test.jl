@@ -23,7 +23,7 @@ using KiteModels, LinearAlgebra
 using KiteUtils: Settings, load_settings
 
 set::Settings = if haskey(ENV, "USE_V9")
-    (load_settings("system_v9.yaml"))
+    deepcopy(load_settings("system_v9.yaml"))
 else
     deepcopy(load_settings("system.yaml"))
 end
