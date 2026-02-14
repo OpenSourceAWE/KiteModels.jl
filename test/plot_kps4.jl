@@ -23,7 +23,7 @@ kps4.stiffness_factor = 0.04
 
 y0, yd0 = KiteModels.init(kps4)
 
-find_steady_state!(kps4, prn=false)
+find_steady_state!(kps4; delta=0.001, stiffness_factor=1, prn=false)
 
 println("kite distance: $(norm(kps4.pos[end-2]))")
 println(KiteModels.spring_forces(kps4))
@@ -31,3 +31,4 @@ println("alpha_depower [deg]: $(rad2deg(kps4.alpha_depower))")
 println("lift, drag    [N]  : $(KiteModels.lift_drag(kps4))")
 
 plot2d(kps4.pos; zoom=false, front=FRONT_VIEW)
+nothing
