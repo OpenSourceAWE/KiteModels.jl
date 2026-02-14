@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ("TestEnv" ∈ keys(Pkg.project().dependencies))
-    if ! ("Documents" ∈ keys(Pkg.project().dependencies))
-        using TestEnv; TestEnv.activate()
-    end
-end
-using ControlPlots, VortexStepMethod
+Pkg.activate(@__DIR__)
+Pkg.develop(PackageSpec(path=dirname(@__DIR__)))
+Pkg.instantiate()
+
+using ControlPlots
 using KiteModels
 using Documenter
 
@@ -28,12 +27,9 @@ makedocs(;
         "Home" => "index.md",
         "Types" => "types.md",
         "Functions" => "functions.md",
-        "SymbolicAWEModel" => "ram_air_kite.md",
         "Parameters" => "parameters.md",
         "Examples 1p" => "examples.md",
         "Examples 4p" => "examples_4p.md",
-        "Examples SymbolicAWEModel" => "examples_ram_air.md",
-        "SystemStructure for custom models" => "tutorial_system_structure.md",
         "Quickstart" => "quickstart.md",
         "Advanced usage" => "advanced.md",
     ],

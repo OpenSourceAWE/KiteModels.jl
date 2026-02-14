@@ -65,9 +65,7 @@ times faster.
 
 ## News
 #### February 2026
-- a symbolic model of a RAM air kite is now included, but it is a bit outdated, you can find the latest code in the package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl)
-#### April 2025
-- a new model `SymbolicAWEModel` was contributed, based on the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
+- the `SymbolicAWEModel` has been moved to a separate package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) for better maintainability
 #### November 2024
 - the four point kite model KPS4 was extended to include aerodynamic damping of pitch oscillations;
   for this purpose, the parameters `cmq` and `cord_length` must be defined in `settings.yaml`
@@ -82,7 +80,7 @@ times faster.
 - the documentation was improved
 
 ## Provides
-The types [`KPS3`](@ref), [`KPS4`](@ref) and [`SymbolicAWEModel`](@ref), representing the one point, the four point kite model and the ram air kite model, together with the high level simulation interface consisting of the functions [`init!`](@ref) and [`next_step!`](@ref). Other kite models can be added inside or outside of this package by implementing the non-generic methods required for an AbstractKiteModel.
+The types [`KPS3`](@ref) and [`KPS4`](@ref), representing the one point and four point kite models, together with the high level simulation interface consisting of the functions [`init!`](@ref) and [`next_step!`](@ref). Other kite models can be added inside or outside of this package by implementing the non-generic methods required for an AbstractKiteModel.
 
 Additional functions to provide inputs and outputs of the model on each time step. In particular the constructor [`SysState`](@ref) can be called once per time step to create a SysState struct for
 logging or for displaying the state in a viewer. For the KPS3 and KPS4 model, once per time step the [`residual!`](@ref) function is called as many times as needed to find the solution at the end
@@ -96,9 +94,6 @@ When combined with a controller for the turn rate it can be used to simulate a p
 This model assumes the kite to consist of four-point masses with aerodynamic forces acting on points B, C and D. It reacts much more realistically than the one-point model because it has rotational inertia in every axis.
 
 ![Four point kite power system model](kps4.png)
-
-## Ram air kite model
-This model represents the kite as a deforming rigid body, with orientation governed by quaternion dynamics. Aerodynamics are computed using the Vortex Step Method. The kite is controlled from the ground via four tethers.
 
 ## Tether
 The tether is modeled as point masses, connected by spring-damper elements. Aerodynamic drag is modeled realistically. When reeling out or in the unstreched length of the spring-damper elements

@@ -1,53 +1,22 @@
 ```@meta
 CurrentModule = KiteModels
 ```
-# Examples for using the ram air kite model
 
-## Create a test project
-```bash
-mkdir test
-cd test
-julia --project=.
-```
-Don't forget to type the dot at the end of the last line.
-With the last command, we told Julia to create a new project in the current directory.
+# SymbolicAWEModel Examples Moved
 
-You can copy the examples to your project with:
-```julia
-using KiteModels
-KiteModels.install_examples()
-```
+The examples for using the RAM air kite model (`SymbolicAWEModel`) have been moved to a separate package.
 
-## Running the first example
-```julia
-SIMPLE=false; include("examples/ram_air_kite.jl")
-```
-Expected output for first run:
-```
-[ Info: Loading packages 
-Time elapsed: 7.483472342 s
-[ Info: Creating wing, aero, vsm_solver, sys_struct and s:
-Time elapsed: 15.341197455 s
-[ Info: Creating ODESystem
-  4.316010 seconds (8.72 M allocations: 222.606 MiB, 1.42% gc time, 25.46% compilation time: 14% of which was recompilation)
-[ Info: Simplifying the system
- 38.520311 seconds (335.98 M allocations: 11.256 GiB, 3.30% gc time, 26.34% compilation time: 29% of which was recompilation)
-[ Info: Creating ODEProblem
- 79.285815 seconds (668.64 M allocations: 22.706 GiB, 3.52% gc time, 19.17% compilation time: 19% of which was recompilation)
-[ Info: Initialized integrator in 20.055285573 seconds
-[ Info: System initialized at:
-Time elapsed: 184.100123328 s
-[ Info: Total time without plotting:
-Time elapsed: 201.450775931 s
-┌ Info: Performance:
-│   times_realtime = 5.425567300328113
-└   integrator_times_realtime = 17.86788617896347
-```
-The second time it runs much faster, because the simplified ODE system is cached in the `prob_dynamic_1.11_3_seg.bin`
-file in the `data` folder:
-```
-[ Info: Loading packages 
-Time elapsed: 7.396961284 s
+## Documentation Now Available At
+
+Please refer to the [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) package for:
+
+- RAM air kite examples
+- `SymbolicAWEModel` usage tutorials
+- Example projects and scripts
+- Performance benchmarks
+
+The `SymbolicAWEModel` and all related examples have been moved to this dedicated package for better maintainability and focused development.
+
 [ Info: Creating wing, aero, vsm_solver, sys_struct and s:
 Time elapsed: 15.387790726 s
 [ Info: Initialized integrator in 29.545349428 seconds
