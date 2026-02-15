@@ -1,6 +1,6 @@
 Benchmark results 15.02.2026c
 
-Julia 12.4
+Julia 1.12.4
 
 - bench3.jl
 609 612 613 
