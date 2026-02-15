@@ -15,16 +15,14 @@ fi
 
 echo "Detected Julia version: $julia_version (major: $julia_major)"
 
+# Only accept Julia 1.11 and 1.12
+if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
+    echo "Error: Julia $julia_major is not supported. Only Julia 1.11 and 1.12 are supported."
+    exit 1
+fi
+
 # Copy the appropriate default manifest
-if [[ $julia_major == "1.10" ]]; then
-    if [ -f "Manifest-v1.10.toml.default" ]; then
-        cp Manifest-v1.10.toml.default Manifest-v1.10.toml
-        echo "Copied Manifest-v1.10.toml.default to Manifest-v1.10.toml"
-    else
-        echo "Warning: Manifest-v1.10.toml.default not found"
-        exit 1
-    fi
-elif [[ $julia_major == "1.11" ]]; then
+if [[ $julia_major == "1.11" ]]; then
     if [ -f "Manifest-v1.11.toml.default" ]; then
         cp Manifest-v1.11.toml.default Manifest-v1.11.toml
         echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
@@ -47,13 +45,11 @@ fi
 echo "Instantiating project..."
 julia --project -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
 
-# Instantiate the examples folder for Julia 1.10 and 1.11 only
-if [[ $julia_major == "1.10" ]] || [[ $julia_major == "1.11" ]]; then
+# Instantiate the examples and test project for Julia 1.11 only
+if [[ $julia_major == "1.11" ]]; then
     echo "Instantiating examples and test project for Julia $julia_major..."
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
-    if [[ $julia_major == "1.11" ]]; then
-      julia --project=test -e 'using Pkg; Pkg.instantiate()'
-    fi
+    julia --project=test -e 'using Pkg; Pkg.instantiate()'
     
     # Rename the manifest file to version-specific name
     if [ -f "examples/Manifest.toml" ]; then
