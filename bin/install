@@ -65,3 +65,9 @@ else
 fi
 
 echo "Installation complete!"
+echo
+echo "You can now launch Julia by typing"
+echo "cd .."
+echo "./bin/run_julia"
+echo "and then get the menu with the examples by typing:"
+echo "menu()"
