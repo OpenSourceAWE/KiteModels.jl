@@ -51,8 +51,9 @@ julia --project -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
 if [[ $julia_major == "1.10" ]] || [[ $julia_major == "1.11" ]]; then
     echo "Instantiating examples and test project for Julia $julia_major..."
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
-    julia --project=test -e 'using Pkg; Pkg.instantiate()'
-    # julia --project -e 'using Pkg; Pkg.test()'
+    if [[ $julia_major == "1.11" ]]; then
+      julia --project=test -e 'using Pkg; Pkg.instantiate()'
+    fi
     
     # Rename the manifest file to version-specific name
     if [ -f "examples/Manifest.toml" ]; then
