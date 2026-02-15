@@ -47,4 +47,18 @@ fi
 echo "Instantiating project..."
 julia --project -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
 
+# Instantiate the examples folder for Julia 1.10 and 1.11 only
+if [[ $julia_major == "1.10" ]] || [[ $julia_major == "1.11" ]]; then
+    echo "Instantiating examples project for Julia $julia_major..."
+    julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    
+    # Rename the manifest file to version-specific name
+    if [ -f "examples/Manifest.toml" ]; then
+        mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
+        echo "Renamed examples/Manifest.toml to examples/Manifest-v${julia_major}.toml"
+    fi
+else
+    echo "Skipping examples project instantiation for Julia $julia_major"
+fi
+
 echo "Installation complete!"
