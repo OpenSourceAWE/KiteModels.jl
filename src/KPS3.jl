@@ -511,30 +511,7 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     end
 
     if prn println("\nStarted function test_nlsolve...") end
-    # Provide explicit Jacobian using central finite differences to work around
-    # NLSolversBase >= 7.10 producing subnormal Jacobian entries via DifferentiationInterface,
-    # which cause NaN in NLsolve autoscale (subnormal column norms squared underflow to zero).
-    n_vars = length(X)
-    _F1 = zeros(SimFloat, n_vars)
-    _F2 = zeros(SimFloat, n_vars)
-    _xp = zeros(SimFloat, n_vars)
-    _xm = zeros(SimFloat, n_vars)
-    function jac!(J, x)
-        h_factor = cbrt(eps(SimFloat))
-        for j in 1:n_vars
-            copyto!(_xp, x)
-            copyto!(_xm, x)
-            h = max(abs(x[j]), one(SimFloat)) * h_factor
-            _xp[j] += h
-            _xm[j] -= h
-            test_initial_condition!(_F1, _xp)
-            test_initial_condition!(_F2, _xm)
-            @views J[:, j] .= (_F1 .- _F2) ./ (2h)
-        end
-        # Flush near-zero entries whose squares would underflow, preventing NaN in autoscale
-        threshold = sqrt(floatmin(SimFloat))
-        @. J = ifelse(abs(J) < threshold, zero(SimFloat), J)
-    end
+    jac! = make_jac(test_initial_condition!, length(X))
     results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
     if prn println("\nresult: $results") end
     results.zero
