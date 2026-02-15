@@ -21,7 +21,7 @@ The DI backend produces subnormal values (~5.6e-305) in near-zero Jacobian colum
 NLsolve's autoscale computes column norms d[j], and when d[j] is subnormal (not zero), its guard if d[j] == 0; d[j] = 1; 
 end doesn't trigger. The subsequent g ./ d.^2 underflows d[j]^2 to 0.0, producing NaN that propagates through the solver.
 
-Fix: Both KPS4.jl:688-710 and KPS3.jl:513-535 now provide an explicit Jacobian function (jac!) to nlsolve using manual 
+Fix: Both KPS4.jl:697-712 and KPS3.jl:522-537 now provide an explicit Jacobian function (jac!) to nlsolve using manual 
 central finite differences (matching FiniteDiff's defaults: step = cbrt(eps)). After computing the Jacobian, entries 
 below sqrt(floatmin) (~1.5e-154) are flushed to zero—this prevents any value whose square would underflow from reaching 
 NLsolve's autoscale.
