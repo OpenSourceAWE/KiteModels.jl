@@ -1,4 +1,4 @@
-Benchmark results 15.02.2026c
+Benchmark results 15.02.2026
 
 Julia 1.12.4
 
