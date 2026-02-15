@@ -18,6 +18,9 @@ echo "Detected Julia version: $julia_version (major: $julia_major)"
 # Only accept Julia 1.11 and 1.12
 if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
     echo "Error: Julia $julia_major is not supported. Only Julia 1.11 and 1.12 are supported."
+    echo "You can install Julia 1.11 with the following commands:"
+    echo "juliaup add 1.11"
+    echo "juliaup default 1.11"
     exit 1
 fi
 
