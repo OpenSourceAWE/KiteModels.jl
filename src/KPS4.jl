@@ -686,7 +686,31 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0
     end
     if prn println("\nStarted function test_nlsolve...") end
     X00 = zeros(SimFloat, 2*(s.set.segments+KITE_PARTICLES-1)+2)
-    results = nlsolve(test_initial_condition!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
+    # Provide explicit Jacobian using central finite differences to work around
+    # NLSolversBase >= 7.10 producing subnormal Jacobian entries via DifferentiationInterface,
+    # which cause NaN in NLsolve autoscale (subnormal column norms squared underflow to zero).
+    n_vars = length(X00)
+    _F1 = zeros(SimFloat, n_vars)
+    _F2 = zeros(SimFloat, n_vars)
+    _xp = zeros(SimFloat, n_vars)
+    _xm = zeros(SimFloat, n_vars)
+    function jac!(J, x)
+        h_factor = cbrt(eps(SimFloat))
+        for j in 1:n_vars
+            copyto!(_xp, x)
+            copyto!(_xm, x)
+            h = max(abs(x[j]), one(SimFloat)) * h_factor
+            _xp[j] += h
+            _xm[j] -= h
+            test_initial_condition!(_F1, _xp)
+            test_initial_condition!(_F2, _xm)
+            @views J[:, j] .= (_F1 .- _F2) ./ (2h)
+        end
+        # Flush near-zero entries whose squares would underflow, preventing NaN in autoscale
+        threshold = sqrt(floatmin(SimFloat))
+        @. J = ifelse(abs(J) < threshold, zero(SimFloat), J)
+    end
+    results = nlsolve(test_initial_condition!, jac!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
     if prn println("\nresult: $results") end
     y0, yd0 = init(s, results.zero; upwind_dir)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
