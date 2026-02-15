@@ -6,7 +6,7 @@ Julia 1.12.4
 609 612 613 
 
 - bench4.jl
-1096 1097 1100
+1096 1097 1100: 1097.7
 
 Julia 1.11.8
 
@@ -14,7 +14,9 @@ Julia 1.11.8
 615 614 612
 
 - bench4.jl
-934 935 931
+934 935 931: 934.3
+
+Julia 1.12 is 17% slower than 1.11 for bench4 and about the same for bench3.
 
 Root cause: NLSolversBase 7.10.0 switched from direct FiniteDiff to DifferentiationInterface for Jacobian computation. 
 The DI backend produces subnormal values (~5.6e-305) in near-zero Jacobian columns instead of exact zeros. 
