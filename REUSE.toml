@@ -29,3 +29,22 @@ SPDX-License-Identifier = "CC-BY-4.0"
 path = ["docs/.gitignore", "docs/Project.toml", "examples/Project.toml", "test/Project.toml", "CITATION.cff"]
 SPDX-FileCopyrightText = "2025 Uwe Fechner"
 SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    ".JuliaFormatter.toml",
+    ".copier-answers.yml",
+    ".editorconfig",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/workflows/Docs.yml",
+    ".github/workflows/ReusableTest.yml",
+    ".github/workflows/Test.yml",
+    ".github/workflows/TestOnPRs.yml",
+    ".lychee.toml",
+    ".markdownlint.json",
+    ".yamlfmt.yml",
+    ".yamllint.yml",
+    "codecov.yml",
+]
+SPDX-FileCopyrightText = "2024 BestieTemplate contributors"
+SPDX-License-Identifier = "MIT"

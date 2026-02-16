@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier
+Authors: Uwe Fechner <fechner@aenarete.eu> and contributors
+JuliaMinVersion: '1.10'
+License: MIT
+LicenseCopyrightHolders: Uwe Fechner
+PackageName: KiteModels
+PackageOwner: OpenSourceAWE
+PackageUUID: b94af626-7959-4878-9336-2adc27959007
+StrategyConfirmIncluded: false
+StrategyLevel: 1
+StrategyReviewExcluded: false
+_src_path: /home/ufechner/.julia/packages/BestieTemplate/fOzc4

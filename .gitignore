@@ -1,3 +1,16 @@
+# BestieTemplate defaults
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+*.rej
+.DS_Store
+.benchmarkci
+benchmark/*.json
+docs/build/
+env
+node_modules
+
+# Project-specific
 LocalPreferences.toml
 *.arrow
 *.bin
