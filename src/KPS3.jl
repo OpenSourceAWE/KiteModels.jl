@@ -511,7 +511,8 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     end
 
     if prn println("\nStarted function test_nlsolve...") end
-    results = nlsolve(test_initial_condition!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
+    jac! = make_jac(test_initial_condition!, length(X))
+    results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
     if prn println("\nresult: $results") end
     results.zero
  end

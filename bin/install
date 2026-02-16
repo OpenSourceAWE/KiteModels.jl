@@ -1,0 +1,76 @@
+#!/bin/bash -eu
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+if [[ $(basename $(pwd)) == "bin" ]]; then
+    cd ..
+fi
+
+# Detect Julia version
+julia_version=$(julia --version | awk '{print($3)}')
+julia_major=${julia_version:0:3}
+if [[ $julia_major == "1.1" ]]; then
+    julia_major=${julia_version:0:4} 
+fi
+
+echo "Detected Julia version: $julia_version (major: $julia_major)"
+
+# Only accept Julia 1.11 and 1.12
+if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
+    echo "Error: Julia $julia_major is not supported. Only Julia 1.11 and 1.12 are supported."
+    echo "You can install Julia 1.11 with the following commands:"
+    echo "juliaup add 1.11"
+    echo "juliaup default 1.11"
+    exit 1
+fi
+
+# Copy the appropriate default manifest
+if [[ $julia_major == "1.11" ]]; then
+    if [ -f "Manifest-v1.11.toml.default" ]; then
+        cp Manifest-v1.11.toml.default Manifest-v1.11.toml
+        echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
+    else
+        echo "Warning: Manifest-v1.11.toml.default not found"
+        exit 1
+    fi
+else
+    # Default to 1.12 for newer versions
+    if [ -f "Manifest-v1.12.toml.default" ]; then
+        cp Manifest-v1.12.toml.default Manifest-v1.12.toml
+        echo "Copied Manifest-v1.12.toml.default to Manifest-v1.12.toml"
+    else
+        echo "Warning: Manifest-v1.12.toml.default not found"
+        exit 1
+    fi
+fi
+
+# Instantiate the project
+echo "Instantiating project..."
+julia --project -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+
+# Instantiate the examples and test project for Julia 1.11 only
+if [[ $julia_major == "1.11" ]]; then
+    echo "Instantiating examples and test project for Julia $julia_major..."
+    julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=test -e 'using Pkg; Pkg.instantiate()'
+    
+    # Rename the manifest file to version-specific name
+    if [ -f "examples/Manifest.toml" ]; then
+        mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
+        echo "Renamed examples/Manifest.toml to examples/Manifest-v${julia_major}.toml"
+    fi
+    if [ -f "test/Manifest.toml" ]; then
+        mv test/Manifest.toml test/Manifest-v${julia_major}.toml
+        echo "Renamed test/Manifest.toml to test/Manifest-v${julia_major}.toml"
+    fi
+else
+    echo "Skipping examples project instantiation for Julia $julia_major"
+fi
+
+echo "Installation complete!"
+echo
+echo "You can now launch Julia by typing"
+echo "cd .."
+echo "./bin/run_julia"
+echo "and then get the menu with the examples by typing:"
+echo "menu()"

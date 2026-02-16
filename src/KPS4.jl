@@ -686,7 +686,8 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0
     end
     if prn println("\nStarted function test_nlsolve...") end
     X00 = zeros(SimFloat, 2*(s.set.segments+KITE_PARTICLES-1)+2)
-    results = nlsolve(test_initial_condition!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
+    jac! = make_jac(test_initial_condition!, length(X00))
+    results = nlsolve(test_initial_condition!, jac!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
     if prn println("\nresult: $results") end
     y0, yd0 = init(s, results.zero; upwind_dir)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
