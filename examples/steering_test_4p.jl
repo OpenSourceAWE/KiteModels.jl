@@ -3,7 +3,7 @@
 
 # apply different rel_steering values and plot turn rate
 using Printf
-using KiteModels, KitePodModels, KiteUtils, Pkg
+using KiteModels, KitePodModels, Pkg
 using KiteUtils: Settings, load_settings
 
 set::Settings = if haskey(ENV, "USE_V9")

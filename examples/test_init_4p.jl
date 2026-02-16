@@ -7,7 +7,7 @@ using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
+using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
