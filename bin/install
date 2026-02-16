@@ -47,6 +47,8 @@ fi
 # Instantiate the project
 echo "Instantiating project..."
 julia --project -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+echo "Precompiling main project..."
+julia --project -e 'using Pkg; Pkg.precompile()'
 
 # Instantiate the examples and test project for Julia 1.11 only
 if [[ $julia_major == "1.11" ]]; then
@@ -54,7 +56,11 @@ if [[ $julia_major == "1.11" ]]; then
     # Remove stale manifest files so the resolver starts fresh
     rm -f examples/Manifest*.toml test/Manifest*.toml
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    echo "Precompiling examples project..."
+    julia --project=examples -e 'using Pkg; Pkg.precompile()'
     julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    echo "Precompiling test project..."
+    julia --project=test -e 'using Pkg; Pkg.precompile()'
     
     # Rename the manifest file to version-specific name
     if [ -f "examples/Manifest.toml" ]; then
