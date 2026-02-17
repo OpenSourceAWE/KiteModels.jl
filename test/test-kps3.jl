@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using Test, BenchmarkTools, StaticArrays, LinearAlgebra, KiteUtils
-
+using BenchmarkTools, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
 const SEGMENTS = se().segments
