@@ -25,21 +25,21 @@ end::Bool
 cd("..")
 KiteUtils.set_data_path("") 
 @testset verbose = true "Testing KiteModels..." begin
-    include("test_orientation.jl")
+    include("test-orientation.jl")
     println("--> 1")
-    include("test_kps3.jl")
+    include("test-kps3.jl")
     println("--> 2")
-    include("test_kps4.jl")
+    include("test-kps4.jl")
     println("--> 3")
     if build_is_production_build
         include("bench3.jl")
         include("bench4.jl")
     end
-    include("test_helpers.jl")
+    include("test-helpers.jl")
     println("--> 4")
-    include("test_inertia_calculation.jl")
+    include("test-inertia-calculation.jl")
     println("--> 5")
-    include("test_interface.jl")
+    include("test-interface.jl")
     println("--> 6")
     include("aqua.jl")
 end
