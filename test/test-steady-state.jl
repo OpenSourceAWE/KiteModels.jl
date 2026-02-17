@@ -21,8 +21,7 @@ clear!(kps4)
 KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
 kps4.stiffness_factor = 0.5
 
-@time KiteModels.find_steady_state!(kps4, prn=true)
+KiteModels.find_steady_state!(kps4, prn=false)
 
-println("\nlift, drag    [N]  : $(KiteModels.lift_drag(kps4))")
 # println("\nSpring forces:")
 # spring_forces(kps4)

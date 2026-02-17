@@ -46,5 +46,4 @@ set_defaults()
 end
 end
 
-println("alpha_cl: $(se().alpha_cl), cl_list: $(se().cl_list)")
 nothing
