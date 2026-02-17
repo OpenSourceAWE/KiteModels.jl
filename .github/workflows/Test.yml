@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - bestie
     tags: ["*"]
   workflow_dispatch:
 
@@ -32,5 +33,5 @@ jobs:
           - windows-latest
         arch:
           - x64
-        build_is_production_build: [true]
+        build_is_production_build: true
         allow_failure: [false]
