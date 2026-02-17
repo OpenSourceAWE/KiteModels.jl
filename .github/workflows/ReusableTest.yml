@@ -25,8 +25,8 @@ on:
         default: false
       build_is_production_build:
         required: false
-        type: boolean
-        default: true
+        type: string
+        default: "true"
     secrets:
       codecov_token:
         required: true
