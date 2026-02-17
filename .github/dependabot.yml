@@ -10,8 +10,7 @@ updates:
       - "dependencies"
       - "github-actions"
   - package-ecosystem: "julia"
-    directories:
-      - "/"
+    directory: "/"
     schedule:
       interval: "weekly"
     ignore:
