@@ -23,6 +23,10 @@ on:
         required: false
         type: boolean
         default: false
+      build_is_production_build:
+        required: false
+        type: string
+        default: "true"
     secrets:
       codecov_token:
         required: true
@@ -43,6 +47,8 @@ jobs:
         uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        env:
+          BUILD_IS_PRODUCTION_BUILD: ${{ inputs.build_is_production_build }}
       - uses: julia-actions/julia-processcoverage@v1
         if: ${{ inputs.run_codecov }}
       - uses: codecov/codecov-action@v4

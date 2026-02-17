@@ -16,18 +16,21 @@ jobs:
       arch: ${{ matrix.arch }}
       allow_failure: ${{ matrix.allow_failure }}
       run_codecov: ${{ matrix.version == '1' && matrix.os == 'ubuntu-latest' }}
+      build_is_production_build: ${{ matrix.build_is_production_build }}
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
         version:
-          - "lts"
-          - "1"
+          - "1.10"
+          - "1.11"
+          - "1.12"
         os:
           - ubuntu-latest
-          
-          
+          - macOS-latest
+          - windows-latest
         arch:
           - x64
+        build_is_production_build: [true]
         allow_failure: [false]
