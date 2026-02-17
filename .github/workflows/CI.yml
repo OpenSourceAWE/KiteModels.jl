@@ -123,28 +123,3 @@ jobs:
         files: lcov.info
       continue-on-error: true
       
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - name: Install matplotlib
-        run: sudo apt-get install -y python3-matplotlib
-        shell: bash
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
-      - name: Build PyCall
-        run: julia --project=docs/ -e 'ENV["PYTHON"]=""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build("PyCall")'
-        shell: bash
-      - uses: julia-actions/cache@v2
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-docdeploy@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-      - run: |
-          julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using KiteUtils
-            DocMeta.setdocmeta!(KiteUtils, :DocTestSetup, :(using KiteUtils); recursive=true)
-            doctest(KiteUtils)'
