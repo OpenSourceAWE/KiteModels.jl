@@ -33,7 +33,7 @@ end
 
 @testset "KPS4 init! interface" begin
     kps4.set.upwind_dir = rad2deg(-pi/2)
-    integ = init!(kps4; stiffness_factor=0.5, delta=0.0001, prn=false)
+    integ = init!(kps4; stiffness_factor=0.5, delta=0.005, prn=false)
     @test integ isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
     @test kps4.integrator isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
 end

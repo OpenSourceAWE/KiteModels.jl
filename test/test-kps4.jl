@@ -471,6 +471,8 @@ end
 end
 
 @testset "test_find_steady_state" begin
+    global kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    kps4.set.kcu_diameter = 0.0
     init_392()
     clear!(kps4)
     KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
@@ -517,13 +519,18 @@ function simulate(integrator, steps)
 end
 
 @testset "test_simulate        " begin
+    global kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    kps4.set.kcu_diameter = 0.0
+    init_150()
+    kps4.set.elevation = 60.0
+    kps4.set.alpha_zero = 0.0
     STEPS = 500
     kps4.set.depower = 23.6
     kps4.set.solver = "IDA"
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     # struct_diff(kps4.set, se())
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.5, prn=false)
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.5, delta=0.001, prn=false)
     # println("\nStarting simulation...")
     simulate(integrator, 100)
     av_steps = simulate(integrator, STEPS-100)
@@ -551,7 +558,8 @@ end
 end
 
 @testset "Raptures" begin
-    kps4_ = KPS4(KCU(set))
+    kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    kps4_.set.kcu_diameter = 0.0
     integrator = KiteModels.init!(kps4_; stiffness_factor=0.035, prn=false)
     kps4_.set.version = 2
     kps4_.stiffness_factor = 3
