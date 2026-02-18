@@ -647,7 +647,7 @@ end
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 """
-function find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0.035, upwind_dir=-pi/2)
+function find_steady_state!(s::KPS4; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir=-pi/2)
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
