@@ -36,7 +36,7 @@ end
         KiteModels.set_depower_steering!(kps4_local, kps4_local.set.depower_offset/100.0, 0.0)
         height = sin(deg2rad(kps4_local.set.elevation)) * kps4_local.set.l_tether
         kps4_local.v_wind .= kps4_local.v_wind_gnd * calc_wind_factor(kps4_local.am, height)
-        res1, res2 = find_steady_state!(kps4_local; delta=0.002, stiffness_factor=0.035, prn=false) 
+        res1, res2 = find_steady_state!(kps4_local; delta=0.001, stiffness_factor=0.035, prn=false) 
         @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
         pre_tension = KiteModels.calc_pre_tension(kps4_local)
         @test pre_tension > 1.0001
