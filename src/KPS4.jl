@@ -693,6 +693,9 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.002, stiffness_factor=
     jac! = make_jac(test_initial_condition!, length(X00))
     results = nlsolve(test_initial_condition!, jac!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
     if prn println("\nresult: $results") end
+    if !converged(results)
+        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+    end
     y0, yd0 = init(s, results.zero; upwind_dir)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
     residual!(res, yd0, y0, s, 0.0)

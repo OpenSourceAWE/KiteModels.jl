@@ -514,6 +514,9 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     jac! = make_jac(test_initial_condition!, length(X))
     results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
     if prn println("\nresult: $results") end
+    if !converged(results)
+        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+    end
     results.zero
  end
 
