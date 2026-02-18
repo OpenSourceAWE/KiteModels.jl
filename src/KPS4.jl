@@ -659,8 +659,12 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.002, stiffness_factor=
         y0, yd0 = init(s, x1; delta)
         try
             residual!(res, yd0, y0, s, 0.0)
-        catch e
-            println("Warning in test_initial_condition!")
+        catch _
+            @warn "Warning in test_initial_condition!"
+            # Fill F with large values so the solver treats this point as infeasible
+            F .= 1.0e6
+            iter += 1
+            return nothing
         end
         for i in 1:s.set.segments+KITE_PARTICLES-1
             if i != s.set.segments+KITE_PARTICLES-1
