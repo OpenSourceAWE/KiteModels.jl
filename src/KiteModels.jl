@@ -522,7 +522,7 @@ function calc_pre_tension(s::AKM)
 end
 
 """
-    init!(s::AKM; stiffness_factor=0.5, delta=0.01,
+    init!(s::AKM; stiffness_factor=0.5, delta=0.005,
                       prn=false) -> OrdinaryDiffEqCore.ODEIntegrator
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
