@@ -361,14 +361,14 @@ end
 The number of the point masses of the model N = S/6, the state of each point 
 is represented by two 3 element vectors.
 """
-function residual!(res, yd, y::Vector{SimFloat}, s::KPS3)
+function residual!(res, yd, y::Vector{SimFloat}, s::KPS3, time=0.0)
     S = length(y)
     y_ =  MVector{S, SimFloat}(y)
     yd_ =  MVector{S, SimFloat}(yd)
     residual!(res, yd_, y_, s)
 end
 
-function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3) where S
+function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
     T = S-2 # T: three times the number of particles excluding the origin
     segments = div(T,6)
     # unpack the vectors y and yd
