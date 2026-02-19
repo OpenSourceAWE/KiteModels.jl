@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### Unreleased
+### KiteModels v.11.0 2026-02-19
 #### Changed
 - remove SymbolicAWEModels
 - fix warnings and spelling errors
@@ -10,8 +10,10 @@ SPDX-License-Identifier: MIT
 - test-steady-state-kps4.jl is now a separate test file
 - all test files can be executed separately
 - test files have been renamed, now all start with `test-`
+- use workspaces for the `test`, `examples`, and `docs` folder
 #### Added
 - configuration files from `BestieTemplate.jl`
+- installer script `bin/install`
 
 ### KiteModels v0.10.0 2026-02-06
 #### Changed
