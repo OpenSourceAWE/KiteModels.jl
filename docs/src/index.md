@@ -102,7 +102,7 @@ Dyneema or similar high-strength materials for the tether the resulting system i
 - the `heading` angle, the direction the nose of the kite is pointing to is positive in clockwise direction when seen from above.
 - the `steering` input, dimensionless and in the range of -1.0 .. 1.0. A positive steering input causes a positive turn rate (derivative of the heading).
 
-A definition of the reference frames can be found [here](https://ufechner7.github.io/KiteUtils.jl/dev/reference_frames/) .
+A definition of the reference frames can be found [here](https://OpenSourceAWE.github.io/KiteUtils.jl/dev/reference_frames/) .
 
 ## Further reading
 The one point and four point kite models are described in detail in [Dynamic Model of a Pumping Kite Power System](http://arxiv.org/abs/1406.6218).
