@@ -18,10 +18,9 @@ using Dierckx, Interpolations, StaticArrays, LinearAlgebra, Statistics, Paramete
       DocStringExtensions, OrdinaryDiffEqCore, OrdinaryDiffEqBDF, OrdinaryDiffEqNonlinearSolve,
       NonlinearSolve, Suppressor
 import Sundials
-using Reexport, Pkg
-using KiteUtils
+using Pkg, Reexport
 import KiteUtils: init!, next_step!, update_sys_state!
-import KiteUtils: calc_elevation, calc_heading, calc_course, SysState
+import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
