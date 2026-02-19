@@ -27,13 +27,13 @@ const SPRINGS_INPUT = [0.    1.  150.
 
 # KCU = p7, A = p8, B = p9, C = p10, D = p11
 
-# struct, defining the phyical parameters of one spring
+# struct, defining the physical parameters of one spring
 @with_kw struct Spring{I, S}
     p1::I = 1         # number of the first point
     p2::I = 2         # number of the second point
     length::S = 1.0   # current unstressed spring length
     axial_stiffness::S = 1.0 # spring constant [N/m]
-    axial_damping::S  = 0.1 # axial_damping coefficent [Ns/m]
+    axial_damping::S  = 0.1 # axial_damping coefficient [Ns/m]
 end
 
 const SP = Spring{Int16, SimFloat}
@@ -150,7 +150,7 @@ $(TYPEDFIELDS)
     steering::S =          0.0
     "steering after the kcu, before applying offset and depower sensitivity, -1.0 .. 1.0"
     kcu_steering::S =      0.0
-    "multiplier for the stiffniss of tether and bridle"
+    "multiplier for the stiffness of tether and bridle"
     stiffness_factor::S =  1.0
     "initial masses of the point masses"
     initial_masses::MVector{P, S} = ones(P)
@@ -223,10 +223,10 @@ function clear!(s::KPS4)
 end
 
 function KPS4(kcu::KCU)
-    if kcu.set.winch_model == "AsyncMachine"
-        wm = AsyncMachine(kcu.set)
+    wm = if kcu.set.winch_model == "AsyncMachine"
+        AsyncMachine(kcu.set)
     elseif kcu.set.winch_model == "TorqueControlledMachine"
-        wm = TorqueControlledMachine(kcu.set)
+        TorqueControlledMachine(kcu.set)
     end
     # wm.last_set_speed = kcu.set.v_reel_out
     s = KPS4{SimFloat, KVec3, kcu.set.segments+KITE_PARTICLES+1, kcu.set.segments+KITE_SPRINGS, SP}(set=kcu.set, 
@@ -465,7 +465,7 @@ function residual!(res, yd, y::Vector{SimFloat}, s::KPS4, time)
     yd_ =  MVector{S, SimFloat}(yd)
     residual!(res, yd_, y_, s, time)
 end
-function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, time) where S
+function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, _) where S
     T = S-2 # T: three times the number of particles excluding the origin
     segments = div(T,6) - KITE_PARTICLES
     
@@ -586,8 +586,8 @@ function cl_cd(s::KPS4)
         drag_corr = DRAG_CORR
     end
     CL2, CD2 = s.calc_cl(s.alpha_2), drag_corr * s.calc_cd(s.alpha_2)
-    CL3, CD3 = s.calc_cl(s.alpha_3), drag_corr * s.calc_cd(s.alpha_3)
-    CL4, CD4 = s.calc_cl(s.alpha_4), drag_corr * s.calc_cd(s.alpha_4)
+    _, CD3   = s.calc_cl(s.alpha_3), drag_corr * s.calc_cd(s.alpha_3)
+    _, CD4   = s.calc_cl(s.alpha_4), drag_corr * s.calc_cd(s.alpha_4)
     if s.set.version == 3
         return CL2, CD2
     else
