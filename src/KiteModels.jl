@@ -27,7 +27,6 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 using Rotations
 import Base.zero
 import OrdinaryDiffEqCore.init
-import OrdinaryDiffEqCore.step!
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
 export calc_set_cl_cd!, copy_bin, copy_examples, update_sys_state!                     # helper functions
