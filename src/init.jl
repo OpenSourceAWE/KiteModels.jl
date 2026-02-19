@@ -9,9 +9,13 @@ const PRE_STRESS  = 0.9998   # Multiplier for the initial spring lengths.
 
 Create an explicit Jacobian function using central finite differences.
 
-Works around NLSolversBase >= 7.10 producing subnormal Jacobian entries via
-DifferentiationInterface, which cause NaN in NLsolve autoscale (subnormal
-column norms squared underflow to zero).
+Returns a two-argument `jac!(J, x)` closure. Callers wrap it for
+NonlinearSolve's three-argument `jac!(J, x, p)` convention.
+
+The custom Jacobian is needed because the model's `MVector{3, Float64}`
+internals cannot hold `ForwardDiff.Dual` numbers, and NonlinearSolve's
+built-in `AutoFiniteDiff` uses different step sizing without subnormal
+flushing, which causes convergence failures.
 """
 function make_jac(f!, n_vars)
     _F1 = zeros(SimFloat, n_vars)

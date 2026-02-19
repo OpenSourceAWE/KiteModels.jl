@@ -9,7 +9,7 @@ if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
 end
 @info "Loading packages ..."
 using AtmosphericModels, Colors, ControlSystemsBase, DSP, Dierckx, DiscretePIDs,
-    DocStringExtensions, JLD2, KitePodModels, KiteUtils, LinearAlgebra, NLsolve,
+    DocStringExtensions, JLD2, KitePodModels, KiteUtils, LinearAlgebra,
     NonlinearSolve, OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve,
     Parameters, REPL, StaticArrays, StatsBase, Sundials, WinchModels
 using BenchmarkTools, Documenter, PackageCompiler
@@ -18,7 +18,7 @@ using BenchmarkTools, Documenter, PackageCompiler
 push!(LOAD_PATH,joinpath(pwd(),"src"))
 
 PackageCompiler.create_sysimage(
-    [:Dierckx, :StaticArrays, :Parameters, :NLsolve, :DocStringExtensions, :Sundials, :KiteUtils, 
+    [:Dierckx, :StaticArrays, :Parameters, :DocStringExtensions, :Sundials, :KiteUtils,
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
      :OrdinaryDiffEqNonlinearSolve, :StatsBase, :PackageCompiler, :BenchmarkTools, :Documenter,
      :JLD2, :Colors, :REPL, :NonlinearSolve, :DSP, :DiscretePIDs, 
