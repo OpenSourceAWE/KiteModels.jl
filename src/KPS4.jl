@@ -651,7 +651,6 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir=-pi/2)
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
-    iter = 0
 
     # helper function for the steady state finder
     function test_initial_condition!(F, x::Vector)
@@ -663,7 +662,6 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
             @warn "Warning in test_initial_condition!"
             # Fill F with large values so the solver treats this point as infeasible
             F .= 1.0e6
-            iter += 1
             return nothing
         end
         for i in 1:s.set.segments+KITE_PARTICLES-1
@@ -685,7 +683,6 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
         x = res[1 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
         y = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
         F[end]                                 = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)] 
-        iter += 1
         return nothing 
     end
     if prn println("\nStarted function test_nlsolve...") end
@@ -696,8 +693,8 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
     end
-    y0, yd0 = init(s, results.zero; upwind_dir)
+    y00, yd00 = init(s, results.zero; upwind_dir)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    residual!(res, yd0, y0, s, 0.0)
-    y0, yd0
+    residual!(res, yd00, y00, s, 0.0)
+    y00, yd00
 end
