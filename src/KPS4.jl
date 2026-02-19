@@ -681,7 +681,6 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
         # copy the acceleration of point C in y direction
         i = s.set.segments+3 
         x = res[1 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
-        y = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
         F[end]                                 = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)] 
         return nothing 
     end

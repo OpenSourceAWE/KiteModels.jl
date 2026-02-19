@@ -29,15 +29,15 @@ import Base.zero
 import OrdinaryDiffEqCore.init
 import OrdinaryDiffEqCore.step!
 
-export KPS3, KPS4, KVec3, SimFloat, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
-export calc_set_cl_cd!, copy_examples, copy_bin, update_sys_state!                     # helper functions
+export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
+export calc_set_cl_cd!, copy_bin, copy_examples, update_sys_state!                     # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
-export init!, reinit!, next_step!, init_pos_vel                                        # high level workers
-export pos_kite, calc_height, calc_elevation, calc_azimuth, calc_heading, calc_course, calc_orient_quat # getters
-export calc_azimuth_north, calc_azimuth_east
-export winch_force, lift_drag, cl_cd, lift_over_drag, unstretched_length, tether_length, v_wind_kite     # getters
+export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
+export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
+export calc_azimuth_east, calc_azimuth_north
+export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
-export kite_ref_frame, orient_euler, spring_forces, upwind_dir, copy_model_settings, menu2
+export copy_model_settings, kite_ref_frame, menu2, orient_euler, spring_forces, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
