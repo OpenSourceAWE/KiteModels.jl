@@ -15,6 +15,24 @@ fi
 
 echo "Detected Julia version: $julia_version (major: $julia_major)"
 
+# Detect current git branch
+if [ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1 ; then
+    branch=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/g')
+else
+    branch=""
+fi
+
+# Delete any existing custom system image for this Julia version and branch
+if [[ $branch != "" ]]; then
+    SOFILE="bin/kps-image-${julia_major}-${branch}.so"
+else
+    SOFILE="bin/kps-image-${julia_major}.so"
+fi
+if test -f "$SOFILE"; then
+    echo "Deleting old system image: $SOFILE"
+    rm -f "$SOFILE"
+fi
+
 # Only accept Julia 1.11 and 1.12
 if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
     echo "Error: Julia $julia_major is not supported. Only Julia 1.11 and 1.12 are supported."
