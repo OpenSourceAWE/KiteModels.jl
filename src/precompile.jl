@@ -50,10 +50,8 @@ end
     @compile_workload begin
         # all calls in this block will be precompiled, regardless of whether(
         # they belong to your package or not (on Julia 1.8 and higher)
-        Logging.with_logger(Logging.NullLogger()) do
-            integrator = KiteModels.init!(kps3_; stiffness_factor=0.035, prn=false)
-            integrator = KiteModels.init!(kps4_; delta=0.005, stiffness_factor=0.05, prn=false)
-        end
+        integrator = KiteModels.init!(kps3_; stiffness_factor=0.035, prn=false)
+        integrator = KiteModels.init!(kps4_; delta=0.005, stiffness_factor=0.05, prn=false)
         nothing
     end
 end
