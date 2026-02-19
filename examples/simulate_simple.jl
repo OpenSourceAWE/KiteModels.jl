@@ -64,7 +64,7 @@ function simulate(integrator, steps, plot=false)
     iter / steps
 end
 kps4.set.upwind_dir = rad2deg(UPWIND_DIR)
-integrator = KiteModels.init!(kps4;  delta=0.0, stiffness_factor=1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 
 av_steps = if PLOT
     local av_steps_local = simulate(integrator, STEPS, true)
