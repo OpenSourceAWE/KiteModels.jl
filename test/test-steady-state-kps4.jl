@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("test")
 end
 using LinearAlgebra, StaticArrays, Test
