@@ -1,0 +1,76 @@
+name: Reusable test
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+        default: "1"
+      os:
+        required: false
+        type: string
+        default: ubuntu-latest
+      arch:
+        required: false
+        type: string
+        default: x64
+      allow_failure:
+        required: false
+        type: boolean
+        default: false
+      run_codecov:
+        required: false
+        type: boolean
+        default: false
+      build_is_production_build:
+        required: false
+        type: string
+        default: "true"
+    secrets:
+      codecov_token:
+        required: true
+
+jobs:
+  test:
+    name: Julia ${{ inputs.version }} - ${{ inputs.os }} - ${{ inputs.arch }} - ${{ github.event_name }}
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 80
+    continue-on-error: ${{ inputs.allow_failure }}
+
+    steps:
+      - name: Install matplotlib
+        run: if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get install -y python3-matplotlib; fi
+        shell: bash
+
+      - uses: actions/checkout@v6
+
+      - name: Use default manifest
+        run: |
+          if [ -f Manifest.toml.default ]; then cp Manifest.toml.default Manifest.toml; fi
+        shell: bash
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ inputs.version }}
+          arch: ${{ inputs.arch }}
+      - name: Use Julia cache
+        uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+
+      - name: Build PyCall
+        run: julia --project -e 'ENV["PYTHON"]=""; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
+        shell: bash
+
+      - uses: julia-actions/julia-runtest@v1
+        env:
+          BUILD_IS_PRODUCTION_BUILD: ${{ inputs.build_is_production_build }}
+        with:
+          coverage: ${{ inputs.run_codecov }}
+      - uses: julia-actions/julia-processcoverage@v1
+        if: ${{ inputs.run_codecov }}
+      - uses: codecov/codecov-action@v5
+        if: ${{ inputs.run_codecov }}
+        with:
+          files: lcov.info
+          token: ${{ secrets.codecov_token }}

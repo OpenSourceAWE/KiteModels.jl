@@ -41,7 +41,8 @@ end
 
     set = load_settings("system.yaml")
     set.kcu_diameter = 0.0
-    kps4_::KPS4 = KPS4(KCU(set))
+    set4 = deepcopy(set)
+    kps4_::KPS4 = KPS4(KCU(set4))
     kps3_::KPS3 = KPS3(KCU(set))
     ver = "$(VERSION.major).$(VERSION.minor)_"
 
@@ -49,8 +50,10 @@ end
     @compile_workload begin
         # all calls in this block will be precompiled, regardless of whether(
         # they belong to your package or not (on Julia 1.8 and higher)
-        integrator = KiteModels.init!(kps3_; stiffness_factor=0.035, prn=false)
-        integrator = KiteModels.init!(kps4_; delta=0.03, stiffness_factor=0.05, prn=false)
+        Logging.with_logger(Logging.NullLogger()) do
+            integrator = KiteModels.init!(kps3_; stiffness_factor=0.035, prn=false)
+            integrator = KiteModels.init!(kps4_; delta=0.005, stiffness_factor=0.05, prn=false)
+        end
         nothing
     end
 end

@@ -514,6 +514,9 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     jac! = make_jac(test_initial_condition!, length(X))
     results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
     if prn println("\nresult: $results") end
+    if !converged(results)
+        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+    end
     results.zero
  end
 
@@ -523,7 +526,7 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 """
-function find_steady_state!(s::KPS3; prn=false, delta = 0.0, stiffness_factor=0.035, upwind_dir=-pi/2)
+function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
     zero = zeros(SimFloat, 2*s.set.segments)
     s.stiffness_factor=stiffness_factor
     zero = find_steady_state_inner(s, zero, prn; delta)

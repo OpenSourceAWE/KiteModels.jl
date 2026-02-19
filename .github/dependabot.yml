@@ -1,3 +1,4 @@
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -8,3 +9,10 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+  - package-ecosystem: "julia"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Ignore itself so `path = ".."` in subdir/Project.toml doesn't trigger it
+      - dependency-name: "KiteModels"

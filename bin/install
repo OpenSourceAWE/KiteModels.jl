@@ -46,22 +46,44 @@ fi
 
 # Instantiate the project
 echo "Instantiating project..."
-julia --project -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+julia --project -e '
+using Pkg
+try
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.instantiate() failed, attempting fresh resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    # Remove all manifest files to force a clean resolve
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
 echo "Precompiling main project..."
 julia --project -e 'using Pkg; Pkg.precompile()'
 
-# Instantiate the examples and test project for Julia 1.11 only
+# Instantiate the examples and test projects
+# Julia 1.12+ uses workspaces and shares the main manifest, so sub-project
+# manifests are only needed for Julia 1.11.
 if [[ $julia_major == "1.11" ]]; then
     echo "Instantiating examples and test project for Julia $julia_major..."
-    # Remove stale manifest files so the resolver starts fresh
+    # Seed test and examples manifests from the main manifest so that
+    # shared dependencies use the same package versions.
+    # Pkg.resolve() would add the extra deps needed by test/examples.
     rm -f examples/Manifest*.toml test/Manifest*.toml
+    cp "Manifest-v${julia_major}.toml" "examples/Manifest-v${julia_major}.toml"
+    cp "Manifest-v${julia_major}.toml" "test/Manifest-v${julia_major}.toml"
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
     julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
-    
+
     # Rename the manifest file to version-specific name
     if [ -f "examples/Manifest.toml" ]; then
         mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
@@ -72,7 +94,11 @@ if [[ $julia_major == "1.11" ]]; then
         echo "Renamed test/Manifest.toml to test/Manifest-v${julia_major}.toml"
     fi
 else
-    echo "Skipping examples project instantiation for Julia $julia_major"
+    echo "Julia $julia_major uses workspaces; examples and test share the main manifest."
+    echo "Precompiling examples project..."
+    julia --project=examples -e 'using Pkg; Pkg.precompile()'
+    echo "Precompiling test project..."
+    julia --project=test -e 'using Pkg; Pkg.precompile()'
 fi
 
 echo "Installation complete!"
