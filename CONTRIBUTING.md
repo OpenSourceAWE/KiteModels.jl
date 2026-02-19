@@ -32,12 +32,12 @@ By contributing code to KiteModels.jl, you are agreeing to release that code und
 
 - Clone Your Fork: Clone your fork to your local machine.
 
-- Set Up the Development Environment as explained [here](https://ufechner7.github.io/KiteModels.jl/stable/advanced/)
+- Set Up the Development Environment as explained [here](https://OpenSourceAWE.github.io/KiteModels.jl/stable/advanced/)
 
 
 3. Make Your Changes
 
-- Follow Code Style: Adhere to the [style conventions](https://ufechner7.github.io/KiteModels.jl/stable/advanced/#Coding-style) used in the project.
+- Follow Code Style: Adhere to the [style conventions](https://OpenSourceAWE.github.io/KiteModels.jl/stable/advanced/#Coding-style) used in the project.
 
 - Document Your Code: Add or update docstrings and documentation as needed.
 
