@@ -216,7 +216,7 @@ function clear!(s::KPS4)
     s.ks = deg2rad(s.set.max_steering) 
     s.kcu.depower = s.set.depower/100.0
     s.kcu.set_depower = s.kcu.depower
-    roll, pitch, yaw = orient_euler(s)
+    _, pitch, _ = orient_euler(s)
     s.pitch = pitch
     s.pitch_rate = 0.0
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
