@@ -510,14 +510,21 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
         return nothing 
     end
 
-    if prn println("\nStarted function test_nlsolve...") end
-    jac! = make_jac(test_initial_condition!, length(X))
-    results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
-    if prn println("\nresult: $results") end
-    if !converged(results)
-        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+    if prn println("\nStarted NonlinearSolve...") end
+    jac_2arg! = make_jac(test_initial_condition!, length(X))
+
+    # Wrap for NonlinearSolve's 3-arg (out, u, p) convention
+    f_nl!(F, x, p) = test_initial_condition!(F, x)
+    jac_nl!(J, x, p) = jac_2arg!(J, x)
+
+    nf = NonlinearFunction(f_nl!; jac=jac_nl!)
+    prob = NonlinearProblem(nf, X)
+    sol = solve(prob, TrustRegion(); abstol=1e-6, reltol=1e-6, maxiters=1000)
+    if prn println("\nresult retcode: $(sol.retcode)") end
+    if !SciMLBase.successful_retcode(sol.retcode)
+        @warn "find_steady_state!: solver did not converge! retcode=$(sol.retcode)"
     end
-    results.zero
+    sol.u
  end
 
 """
