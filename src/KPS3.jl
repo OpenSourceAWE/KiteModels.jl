@@ -39,9 +39,9 @@ $(TYPEDFIELDS)
     integrator::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing} = nothing
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
-    "Function for calculation the lift coefficent, using a spline based on the provided value pairs."
+    "Function for calculation the lift coefficient, using a spline based on the provided value pairs."
     calc_cl::Spline1D
-    "Function for calculation the drag coefficent, using a spline based on the provided value pairs."
+    "Function for calculation the drag coefficient, using a spline based on the provided value pairs."
     calc_cd::Spline1D
     "wind vector at the height of the kite" 
     v_wind::T =           zeros(S, 3)
@@ -263,7 +263,7 @@ function pos_kite(s::KPS3)
 end
 
 # Calculate the vector res1, that depends on the velocity and the acceleration.
-# The drag force of each segment is distributed equaly on both particles.
+# The drag force of each segment is distributed equally on both particles.
 function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
     s.segment .= pos1 - pos2
     height = (pos1[3] + pos2[3]) * 0.5
@@ -361,13 +361,14 @@ end
 The number of the point masses of the model N = S/6, the state of each point 
 is represented by two 3 element vectors.
 """
-function residual!(res, yd, y::Vector{SimFloat}, s::KPS3, time)
+function residual!(res, yd, y::Vector{SimFloat}, s::KPS3)
     S = length(y)
     y_ =  MVector{S, SimFloat}(y)
     yd_ =  MVector{S, SimFloat}(yd)
-    residual!(res, yd_, y_, s, time)
+    residual!(res, yd_, y_, s)
 end
-function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, time) where S
+
+function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3) where S
     T = S-2 # T: three times the number of particles excluding the origin
     segments = div(T,6)
     # unpack the vectors y and yd
@@ -434,7 +435,7 @@ end
 # length(x) == 2*SEGMENTS
 # Returns:
 # res, a single vector consisting of the elements of y0 and yd0
-function init_inner(s::KPS3, X=zeros(2 * s.set.segments); old=false, delta=0.0)
+function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
     pos = zeros(SVector{s.set.segments+1, KVec3})
     vel = zeros(SVector{s.set.segments+1, KVec3})
     acc = zeros(SVector{s.set.segments+1, KVec3})
@@ -477,8 +478,8 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); old=false, delta=0.0)
 end
 
 # same as above, but returns a tuple of two one dimensional arrays
-function init(s::KPS3, X=zeros(2 * (s.set.segments)); old=false, delta = 0.0)
-    res1_, res2_ = init_inner(s, X; old=old, delta = delta)
+function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0)
+    res1_, res2_ = init_inner(s, X; delta = delta)
     res1, res2  = vcat(reduce(vcat, res1_), [s.l_tether, 0]), vcat(reduce(vcat, res2_),[0,0])
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
@@ -486,7 +487,7 @@ end
 """
     spring_forces(s::AKM)
 
-Return an array of the scalar spring forces of all tether segements.
+Return an array of the scalar spring forces of all tether segments.
 """
 function spring_forces(s::KPS3)
     forces = zeros(SimFloat, s.set.segments)
@@ -502,7 +503,7 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     # helper function for the steady state finder
     function test_initial_condition!(F, x::Vector)
         y0, yd0 = init(s, x, delta=delta)
-        residual!(res, yd0, y0, s, 0.0)
+        residual!(res, yd0, y0, s)
         for i in 1:s.set.segments
             F[i]                = res[1 + 3*(i-1) + 3*s.set.segments]
             F[i+s.set.segments] = res[3 + 3*(i-1) + 3*s.set.segments]

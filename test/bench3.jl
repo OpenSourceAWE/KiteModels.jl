@@ -74,7 +74,7 @@ end
     p = kps
     t = 0.0
     clear!(kps)
-    residual!(res, yd0, y0, p, t)
+    residual!(res, yd0, y0, p)
     res1 = res[1:3*SEGMENTS]
     res2 = res[3*SEGMENTS+1:end]
     @test res1 == zeros(3*(SEGMENTS))
@@ -82,11 +82,11 @@ end
     # println(res2)
 end
 
-t = @benchmark residual!(res, yd, y, p, t) setup = (res1 = zeros(SVector{SEGMENTS, KVec3}); res2 = deepcopy(res1); 
+t = @benchmark residual!(res, yd, y, p) setup = (res1 = zeros(SVector{SEGMENTS, KVec3}); res2 = deepcopy(res1); 
                                                                res = vcat(reduce(vcat, vcat(res1, res2)), zeros(2)); pos = deepcopy(res1);
                                                                pos[1] .= [1.0,2,3]; vel = deepcopy(res1); X = zeros(SimFloat, 2*kps.set.segments); 
                                                                (y0, yd0) = KiteModels.init(kps, X); yd=yd0; y=y0;
-                                                               p = kps; t = 0.0)
+                                                               p = kps)
 
 
 @test t.memory <= 240

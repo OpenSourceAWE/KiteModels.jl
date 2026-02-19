@@ -198,7 +198,7 @@ end
     p = kps
     t = 0.0
     clear!(kps)
-    residual!(res, yd0, y0, p, t)
+    residual!(res, yd0, y0, p)
     res1 = res[1:3*SEGMENTS]
     res2 = res[3*SEGMENTS+1:end]
     @test res1 == zeros(3*(SEGMENTS))
@@ -228,7 +228,7 @@ end
 function test_initial_condition(params::Vector)
     my_state = kps
     y0, yd0 = KiteModels.init(my_state, params)
-    residual!(res3, yd0, y0, kps, 0.0)
+    residual!(res3, yd0, y0, kps)
     return norm(res3) # z component of force on all particles but the first
 end
 
