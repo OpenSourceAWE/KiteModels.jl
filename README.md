@@ -12,7 +12,6 @@ SPDX-License-Identifier: MIT
 [![Coverage](https://codecov.io/gh/OpenSourceAWE/KiteModels.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenSourceAWE/KiteModels.jl)
 [![DOI](https://zenodo.org/badge/443855286.svg)](https://zenodo.org/doi/10.5281/zenodo.15836456)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
-[![BestieTemplate](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/JuliaBesties/BestieTemplate.jl/main/docs/src/assets/badge.json)](https://github.com/JuliaBesties/BestieTemplate.jl)
 
 ## Kite power system models, consisting of tether and kite
 The models have the following subcomponents, implemented in separate packages:
