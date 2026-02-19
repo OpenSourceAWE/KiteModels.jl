@@ -530,7 +530,7 @@ end
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     # struct_diff(kps4.set, se())
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.5, delta=0.001, prn=false)
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.1, delta=0.001, prn=false)
     # println("\nStarting simulation...")
     simulate(integrator, 100)
     av_steps = simulate(integrator, STEPS-100)
