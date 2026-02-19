@@ -34,8 +34,6 @@ end
         init_392(kps4_local, l)
         clear!(kps4_local)
         KiteModels.set_depower_steering!(kps4_local, kps4_local.set.depower_offset/100.0, 0.0)
-        height = sin(deg2rad(kps4_local.set.elevation)) * kps4_local.set.l_tether
-        kps4_local.v_wind .= kps4_local.v_wind_gnd * calc_wind_factor(kps4_local.am, height)
         _, res2 = find_steady_state!(kps4_local; delta=0.001, stiffness_factor=0.035, prn=false) 
         @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
         pre_tension = KiteModels.calc_pre_tension(kps4_local)
@@ -43,6 +41,10 @@ end
         @test pre_tension < 1.01
         @test unstretched_length(kps4_local) ≈  l              # initial, unstretched tether length
         @test isapprox(tether_length(kps4_local), 1.008954l, rtol=1e-2) # real, stretched tether length
+        @info "elevation: $(rad2deg(calc_elevation(kps4_local)))°"
+        @info "aoa: $(kps4_local.alpha_2)°"
+        @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
+        println()
     end
 end
 nothing
