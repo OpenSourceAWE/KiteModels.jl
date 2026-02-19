@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.12.5"
+julia_version = "1.12.4"
 manifest_format = "2.0"
-project_hash = "06c63b32cd45f824d2e2990d432f95d88790c250"
+project_hash = "228dc83e00bc2b5e2ddfb5d8ea10eb2984e60ed6"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -867,7 +867,7 @@ version = "1.12.0"
 deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
 path = "."
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.10.0"
+version = "0.11.0"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
@@ -978,9 +978,9 @@ weakdeps = ["ChainRulesCore", "SparseArrays", "Statistics"]
 
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ChainRulesCore", "ConcreteStructs", "DocStringExtensions", "EnumX", "GPUArraysCore", "InteractiveUtils", "Krylov", "Libdl", "LinearAlgebra", "MKL_jll", "Markdown", "OpenBLAS_jll", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "Setfield", "StaticArraysCore"]
-git-tree-sha1 = "7a1b73e0921e3278fce6a6cd80003c063ed937b4"
+git-tree-sha1 = "f9e19cacc616da676db6fbb74827d3979ad6c0ae"
 uuid = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
-version = "3.58.0"
+version = "3.59.1"
 
     [deps.LinearSolve.extensions]
     LinearSolveAMDGPUExt = "AMDGPU"
@@ -1661,9 +1661,9 @@ version = "0.1.12"
 
 [[deps.SciMLLogging]]
 deps = ["Logging", "LoggingExtras", "Preferences"]
-git-tree-sha1 = "a51104fa06a784c5ddf4a9937c5e0c03de0c6878"
+git-tree-sha1 = "0161be062570af4042cf6f69e3d5d0b0555b6927"
 uuid = "a6db7da4-7206-11f0-1eab-35f2a5dbe1d1"
-version = "1.9.0"
+version = "1.9.1"
 
     [deps.SciMLLogging.extensions]
     SciMLLoggingTracyExt = "Tracy"
