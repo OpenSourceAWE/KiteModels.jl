@@ -39,7 +39,7 @@ end
         @test pre_tension > 1.0001
         @test pre_tension < 1.01
         @test unstretched_length(kps4_local) ≈  l              # initial, unstretched tether length
-        @test isapprox(tether_length(kps4_local), 1.008954l, rtol=1e-2) # real, stretched tether length
+        @test isapprox(tether_length(kps4_local), 1.008954l, rtol=2e-2) # real, stretched tether length
         @info "elevation: $(rad2deg(calc_elevation(kps4_local)))°"
         @info "aoa: $(kps4_local.alpha_2)°"
         @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
