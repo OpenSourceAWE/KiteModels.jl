@@ -539,8 +539,8 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)
     upwind_dir = deg2rad(s.set.upwind_dir)
     s.stiffness_factor = stiffness_factor
     
-    try
-        y0, yd0 = KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
+    y0, yd0 =try
+        KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
     catch e
         if e isa AssertionError
             println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*

@@ -18,9 +18,7 @@ kps::KPS3 = KPS3(kcu)
 
 res1 = zeros(SVector{SEGMENTS+1, KiteModels.KVec3})
 res2 = deepcopy(res1)
-if ! @isdefined res3
-    const res3 = vcat(reduce(vcat, vcat(res1, res2)), zeros(2))
-end
+const res3 = vcat(reduce(vcat, vcat(res1, res2)), zeros(2))
 
 msg=""
 @testset verbose = true "KPS3 benchmarking....    " begin

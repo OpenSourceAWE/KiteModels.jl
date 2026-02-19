@@ -71,7 +71,7 @@ $(TYPEDFIELDS)
     unit_vector::T =      zeros(S, 3)
     "average velocity of the current tether segment, output of calc_res"
     av_vel::T =           zeros(S, 3)
-    "y-vector of the kite fixed referense frame, output of calc_aero_forces"
+    "y-vector of the kite fixed references frame, output of calc_aero_forces"
     kite_y::T =           zeros(S, 3)
     "vector representing one tether segment (p1-p2)"
     segment::T =          zeros(S, 3)
@@ -105,7 +105,7 @@ $(TYPEDFIELDS)
     param_cd::S =         1.0
     "correction term for the steering, in paper named i_(s,c), Eq. 30"
     cor_steering::S =     zero(S)
-    "azimuth angle in radian; inital value is zero"
+    "azimuth angle in radian; initial value is zero"
     psi::S =              zero(S)
     "elevation angle in radian; initial value about 70 degrees"
     beta::S =             deg2rad(se().elevation)
@@ -342,7 +342,7 @@ end
 Calculate the lift and drag coefficients of the kite, based on the current angles of attack.
 """
 function cl_cd(s::KPS3)
-    CL2, CD2 = s.calc_cl(s.alpha_2), s.calc_cd(s.alpha_2)
+    s.calc_cl(s.alpha_2), s.calc_cd(s.alpha_2)
 end
 
 """
