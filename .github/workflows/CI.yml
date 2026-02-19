@@ -18,3 +18,15 @@ jobs:
       - name: Run REUSE lint
         run: |
           docker run --rm --volume ${{ github.workspace }}:/data fsfe/reuse lint
+
+  link-checker:
+    name: Link checker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: true
+          args: --config '.lychee.toml' .
