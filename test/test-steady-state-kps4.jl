@@ -16,7 +16,6 @@ kcu = KCU(set)
 kps4 = KPS4(kcu)
 
 function init_392(kps4, l)
-    KiteModels.clear!(kps4)
     kps4.set.l_tethers[1] = l
     kps4.set.elevation = 70.0
     kps4.set.area = 10.0
@@ -24,6 +23,7 @@ function init_392(kps4, l)
     kps4.set.v_wind = 9.1
     kps4.set.mass = 6.2
     kps4.set.c_s = 0.6
+    KiteModels.clear!(kps4)
 end
 
 @testset "test_find_steady_state" begin
@@ -32,7 +32,6 @@ end
         # create a fresh instance for each test to avoid leftover state from find_steady_state!
         kps4_local = KPS4(KCU(deepcopy(set)))
         init_392(kps4_local, l)
-        clear!(kps4_local)
         KiteModels.set_depower_steering!(kps4_local, kps4_local.set.depower_offset/100.0, 0.0)
         _, res2 = find_steady_state!(kps4_local; delta=0.001, stiffness_factor=0.035, prn=false) 
         @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
