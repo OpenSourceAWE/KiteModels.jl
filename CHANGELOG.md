@@ -2,6 +2,17 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### Unreleased
+#### Changed
+- remove SymbolicAWEModels
+- fix warnings and spelling errors
+- improve find_steady_state!, print warning if the solver fails
+- test-steady-state-kps4.jl is now a separate test file
+- all test files can be executed separately
+- test files have been renamed, now all start with `test-`
+#### Added
+- configuration files from `BestieTemplate.jl`
+
 ### KiteModels v0.10.0 2026-02-06
 #### Changed
 - Support Julia 1.12
