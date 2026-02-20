@@ -1,5 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+using Pkg
+if ! ("StatsBase" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
+
 using Printf
 using KiteModels, LinearAlgebra, StatsBase
 using KiteUtils: Settings, load_settings
@@ -93,7 +98,7 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     set.elevation = 67.0
     kcu::KCU = KCU(set)
     kps4::KPS4 = KPS4(kcu)
-    integrator = KiteModels.init!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.04, prn=STATISTIC)
     set_depower_steering(kps4.kcu, depower, 0.0)
     simulate(kps4, integrator, logger, STEPS, f_ex)
     save_log(logger, "tmp")
