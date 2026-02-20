@@ -9,9 +9,6 @@ using LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
-set = deepcopy(load_settings("system.yaml"))
-kcu = KCU(set)
-kps4 = KPS4(kcu)
 
 function init_150(kps4)
     kps4.set.l_tethers[1] = 150.0
@@ -27,7 +24,7 @@ function init_150(kps4)
     KiteModels.clear!(kps4)
 end
 
-function simulate(integrator, steps)
+function simulate(kps4, integrator, steps)
     iter = 0
     for i in 1:steps
         next_step!(kps4, integrator; set_speed=0)
@@ -37,7 +34,8 @@ function simulate(integrator, steps)
 end
 
 @testset "test_simulate        " begin
-    global kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    local kps4
+    kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4.set.kcu_diameter = 0.0
     init_150(kps4)  
     kps4.set.elevation = 60.0
@@ -48,8 +46,8 @@ end
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     integrator = KiteModels.init!(kps4; stiffness_factor=0.1, delta=0.001, prn=false)
-    simulate(integrator, 100)
-    av_steps = simulate(integrator, STEPS-100)
+    simulate(kps4, integrator, 100)
+    av_steps = simulate(kps4, integrator, STEPS-100)
     if Sys.isapple()
         result = isapprox(av_steps, 300, rtol=0.6)
         if !result
