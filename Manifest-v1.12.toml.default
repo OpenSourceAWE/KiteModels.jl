@@ -2,7 +2,7 @@
 
 julia_version = "1.12.4"
 manifest_format = "2.0"
-project_hash = "9e653ca30fa49f554085f4784f73db05ac07fd41"
+project_hash = "6c3f27a95621d409ecf92c896c4a1b33e5ae41dd"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -173,9 +173,9 @@ version = "0.1.6"
 
 [[deps.BracketingNonlinearSolve]]
 deps = ["CommonSolve", "ConcreteStructs", "NonlinearSolveBase", "PrecompileTools", "Reexport", "SciMLBase"]
-git-tree-sha1 = "66e378e6d89cb18ed1e810d7814df90e6887a743"
+git-tree-sha1 = "fad1448f07155b299bfb925ebf22f5d553bdfb6e"
 uuid = "70df07ce-3d50-431d-a3e7-ca6ddb60ac1e"
-version = "1.9.1"
+version = "1.10.0"
 weakdeps = ["ChainRulesCore", "ForwardDiff"]
 
     [deps.BracketingNonlinearSolve.extensions]
@@ -1728,9 +1728,9 @@ version = "1.11.0"
 
 [[deps.SimpleNonlinearSolve]]
 deps = ["ADTypes", "ArrayInterface", "BracketingNonlinearSolve", "CommonSolve", "ConcreteStructs", "DifferentiationInterface", "FastClosures", "FiniteDiff", "ForwardDiff", "LineSearch", "LinearAlgebra", "MaybeInplace", "NonlinearSolveBase", "PrecompileTools", "Reexport", "SciMLBase", "Setfield", "StaticArraysCore"]
-git-tree-sha1 = "315da09948861edbc6d18e066c08903487bb580d"
+git-tree-sha1 = "744c3f0fb186ad28376199c1e72ca39d0c614b5d"
 uuid = "727e6d20-b764-4bd8-a329-72de5adea6c7"
-version = "2.10.0"
+version = "2.11.0"
 
     [deps.SimpleNonlinearSolve.extensions]
     SimpleNonlinearSolveChainRulesCoreExt = "ChainRulesCore"
