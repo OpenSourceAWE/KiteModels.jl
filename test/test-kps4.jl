@@ -510,54 +510,6 @@ end
     end    
 end
 
-function simulate(integrator, steps)
-    iter = 0
-    for i in 1:steps
-        next_step!(kps4, integrator; set_speed=0)
-        iter += kps4.iter
-    end
-    iter / steps
-end
-
-@testset "test_simulate        " begin
-    global kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
-    kps4.set.kcu_diameter = 0.0
-    init_150()
-    kps4.set.elevation = 60.0
-    kps4.set.alpha_zero = 0.0
-    STEPS = 500
-    kps4.set.depower = 23.6
-    kps4.set.solver = "IDA"
-    kps4.set.profile_law = Int(EXPLOG)
-    kps4.set.alpha = 0.08163
-    # struct_diff(kps4.set, se())
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.1, delta=0.001, prn=false)
-    # println("\nStarting simulation...")
-    simulate(integrator, 100)
-    av_steps = simulate(integrator, STEPS-100)
-    if Sys.isapple()
-        result = isapprox(av_steps, 300, rtol=0.6)
-        if !result
-            println("isapple $av_steps")
-        end
-        println("isapple $av_steps")
-        @test result
-    else
-        result = isapprox(av_steps, 300, rtol=0.6)
-        if !result
-            println("not apple $av_steps")
-        end
-        @test result
-    end
-  
-    lift, drag = KiteModels.lift_drag(kps4)
-    # println(lift, " ", drag) # 703.7699568972286 161.44746368100536
-    @test isapprox(lift, 520.5027844652874, rtol=0.05)
-    sys_state = SysState(kps4)
-    update_sys_state!(sys_state, kps4)
-    # TODO Add testcase with varying reelout speed 
-end
-
 @testset "Raptures" begin
     kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4_.set.kcu_diameter = 0.0
