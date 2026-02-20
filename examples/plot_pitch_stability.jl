@@ -2,6 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 using Printf
+using Pkg
+if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("examples")
+end
+
 using DSP, KiteModels, LinearAlgebra, StatsBase
 using KiteUtils: Settings, load_settings
 
@@ -9,12 +14,9 @@ set = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
 else
     deepcopy(load_settings("system.yaml"))
+    @error "No valid data for the V3 kite available."
 end
 
-using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
-end
 using ControlPlots
 # plt.close("all")
 
