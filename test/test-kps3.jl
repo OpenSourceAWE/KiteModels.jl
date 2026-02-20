@@ -172,7 +172,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_calc_set_cl_cd  " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         kps.kcu.depower = 0.236
         kps.kcu.set_depower = kps.kcu.depower
         KiteModels.set_depower_steering!(kps, get_depower(kps.kcu), get_steering(kps.kcu))
@@ -184,7 +184,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_clear           " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         kps.t_0 = 10.0
         KiteModels.clear!(kps)
         @test kps.t_0 == 0.0
@@ -198,7 +198,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     # Output:
     # Residual     res = res1, res2 = pos1,  ..., vel1, ...
     @testset "test_residual!       " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         res1 = zeros(SVector{SEGMENTS,KVec3})
         res2 = deepcopy(res1)
         res = reduce(vcat, vcat(res1, res2))
@@ -220,7 +220,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_set_depower_steering" begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         depower = 0.25
         steering = 0.1
         KiteModels.set_depower_steering!(kps, depower, steering)
@@ -229,7 +229,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_init            " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
         clear!(kps)
         my_state = deepcopy(kps)
