@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.12.4"
+julia_version = "1.12.5"
 manifest_format = "2.0"
-project_hash = "6c3f27a95621d409ecf92c896c4a1b33e5ae41dd"
+project_hash = "2ef65b61916974a3f1cb233eb5f1414159e71fe0"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -371,10 +371,10 @@ uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.16.0"
 
 [[deps.DataStructures]]
-deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "4e1fe97fdaed23e9dc21d4d664bea76b65fc50a0"
+deps = ["OrderedCollections"]
+git-tree-sha1 = "e357641bb3e0638d353c4b29ea0e40ea644066a6"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.22"
+version = "0.19.3"
 
 [[deps.DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -1278,6 +1278,12 @@ weakdeps = ["Adapt"]
     [deps.OffsetArrays.extensions]
     OffsetArraysAdaptExt = "Adapt"
 
+[[deps.OpenBLAS32_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "46cce8b42186882811da4ce1f4c7208b02deb716"
+uuid = "656ef2d0-ae68-5445-9ca0-591084a874a2"
+version = "0.3.30+0"
+
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
@@ -1908,22 +1914,28 @@ version = "2.6.3"
 uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
 version = "1.11.0"
 
+[[deps.SuiteSparse32_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "libblastrampoline_jll"]
+git-tree-sha1 = "1d43a4874b879f381b8a3a978f0ebe837cfd0922"
+uuid = "ca45d3f4-326b-53b0-9957-23b75aacb3f2"
+version = "7.12.1+0"
+
 [[deps.SuiteSparse_jll]]
 deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "7.8.3+2"
 
 [[deps.Sundials]]
-deps = ["CEnum", "DataStructures", "DiffEqBase", "Libdl", "LinearAlgebra", "Logging", "PrecompileTools", "Reexport", "SciMLBase", "SparseArrays", "Sundials_jll"]
-git-tree-sha1 = "7c7a7ee705724b3c80d5451ac49779db36c6f758"
+deps = ["Accessors", "ArrayInterface", "CEnum", "DataStructures", "DiffEqBase", "Libdl", "LinearAlgebra", "LinearSolve", "Logging", "NonlinearSolveBase", "PrecompileTools", "Reexport", "SciMLBase", "SparseArrays", "Sundials_jll", "SymbolicIndexingInterface"]
+git-tree-sha1 = "2d27edb89b7c555a57b8f22bfde92d6828d11cee"
 uuid = "c3572dad-4567-51f8-b174-8c6c989267f4"
-version = "4.28.0"
+version = "5.1.0"
 
 [[deps.Sundials_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "SuiteSparse_jll", "libblastrampoline_jll"]
-git-tree-sha1 = "91db7ed92c66f81435fe880947171f1212936b14"
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenBLAS32_jll", "SuiteSparse32_jll"]
+git-tree-sha1 = "a872f379c836e9cb5734485ca0681b192a59b98b"
 uuid = "fb77eaff-e24c-56d4-86b1-d163f2edb164"
-version = "5.2.3+0"
+version = "7.5.0+0"
 
 [[deps.Suppressor]]
 deps = ["Logging"]
