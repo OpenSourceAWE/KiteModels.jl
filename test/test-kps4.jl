@@ -20,7 +20,6 @@ poss, vels = nothing, nothing
 
 function set_defaults()
     global kps4
-    KiteModels.clear!(kps4)
     kps4.set.l_tethers[1] = 150.0
     kps4.set.elevation = 60.0
     kps4.set.area = 20.0
@@ -31,10 +30,10 @@ function set_defaults()
     kps4.set.alpha = 1.0/7
     kps4.set.c_s = 0.6
     kps4.set.kcu_diameter = 0.0
+    KiteModels.clear!(kps4)
 end
 
 function init_392()
-    KiteModels.clear!(kps4)
     kps4.set.l_tethers[1] = 392.0
     kps4.set.elevation = 70.0
     kps4.set.area = 10.0
@@ -42,10 +41,10 @@ function init_392()
     kps4.set.v_wind = 9.1
     kps4.set.mass = 6.2
     kps4.set.c_s = 0.6
+    KiteModels.clear!(kps4)
 end
 
 function init_150()
-    KiteModels.clear!(kps4)
     kps4.set.l_tethers[1] = 150.0
     kps4.set.elevation = 70.0
     kps4.set.area = 10.18
@@ -56,11 +55,11 @@ function init_150()
     kps4.set.axial_damping = 473.0     # unit axial_damping
     kps4.set.axial_stiffness = 614600.0 # unit spring coefficient
     kps4.set.width = 4.9622
+    KiteModels.clear!(kps4)
 end
 
 function init3()
     kps4.set.alpha =  0.08163
-    KiteModels.clear!(kps4)
     kps4.set.l_tethers[1] = 150.0 # - kps4.set.height_k - kps4.set.h_bridle
     kps4.set.area = 10.18
     kps4.set.rel_side_area = 30.6
@@ -71,6 +70,7 @@ function init3()
     kps4.set.width = 4.9622
     kps4.set.elevation = 70.7 
     kps4.set.profile_law = Int(EXPLOG)
+    KiteModels.clear!(kps4)
     pos, vel = KiteModels.init_pos_vel(kps4)
     posd = copy(vel)
     veld = zero(vel)
@@ -530,7 +530,7 @@ end
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     # struct_diff(kps4.set, se())
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.1, delta=0.001, prn=false)
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.4, delta=0.001, prn=false)
     # println("\nStarting simulation...")
     simulate(integrator, 100)
     av_steps = simulate(integrator, STEPS-100)
