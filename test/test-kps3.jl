@@ -1,10 +1,15 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+using Pkg
+if ! ("Test" ∈ keys(Pkg.project().dependencies))
+    Pkg.activate("test")
+end
+
 using BenchmarkTools, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
-const SEGMENTS = se().segments
+const SEGMENTS = load_settings("system.yaml").segments
 
 @testset verbose = true "KPS3 tests...." begin
 
@@ -33,14 +38,14 @@ const SEGMENTS = se().segments
     end
 
     @testset "calc_rho             " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
         @test isapprox(calc_rho(kps.am, 0.0), 1.225, atol = 1e-5)
         @test isapprox(calc_rho(kps.am, 100.0), 1.210756, atol = 1e-5)
     end
 
     @testset "calc_wind_factor     " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
         @test isapprox(calc_wind_factor(kps.am, 6.0, Int(EXP)), 1.0, atol = 1e-5)
         @test isapprox(calc_wind_factor(kps.am, 10.0, Int(EXP)), 1.0757037, atol = 1e-5)
@@ -48,7 +53,7 @@ const SEGMENTS = se().segments
     end
 
     @testset "calc_cl              " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         @test isapprox(kps.calc_cl(-5.0), 0.150002588978, atol = 1e-4)
         @test isapprox(kps.calc_cl(0.0), 0.200085035326, atol = 1e-4)
         @test isapprox(kps.calc_cl(10.0), 0.574103590856, atol = 1e-4)
@@ -56,7 +61,7 @@ const SEGMENTS = se().segments
     end
 
     @testset "test_calc_drag       " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         v_segment = KVec3(1.0, 2, 3)
         unit_vector = KVec3(2.0, 3.0, 4.0)
         rho = SimFloat(calc_rho(kps.am, 10.0))
@@ -72,7 +77,7 @@ const SEGMENTS = se().segments
     end
 
     @testset "test_calc_aero_forces" begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
         kps.v_apparent .= KVec3(35.1, 52.2, 69.3)
         kps.v_wind .= kps.v_wind_gnd
@@ -93,7 +98,7 @@ const SEGMENTS = se().segments
     end
 
     @testset "test_calc_res        " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
         i = 2
         pos1 = KVec3(30.0, 5.0, 100.0)
@@ -118,7 +123,7 @@ const SEGMENTS = se().segments
     end
 
     @testset "test_calc_loop       " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
         kps.last_tether_drag = KVec3(5.0, 6, 7)
         kps.last_force = KVec3(-1.0, -2, -3)
@@ -159,7 +164,7 @@ const SEGMENTS = se().segments
     end
 
     @testset "test_set_cl_cd       " begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         alpha = deg2rad(10.0)
         KiteModels.set_cl_cd!(kps, alpha)
         @test kps.param_cl ≈ 0.5740976324353215
