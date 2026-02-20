@@ -14,6 +14,7 @@ end
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
+set.max_iter = 500
 set.elevation = 69.4+0.4
 set.v_steering = 0.2*6
 set.steering_gain = 10.0
@@ -82,7 +83,7 @@ STEERING = zeros(length(SET_STEERING))
 SIDE_CL  = zeros(length(SET_STEERING))
 for (i, set_steering) in pairs(SET_STEERING)
     local side_cl, integrator
-    integrator = KiteModels.init!(kps4;  delta=0.0006, stiffness_factor=0.035, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
     side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
     SIDE_CL[i] = side_cl
     STEERING[i] = steering
