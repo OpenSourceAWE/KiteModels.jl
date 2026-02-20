@@ -115,8 +115,9 @@ else
     echo "Julia $julia_major uses workspaces; examples and test share the main manifest."
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
-    echo "Precompiling test project..."
+    echo "Precompiling test project and running the tests..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
+    julia --project -e 'using Pkg; Pkg.test()'
 fi
 
 echo "Installation complete!"
