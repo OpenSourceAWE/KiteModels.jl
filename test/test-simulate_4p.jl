@@ -45,7 +45,7 @@ end
     kps4.set.solver = "IDA"
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.4, delta=0.001, prn=false)
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.4, delta=0.0015, prn=false)
     simulate(kps4, integrator, 100)
     av_steps = simulate(kps4, integrator, STEPS-100)
     if Sys.isapple()
