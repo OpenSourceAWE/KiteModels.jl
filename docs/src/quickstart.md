@@ -17,7 +17,7 @@ For a quick test of this program, it is NOT needed to install VSCode, git or bas
 
 Please download and install Julia using `juliaup`. Launch the `Command Prompt` app and type:
 
-```
+```bash
 winget install julia -s msstore
 juliaup add 1.10
 juliaup update
@@ -42,20 +42,20 @@ It is suggested to install [Windows Terminal](https://learn.microsoft.com/en-us/
 
 Copy and past the following line to install julia:
 
-```
+```bash
 curl -fsSL https://install.julialang.org | sh
 ```
 
 Restart your terminal, and then execute:
 
-```
-juliaup add 1.10
+```bash
+juliaup add 1.11
 juliaup update
 ```
 
 It is suggested to add the following line to your ```.bashrc``` file:
 
-```
+```bash
 alias jl='./bin/run_julia'
 ```
 
@@ -76,8 +76,8 @@ Please download and install `juliaup` as explained at <https://github.com/JuliaL
 
 Restart your terminal, and then execute:
 
-```
-juliaup add 1.10
+```bash
+juliaup add 1.11
 juliaup update
 ```
 
@@ -106,7 +106,7 @@ KiteModels.install_examples()
 
 Your folder structure should now look like this:
 
-```
+```bash
 shell> tree -d
 ├── data
 ├── examples
@@ -124,13 +124,13 @@ On windows you need to type ```tree /f``` instead of ```tree``` to see the files
 
 From the Julia prompt you can use the command "include" to execute a script:
 
-```
+```julia
 include("examples/simulate_simple.jl")
 ```
 
 On Windows you need to type "\\\\" instead of "/":
 
-```
+```julia
 include("examples\\simulate_simple.jl")
 ```
 
@@ -139,7 +139,7 @@ You can use the <TAB> key for autocompletion, for example `include("ex<TAB>` com
 
 Try out changing the following default settings:
 
-```
+```julia
 dt = 0.05
 STEPS = 600
 PLOT = true
@@ -164,7 +164,7 @@ julia --project
 
 and then execute the command
 
-```
+```julia
 using KiteModels
 include("examples/compare_kps3_kps4.jl")
 ```

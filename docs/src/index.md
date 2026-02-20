@@ -25,11 +25,11 @@ If you want to run simulations and see the results in 3D, please install the met
 
 Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 and 1.12 are also supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
 
-```
+```bash
 sudo apt install python3-matplotlib
 ```
 
-Make sure that `ControlPlots.jl` works as explained [here](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
+Make sure that `ControlPlots.jl` works as explained in the [installation instructions](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
 
 Before installing this software it is suggested to create a new project, for example like this:
 
@@ -78,18 +78,18 @@ times faster.
 
 ## News
 
-#### February 2026
+### February 2026
 
 - the `SymbolicAWEModel` has been moved to a separate package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) for better maintainability
 
-#### November 2024
+### November 2024
 
 - the four point kite model KPS4 was extended to include aerodynamic damping of pitch oscillations;
   for this purpose, the parameters `cmq` and `cord_length` must be defined in `settings.yaml`
 - the four point kite model KPS4 was extended to include the impact of the deformation of the
   kite on the turn rate; for this, the parameter `smc` must be defined in `settings.yaml`
 
-#### October 2024
+### October 2024
 
 - the orientation is now represented with respect to the NED reference frame
 - azimuth is now calculated in wind reference frame. This allows it to handle changes of the wind direction
@@ -130,7 +130,7 @@ Dyneema or similar high-strength materials for the tether the resulting system i
 - the `heading` angle, the direction the nose of the kite is pointing to is positive in clockwise direction when seen from above.
 - the `steering` input, dimensionless and in the range of -1.0 .. 1.0. A positive steering input causes a positive turn rate (derivative of the heading).
 
-A definition of the reference frames can be found [here](https://OpenSourceAWE.github.io/KiteUtils.jl/dev/reference_frames/) .
+A definition of the reference frames can be found in the [reference frames documentation](https://OpenSourceAWE.github.io/KiteUtils.jl/dev/reference_frames/).
 
 ## Further reading
 

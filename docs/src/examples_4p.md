@@ -67,7 +67,7 @@ plot(x,z, xlabel="x [m]", ylabel="z [m]", scatter=true)
 
 Print the vector of the positions of the particles:
 
-```
+```julia
 julia> kps.pos
 11-element StaticArrays.SVector{11, StaticArrays.MVector{3, Float64}} with indices SOneTo(11):
  [0.0, 0.0, 0.0]

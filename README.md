@@ -23,22 +23,22 @@ The models have the following subcomponents, implemented in separate packages:
 - The aerodynamic forces and moments of some of the models are calculated using the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
 
 This package is part of Julia Kite Power Tools, which consists of the following packages:
-<p align="center"><img src="https://github.com/aenarete/WinchModels.jl/blob/main/docs/kite_power_tools.png" width="500" /></p>
+<p align="center"><img src="https://github.com/aenarete/WinchModels.jl/blob/main/docs/kite_power_tools.png" alt="Julia Kite Power Tools package overview" width="500" /></p>
 
 ## News
 
-#### February 2026
+### February 2026
 
 - the `SymbolicAWEModel` has been moved to a separate package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) for better maintainability
 
-#### November 2024
+### November 2024
 
 - the four point kite model KPS4 was extended to include aerodynamic damping of pitch oscillations;
   for this purpose, the parameters `cmq` and `cord_length` must be defined in `settings.yaml`
 - the four point kite model KPS4 was extended to include the impact of the deformation of the
   kite on the turn rate; for this, the parameter `smc` must be defined in `settings.yaml`
 
-#### October 2024
+### October 2024
 
 - the orientation is now represented with respect to the NED reference frame
 - azimuth is now calculated in wind reference frame. This allows it to handle changes of the wind direction
@@ -55,11 +55,11 @@ If you want to run simulations and see the results in 3D, please install the met
 
 If possible, install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 and 1.12 are also supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
 
-```
+```bash
 sudo apt install python3-matplotlib
 ```
 
-Make sure that `ControlPlots.jl` works as explained [here](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
+Make sure that `ControlPlots.jl` works as explained in the [ControlPlots.jl installation instructions](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
 
 Before installing this software it is suggested to create a new project, for example like this:
 
@@ -148,7 +148,7 @@ When combined with a controller for the turn rate it can be used to simulate a p
 ## Four point model
 
 This model assumes the kite to consist of four-point masses with aerodynamic forces acting on points B, C and D. It reacts much more realistically than the one-point model because it has rotational inertia in every axis.
-<p align="center"><img src="https://github.com/OpenSourceAWE/KiteModels.jl/raw/main/docs/src/4-point-kite.png" width="200" /></p>
+<p align="center"><img src="https://github.com/OpenSourceAWE/KiteModels.jl/raw/main/docs/src/4-point-kite.png" alt="Four-point kite model diagram" width="200" /></p>
 
 ## Ram air kite model
 

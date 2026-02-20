@@ -26,7 +26,7 @@ cd bin
 
 This will take about 12 min on a  Ryzen 7950X CPU. You should now see a new file in the bin folder:
 
-```
+```bash
 ~/repos/test/bin$ ls -lah kps*
 -rwxrwxr-x 1 ufechner ufechner 723M apr 18 18:23 kps-image-1.10-main.so
 ```
