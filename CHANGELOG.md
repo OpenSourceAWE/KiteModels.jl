@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v.11.0 2026-02-19
+### KiteModels v.11.0 2026-02-20
 
 #### Changed
 
@@ -13,11 +13,21 @@ SPDX-License-Identifier: MIT
 - all test files can be executed separately
 - test files have been renamed, now all start with `test-`
 - use workspaces for the `test`, `examples`, and `docs` folder
+- all markdown files are now checked with `markdownlint`
+- no more global variables in the main test scripts
+
+#### Fixed
+
+- all examples and tests that call `find_steady_state!` succeed now without warning
+- other fixes of examples
+- dead or wrong links in README.md and the documentation
+- many JETLS warnings, only two left
 
 #### Added
 
 - configuration files from `BestieTemplate.jl`
 - installer script `bin/install`
+- a warning if `find_steady_state!` does not succeed
 
 ### KiteModels v0.10.0 2026-02-06
 
