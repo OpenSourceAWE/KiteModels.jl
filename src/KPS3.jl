@@ -236,7 +236,7 @@ end
 
 Returns a tuple of the x, y, and z vectors of the kite reference frame.
 """
-function kite_ref_frame(s::KPS3; one_point=true)
+function kite_ref_frame(s::KPS3)
     pos_kite = s.pos[end]
     delta = pos_kite - s.pos[end - 1]
     c = -delta
@@ -528,6 +528,9 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
+
+The parameter upwind_dir is not used in the current implementation, but will be used in future versions 
+to set the initial direction of the wind.
 """
 function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
     zero = zeros(SimFloat, 2*s.set.segments)
