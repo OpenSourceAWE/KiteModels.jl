@@ -1,44 +1,57 @@
 ```@meta
 CurrentModule = KiteModels
 ```
+
 # Examples for using the one point kite model
 
 ## Create a test project
+
 ```bash
 mkdir test
 cd test
 julia --project="."
 ```
+
 With the last command, we told Julia to create a new project in the current directory.
 
 Then add KiteModels from  Julia's package manager, by typing:
+
 ```julia
 using Pkg
 pkg"add KiteModels"
-``` 
+```
 
 You can copy the examples to your project with:
+
 ```julia
 using KiteModels
 KiteModels.install_examples()
 ```
+
 This also adds the extra packages, needed for the examples to the project. Furthermore, it creates a folder `data` with some example input files. You can now run the examples with the command:
+
 ```julia
 include("examples/menu.jl")
 ```
 
 ## Plotting the initial state
+
 First, an instance of the model of the kite control unit (KCU) is created which is needed by the Kite Power System model KPS3. Then we create a kps instance, passing the kcu model as parameter. We need to declare the type these variables to achieve a decent performance.
+
 ```julia
 using KiteModels
 kcu::KCU = KCU(se())
 kps::KPS3 = KPS3(kcu)
 ```
-Then we call the function `find_steady_state` which uses a non-linear solver to find the solution for a given elevation angle, reel-out speed and wind speed. 
+
+Then we call the function `find_steady_state` which uses a non-linear solver to find the solution for a given elevation angle, reel-out speed and wind speed.
+
 ```julia
 find_steady_state!(kps, prn=true)
 ```
+
 To plot the result in 2D we extract the vectors of the x and z coordinates of the tether particles with a for loop:
+
 ```julia
 x = Float64[] 
 z = Float64[]
@@ -47,17 +60,23 @@ for i in 1:length(kps.pos)
      push!(z, kps.pos[i][3])
 end
 ```
+
 And finally, we plot the position of the particles in the x-z plane. When you type ```using ControlPlots``` you will be asked if you want to install the ControlPlots package. Just press \<ENTER\> and it gets installed.
+
 ```julia
 using ControlPlots
 plot(x,z, xlabel="x [m]", ylabel="z [m]", scatter=true)
 ```
-### Inital State
+
+### Initial State
+
 ![Initial State](initial_state.png)
 
 ## Print other model outputs
+
 Print the vector of the positions of the particles:
-```
+
+```julia
 julia> kps.pos
 7-element StaticArrays.SVector{7, StaticArrays.MVector{3, Float64}} with indices SOneTo(7):
  [0.0, 0.0, 0.0]
@@ -69,7 +88,9 @@ julia> kps.pos
  [132.79571663189674, 0.0, 368.74701279158705]
 
 ```
+
 Print the unstretched and stretched tether length and the height of the kite:
+
 ```julia
 julia> unstretched_length(kps)
 150.0
@@ -79,8 +100,10 @@ julia> tether_length(kps)
 
 julia> calc_height(kps)
 142.78102261557189
-``` 
+```
+
 Print the force at the winch (groundstation, in Newton) and at each tether segment:
+
 ```julia
 julia> winch_force(kps)
 592.5649922210812
@@ -94,9 +117,11 @@ julia> spring_forces(kps)
  602.793488771366
  605.3855398009119
 ```
+
 The force increases when going upwards because the kite not only experiences the winch force but in addition the weight of the tether.
 
 Print the lift and drag forces of the kite (in Newton) and the lift-over-drag ratio:
+
 ```julia
 julia> lift, drag = lift_drag(kps)
 (730.5877517655691, 157.36420900755007)
@@ -104,7 +129,9 @@ julia> lift, drag = lift_drag(kps)
 julia> lift_over_drag(kps)
 4.64265512706588
 ```
+
 Print the wind speed vector at the kite:
+
 ```julia
 julia> v_wind_kite(kps)
 3-element StaticArrays.MVector{3, Float64} with indices SOneTo(3):
@@ -112,10 +139,13 @@ julia> v_wind_kite(kps)
   0.0
   0.0
 ```
+
 ## Example of reeling out the tether
+
 ```julia
 include("examples/reel_out_1p.jl")
 ```
+
 ![Reel out 1p model](reelout_force_1p.png)
 
 In this example, we first keep the tether length constant and at 15 s start to reel out the winch with an acceleration of 0.1 m/s². At a set speed below 2.2 m/s the brake of the winch is active, therefore the "jump" in the v_reelout at the beginning of the reel-out phase.
