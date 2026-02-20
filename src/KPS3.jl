@@ -348,7 +348,7 @@ function cl_cd(s::KPS3)
 end
 
 """
-    residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, time) where S
+    residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _) where S
 
     N-point tether model, one point kite at the top:
     Inputs:
@@ -363,7 +363,7 @@ end
 The number of the point masses of the model N = S/6, the state of each point 
 is represented by two 3 element vectors.
 """
-function residual!(res, yd, y::Vector{SimFloat}, s::KPS3, time=0.0)
+function residual!(res, yd, y::Vector{SimFloat}, s::KPS3, _=0.0)
     S = length(y)
     y_ =  MVector{S, SimFloat}(y)
     yd_ =  MVector{S, SimFloat}(yd)
