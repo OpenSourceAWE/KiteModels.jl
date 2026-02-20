@@ -34,6 +34,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         kps.set.v_wind = 9.1
         kps.set.mass = 6.2
         kps.set.c_s = 0.6
+        kps.set.alpha = 1.0/7
         KiteModels.clear!(kps)
     end
 
@@ -253,7 +254,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_initial_residual" begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         # global res, x, z
         init_392(kps)
         initial_x = [
@@ -309,7 +310,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_getters" begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         init_392(kps)
         initial_x = [
             -1.52505,
@@ -343,7 +344,7 @@ const SEGMENTS = load_settings("system.yaml").segments
     end
 
     @testset "test_find_steady_state" begin
-        local kps = KPS3(KCU(se()))
+        local kps = KPS3(KCU(load_settings("system.yaml")))
         init_392(kps)
         KiteModels.set_depower_steering!(kps, 0.25, 0.0)
         res1, res2 = find_steady_state!(kps; delta = 1e-6, prn = false)
