@@ -189,8 +189,8 @@ If you like this software, please consider donating to [Flood in Kenya](https://
 - [Research Fechner](https://research.tudelft.nl/en/publications/?search=Fechner+wind&pageSize=50&ordering=rating&descending=true) for the scientific background of this code
 - The meta-package  [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl)
 - the package [KiteUtils](https://github.com/OpenSourceAWE/KiteUtils.jl)
-- the packages [WinchModels](https://github.com/aenarete/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
-- the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/aenarete/KiteViewers.jl)
-- the [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
+- the packages [WinchModels](https://github.com/aenarete/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
+- the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/OpenSourceAWE/KiteViewers.jl)
+- the [VortexStepMethod](https://github.com/OpenSourceAWE/VortexStepMethod.jl)
 
 **Documentation** [Stable Version](https://OpenSourceAWE.github.io/KiteModels.jl/stable) --- [Development Version](https://OpenSourceAWE.github.io/KiteModels.jl/dev)
