@@ -9,17 +9,10 @@ using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
-set = deepcopy(load_settings("system.yaml"))
-kcu::KCU = KCU(set)
-kps4::KPS4 = KPS4(kcu)
-
-pos, vel = nothing, nothing
-poss, vels = nothing, nothing
 
 @testset verbose = true "KPS4 tests...." begin
 
-function set_defaults()
-    global kps4
+function set_defaults(kps4)
     kps4.set.l_tethers[1] = 150.0
     kps4.set.elevation = 60.0
     kps4.set.area = 20.0
@@ -33,7 +26,7 @@ function set_defaults()
     KiteModels.clear!(kps4)
 end
 
-function init_392()
+function init_392(kps4)
     kps4.set.l_tethers[1] = 392.0
     kps4.set.elevation = 70.0
     kps4.set.area = 10.0
@@ -44,7 +37,7 @@ function init_392()
     KiteModels.clear!(kps4)
 end
 
-function init_150()
+function init_150(kps4)
     kps4.set.l_tethers[1] = 150.0
     kps4.set.elevation = 70.0
     kps4.set.area = 10.18
@@ -58,7 +51,7 @@ function init_150()
     KiteModels.clear!(kps4)
 end
 
-function init3()
+function init3(kps4)
     kps4.set.alpha =  0.08163
     kps4.set.l_tethers[1] = 150.0 # - kps4.set.height_k - kps4.set.h_bridle
     kps4.set.area = 10.18
@@ -81,9 +74,9 @@ function init3()
     return pos, vel, posd, veld
 end
 
-set_defaults()
-
 @testset "calc_rho              " begin
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    set_defaults(kps4)
     @test isapprox(calc_rho(kps4.am, 0.0), 1.225, atol=1e-5) 
     @test isapprox(calc_rho(kps4.am, 100.0), 1.210756, atol=1e-5) 
 end
@@ -98,7 +91,8 @@ end
 end
 
 @testset "get_particles         " begin
-    init_150()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init_150(kps4)
     particles = KiteUtils.get_particles(kps4.set.height_k, kps4.set.h_bridle, kps4.set.width, kps4.set.m_k)
     @test particles[1] == zeros(3)
     @test particles[2] == [  75.,              0.    ,       129.90381057]   # P_KCU
@@ -109,7 +103,8 @@ end
 end
 
 @testset "init_springs!          " begin
-    init_150()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init_150(kps4)
     sp = KiteModels.init_springs!(kps4)
     # test springs
     @test length(sp) == 6 + KiteModels.KITE_SPRINGS
@@ -137,7 +132,8 @@ end
 end
 
 @testset "init_masses!           " begin
-    init_150()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init_150(kps4)
     m = KiteModels.init_masses!(kps4)
     @test m[1] ≈ 0.1137256540599505
     for i in 2:6
@@ -151,13 +147,14 @@ end
 end
 
 @testset "calc_particle_forces!  " begin
-    init_150()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init_150(kps4)
     pos1 = KVec3(1.0, 2.0, 3.0)
     pos2 = KVec3(2.0, 3.0, 4.0)
     vel1 = KVec3(3.0, 4.0, 5.0)
     vel2 = KVec3(4.0, 5.0, 6.0)
     rho = kps4.set.rho_0
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     bytes = 0
@@ -165,7 +162,7 @@ end
         spring = kps4.springs[i]
         kps4.stiffness_factor = 0.5
         kps4.v_wind_tether .= KVec3(8.0, 0.1, 0.0)
-        bytes = @allocated KiteModels.calc_particle_forces!(kps4, pos1, pos2, vel1, vel2, spring, set.segments, set.d_tether/1000.0, rho, i)
+        bytes = @allocated KiteModels.calc_particle_forces!(kps4, pos1, pos2, vel1, vel2, spring, kps4.set.segments, kps4.set.d_tether/1000.0, rho, i)
     end
     # @test bytes == 0
     # Python output
@@ -180,13 +177,14 @@ end
          [ 12986.35257788861054    12986.7734548936750798  12986.8254733999201562]
          [ 23289.9810739697131794  23290.5422433097955945  23290.6116013181235758]
          [ -1883.1033393325606085  -1882.5421699924754648  -1882.4728119841502121]]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         @test all(res[i,:] .≈ kps4.forces[i])
     end
 end
 
 @testset "init                  " begin
-    init_150()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init_150(kps4)
     kps4.set.elevation = 60.0
     pos, vel, acc = KiteModels.init_pos_vel_acc(kps4, old=true, delta = 1e-6)
     pos1 = [[  -0.                    0.000001             -0.                ]
@@ -201,7 +199,7 @@ end
             [  77.4500000002498865    2.4810999999999996  134.1473350483994693]
             [  77.4500000002498865   -2.4810999999999996  134.1473350483994693]
            ]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         if ! all(pos1[i,:] .≈ pos[i])
             println(i, " ", pos1[i,:], " ", pos[i])
         else
@@ -210,20 +208,21 @@ end
     end
 end
 
-function split_res(res)
-    particles = set.segments+KiteModels.KITE_PARTICLES
+function split_res(res, kps4)
+    particles = kps4.set.segments+KiteModels.KITE_PARTICLES
     pos=res[1:3*particles]
     vel=res[3*particles+1:6*particles]
     pos, vel
 end
 
 @testset "initial_residual      " begin
-    init3()
-    res = zeros(MVector{6*(set.segments+KiteModels.KITE_PARTICLES), SimFloat})
-    X00 = zeros(SimFloat, 2*(set.segments+KiteModels.KITE_PARTICLES-1)+2)
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init3(kps4)
+    res = zeros(MVector{6*(kps4.set.segments+KiteModels.KITE_PARTICLES), SimFloat})
+    X00 = zeros(SimFloat, 2*(kps4.set.segments+KiteModels.KITE_PARTICLES-1)+2)
     y0, yd0 = KiteModels.init(kps4, X00)
     residual!(res, yd0, y0, kps4, 0.0)
-    res_pos, res_vel = split_res(res)
+    res_pos, res_vel = split_res(res, kps4)
     @test res_pos == zeros(length(res_pos))
     # in the second test we check if the norm of the accelerations of the tether particles is low
     # println((norm(res_vel[1:15])))
@@ -231,13 +230,14 @@ end
 end
 
 @testset "inner_loop!            " begin
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4.set.alpha = 1.0/7.0
-    init_150()
+    init_150(kps4)
     kps4.set.elevation = 60.0
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     # kps4.set.profile_low = se().profile_law
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     pos, vel, acc = KiteModels.init_pos_vel_acc(kps4, old=true, delta = 1e-6)
@@ -257,17 +257,18 @@ end
                [ 39.29965633377961   -0.006545683435678002 47.3267402543354]
                [  10.339058623294022 84.4381372725957       0.4183018889575614]
                [  10.343380853641088  -84.46578672918862    0.4358890208546278]]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         @test isapprox(forces[i,:], kps4.forces[i], rtol=1e-4) 
     end
 end
 
 @testset "calc_aero_forces!      " begin
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4.set.alpha = 1.0/7.0
-    init_150()
+    init_150(kps4)
     kps4.set.elevation = 60.0
     kps4.set.profile_law = Int(EXP)
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     pos, vel, acc = KiteModels.init_pos_vel_acc(kps4, old=true, delta = 1e-6)
@@ -276,7 +277,7 @@ end
     alpha_depower = 0.1
     rel_steering = +0.1
     kps4.set.alpha_zero = 5.0
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     KiteModels.calc_aero_forces!(kps4, pos, vel, rho, alpha_depower, rel_steering)
@@ -291,14 +292,14 @@ end
             [ -81.3257203383301146   -2.0331316776625457 -454.15328374043645  ]
             [  -9.9385080719600989  -68.915067335201357    -0.9904916722429121]
             [ -11.4093091631036021   53.2874848115847612    0.7727700100708267]]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         @test all(isapprox.(forces[i,:], kps4.forces[i], rtol=1e-4))
     end
 end
 
-function init2()
+function init2(kps4)
     kps4.set.alpha = 1.0/7.0
-    init_150()
+    init_150(kps4)
     kps4.set.elevation = 60.0
     kps4.set.profile_law = Int(EXP)
     pos, vel, acc = KiteModels.init_pos_vel_acc(kps4,old=true, delta = 1e-6)
@@ -310,8 +311,8 @@ function init2()
     kps4.stiffness_factor = 0.5
     kps4.set.alpha = 1.0/7.0
     length = 150.0
-    kps4.segment_length = length/set.segments
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    kps4.segment_length = length/kps4.set.segments
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     KiteModels.init_springs!(kps4)
@@ -319,8 +320,9 @@ function init2()
 end
 
 @testset "test_loop          " begin
-    init2()
-    pos, vel, posd, veld = init2()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init2(kps4)
+    pos, vel, posd, veld = init2(kps4)
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     KiteModels.loop!(kps4, pos, vel, posd, veld)
@@ -335,7 +337,7 @@ end
           [ 0.        0.        0.      ]
           [ 0.        0.        0.      ]
           [ 0.        0.        0.      ]]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         @test all(kps4.res1[i] .≈ res1[i,:])
     end
     forces=[[ -1.058148047467609  -0.020155169648329054  0.6109409799974753]
@@ -349,7 +351,7 @@ end
             [ 39.29965633377961   -0.006545683435678002  47.3267402543354]
             [ 10.339058623294022   84.4381372725957       0.4183018889575614]
             [  10.343380853641088 -84.46578672918862      0.4358890208546278]]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1 
         @test isapprox(forces[i,:], kps4.forces[i], rtol=1e-4)
     end
     res2 = [[  0.000001             0.000001             0.000001          ]
@@ -363,7 +365,7 @@ end
             [ 29.851165446616537   -0.004971958979489869 45.75836406156792]
             [ 10.471099184004316   85.51650034190715     10.233644040305819]
             [ 10.475476613740355  -85.544502910895       10.251455778217956]]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         @test isapprox(res2[i,:], kps4.res2[i], rtol=1e-4)
     end
 end
@@ -387,11 +389,16 @@ function unpack(y::MVector{T, SimFloat},) where T
 end
 
 @testset "test_residual!       " begin
-    global pos, poss, vel, vels
-    # init2()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    kps4.set.kcu_diameter = 0.0
+    init_150(kps4)
+    kps4.set.elevation = 60.0
+    kps4.set.profile_law = Int(EXPLOG)
+    kps4.set.alpha = 0.08163
     kps4.alpha_depower = -0.820659579962 
     kps4.stiffness_factor = 0.5
     kps4.set.alpha_zero = 0.0
+    kps4.v_wind_gnd .= KVec3(7.0, 0.1, 0.0)
     res =  zeros(MVector{6*(kps4.set.segments+4), SimFloat})
     y0, yd0 = KiteModels.init(kps4; old=true, delta=1e-6)
     pos, vel = unpack_add_origin(y0)
@@ -420,7 +427,7 @@ end
         150.                ,    0.                ][1:end-2]
     poss, vels=unpack(MVector{66, Float64}(y0s))
     @test length(pos) == length(poss)
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         @test all(pos[i] .≈ poss[i])
         @test all(vel[i] .≈ vels[i])
     end
@@ -447,7 +454,7 @@ end
 
     @test res2_[1, :] == res2[1]
     @test all(res2_[2, :] .≈ res2[2])
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         if ! all(res2_[i, :] .≈ res2[i])
             # println(i, res2_[i, :], " ", res2[i])
             @test_broken all(res2_[i, :] .≈ res2[i])
@@ -458,6 +465,19 @@ end
 end
 
 @testset "test_getters" begin
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    kps4.set.kcu_diameter = 0.0
+    init_150(kps4)
+    kps4.set.elevation = 60.0
+    kps4.set.profile_law = Int(EXPLOG)
+    kps4.set.alpha = 0.08163
+    kps4.alpha_depower = -0.820659579962
+    kps4.stiffness_factor = 0.5
+    kps4.set.alpha_zero = 0.0
+    kps4.v_wind_gnd .= KVec3(7.0, 0.1, 0.0)
+    y0, yd0 = KiteModels.init(kps4; old=true, delta=1e-6)
+    res = zeros(MVector{6*(kps4.set.segments+4), SimFloat})
+    residual!(res, yd0, y0, kps4, 0.0)
     x, y, z = kite_ref_frame(kps4)
     @test all(x .≈ [-0.8660254037549963, 0.0, 0.5000000000509957])
     @test all(y .≈ [0.0, 1.0, 0.0])
@@ -471,17 +491,17 @@ end
 end
 
 @testset "test_find_steady_state" begin
-    global kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4.set.kcu_diameter = 0.0
     kps4.set.max_iter = 500
-    init_392()
+    init_392(kps4)
     clear!(kps4)
     KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
     height = sin(deg2rad(kps4.set.elevation)) * kps4.set.l_tether
     kps4.v_wind .= kps4.v_wind_gnd * calc_wind_factor(kps4.am, height)
     res1, res2 = find_steady_state!(kps4; stiffness_factor=0.07, prn=false) 
     # TODO check why -9.81 appears in the residual
-    @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
+    @test sum(res2) ≈ -9.81*(kps4.set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
     pre_tension = KiteModels.calc_pre_tension(kps4)
     @test pre_tension > 1.0001
     @test pre_tension < 1.01
@@ -497,7 +517,8 @@ end
 end
 
 @testset "test_spring_forces    " begin
-    init2()
+    local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+    init2(kps4)
     kps4.alpha_depower = -0.820659579962 
     kps4.stiffness_factor = 0.04
     kps4.set.alpha_zero = 0.0
@@ -505,7 +526,7 @@ end
     y0, yd0 = KiteModels.init(kps4)
     forces = spring_forces(kps4; prn=false)
     ref_forces = [3.928735076156923e-12, 3.928735076156923e-12, 3.928735076156923e-12, 0.0, -3.928735076156923e-12, 1.1786205228470769e-11, 2.160277004750972, 2.1602770047433926, 2.1602770047441373, 2.1602770047074573, 2.1602770047483513, 2.1602770047483513, 2.1602770047074573, 2.1602770047433926, 2.160277004685822]
-    for i in 1:set.segments + KiteModels.KITE_PARTICLES + 1
+    for i in 1:kps4.set.segments + KiteModels.KITE_PARTICLES + 1
         @test isapprox(forces[i], ref_forces[i], atol=1e-6, rtol=1e-4)
     end    
 end
