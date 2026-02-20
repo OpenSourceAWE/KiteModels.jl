@@ -53,7 +53,7 @@ function simulate(integrator, steps, offset = 0)
     iter / steps
 end
 
-integrator = init!(kps4, delta = 0, stiffness_factor = 0.5, prn = STATISTIC)
+integrator = init!(kps4, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100, 100)

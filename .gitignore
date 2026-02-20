@@ -1,3 +1,16 @@
+# BestieTemplate defaults
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+*.rej
+.DS_Store
+.benchmarkci
+benchmark/*.json
+docs/build/
+env
+node_modules
+
+# Project-specific
 LocalPreferences.toml
 *.arrow
 *.bin
@@ -63,3 +76,4 @@ coverage/lcov.info
 temp_benchmark.jl
 Manifest-v1.12.toml
 Manifest-v1.12.toml.bak
+.JETLSConfig.toml

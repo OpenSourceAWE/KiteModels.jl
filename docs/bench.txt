@@ -1,0 +1,29 @@
+Benchmark results 15.02.2026
+
+Julia 1.12.4
+
+- bench3.jl
+609 612 613 
+
+- bench4.jl
+1096 1097 1100: 1097.7
+
+Julia 1.11.8
+
+- bench3.jl
+615 614 612
+
+- bench4.jl
+934 935 931: 934.3
+
+Julia 1.12 is 17% slower than 1.11 for bench4 and about the same for bench3.
+
+Root cause: NLSolversBase 7.10.0 switched from direct FiniteDiff to DifferentiationInterface for Jacobian computation. 
+The DI backend produces subnormal values (~5.6e-305) in near-zero Jacobian columns instead of exact zeros. 
+NLsolve's autoscale computes column norms d[j], and when d[j] is subnormal (not zero), its guard if d[j] == 0; d[j] = 1; 
+end doesn't trigger. The subsequent g ./ d.^2 underflows d[j]^2 to 0.0, producing NaN that propagates through the solver.
+
+Fix: Both KPS4.jl and KPS3.jl now provide an explicit Jacobian function (jac!) to nlsolve using manual central finite 
+differences (matching FiniteDiff's defaults: step = cbrt(eps)). After computing the Jacobian, entries below 
+sqrt(floatmin) (~1.5e-154) are flushed to zero—this prevents any value whose square would underflow from reaching 
+NLsolve's autoscale.

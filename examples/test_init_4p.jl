@@ -7,7 +7,7 @@ using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using KiteModels, KitePodModels, KiteUtils, LinearAlgebra, Rotations
+using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
@@ -38,7 +38,7 @@ logger = Logger(set.segments + 5, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
-integrator = KiteModels.init!(kps4; delta=0.03, stiffness_factor=0.01, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 for i=1:80
     next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, dt)
 end

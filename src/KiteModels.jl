@@ -13,31 +13,30 @@ Scientific background: http://arxiv.org/abs/1406.6218 =#
 module KiteModels
 
 using PrecompileTools: @setup_workload, @compile_workload 
+using Logging
 using Dierckx, Interpolations, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
       DocStringExtensions, OrdinaryDiffEqCore, OrdinaryDiffEqBDF, OrdinaryDiffEqNonlinearSolve,
       NonlinearSolve, Suppressor
 import Sundials
-using Reexport, Pkg
-using KiteUtils
+using Pkg, Reexport
 import KiteUtils: init!, next_step!, update_sys_state!
-import KiteUtils: calc_elevation, calc_heading, calc_course, SysState
+import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
 using Rotations
 import Base.zero
 import OrdinaryDiffEqCore.init
-import OrdinaryDiffEqCore.step!
 
-export KPS3, KPS4, KVec3, SimFloat, ProfileLaw, EXP, LOG, EXPLOG     # constants and types
-export calc_set_cl_cd!, copy_examples, copy_bin, update_sys_state!                     # helper functions
+export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
+export calc_set_cl_cd!, copy_bin, copy_examples, update_sys_state!                     # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
-export init!, reinit!, next_step!, init_pos_vel                                        # high level workers
-export pos_kite, calc_height, calc_elevation, calc_azimuth, calc_heading, calc_course, calc_orient_quat # getters
-export calc_azimuth_north, calc_azimuth_east
-export winch_force, lift_drag, cl_cd, lift_over_drag, unstretched_length, tether_length, v_wind_kite     # getters
+export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
+export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
+export calc_azimuth_east, calc_azimuth_north
+export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
-export kite_ref_frame, orient_euler, spring_forces, upwind_dir, copy_model_settings, menu2
+export copy_model_settings, kite_ref_frame, menu2, orient_euler, spring_forces, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -543,7 +542,7 @@ function calc_pre_tension(s::AKM)
 end
 
 """
-    init!(s::AKM; stiffness_factor=0.5, delta=0.0001,
+    init!(s::AKM; stiffness_factor=0.5, delta=0.005,
                       prn=false) -> OrdinaryDiffEqCore.ODEIntegrator
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
@@ -557,13 +556,13 @@ Parameters:
 Returns:
 An instance of an `ODEIntegrator`.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.0001, prn=false)
+function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)
     clear!(s)
     upwind_dir = deg2rad(s.set.upwind_dir)
     s.stiffness_factor = stiffness_factor
     
-    try
-        y0, yd0 = KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
+    y0, yd0 =try
+        KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
     catch e
         if e isa AssertionError
             println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*

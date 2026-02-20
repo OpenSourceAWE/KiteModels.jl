@@ -39,9 +39,9 @@ $(TYPEDFIELDS)
     integrator::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing} = nothing
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
-    "Function for calculation the lift coefficent, using a spline based on the provided value pairs."
+    "Function for calculation the lift coefficient, using a spline based on the provided value pairs."
     calc_cl::Spline1D
-    "Function for calculation the drag coefficent, using a spline based on the provided value pairs."
+    "Function for calculation the drag coefficient, using a spline based on the provided value pairs."
     calc_cd::Spline1D
     "wind vector at the height of the kite" 
     v_wind::T =           zeros(S, 3)
@@ -71,7 +71,7 @@ $(TYPEDFIELDS)
     unit_vector::T =      zeros(S, 3)
     "average velocity of the current tether segment, output of calc_res"
     av_vel::T =           zeros(S, 3)
-    "y-vector of the kite fixed referense frame, output of calc_aero_forces"
+    "y-vector of the kite fixed references frame, output of calc_aero_forces"
     kite_y::T =           zeros(S, 3)
     "vector representing one tether segment (p1-p2)"
     segment::T =          zeros(S, 3)
@@ -105,7 +105,7 @@ $(TYPEDFIELDS)
     param_cd::S =         1.0
     "correction term for the steering, in paper named i_(s,c), Eq. 30"
     cor_steering::S =     zero(S)
-    "azimuth angle in radian; inital value is zero"
+    "azimuth angle in radian; initial value is zero"
     psi::S =              zero(S)
     "elevation angle in radian; initial value about 70 degrees"
     beta::S =             deg2rad(se().elevation)
@@ -174,6 +174,8 @@ function clear!(s::KPS3)
     s.axial_damping  = s.set.axial_damping / s.segment_length
     s.kcu.depower = s.set.depower/100.0
     s.kcu.set_depower = s.kcu.depower
+    s.kcu.steering = 0.0
+    s.kcu.set_steering = 0.0
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
 end
 
@@ -263,7 +265,7 @@ function pos_kite(s::KPS3)
 end
 
 # Calculate the vector res1, that depends on the velocity and the acceleration.
-# The drag force of each segment is distributed equaly on both particles.
+# The drag force of each segment is distributed equally on both particles.
 function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
     s.segment .= pos1 - pos2
     height = (pos1[3] + pos2[3]) * 0.5
@@ -342,11 +344,11 @@ end
 Calculate the lift and drag coefficients of the kite, based on the current angles of attack.
 """
 function cl_cd(s::KPS3)
-    CL2, CD2 = s.calc_cl(s.alpha_2), s.calc_cd(s.alpha_2)
+    s.calc_cl(s.alpha_2), s.calc_cd(s.alpha_2)
 end
 
 """
-    residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, time) where S
+    residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _) where S
 
     N-point tether model, one point kite at the top:
     Inputs:
@@ -361,13 +363,14 @@ end
 The number of the point masses of the model N = S/6, the state of each point 
 is represented by two 3 element vectors.
 """
-function residual!(res, yd, y::Vector{SimFloat}, s::KPS3, time)
+function residual!(res, yd, y::Vector{SimFloat}, s::KPS3, _=0.0)
     S = length(y)
     y_ =  MVector{S, SimFloat}(y)
     yd_ =  MVector{S, SimFloat}(yd)
-    residual!(res, yd_, y_, s, time)
+    residual!(res, yd_, y_, s)
 end
-function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, time) where S
+
+function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
     T = S-2 # T: three times the number of particles excluding the origin
     segments = div(T,6)
     # unpack the vectors y and yd
@@ -434,7 +437,7 @@ end
 # length(x) == 2*SEGMENTS
 # Returns:
 # res, a single vector consisting of the elements of y0 and yd0
-function init_inner(s::KPS3, X=zeros(2 * s.set.segments); old=false, delta=0.0)
+function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
     pos = zeros(SVector{s.set.segments+1, KVec3})
     vel = zeros(SVector{s.set.segments+1, KVec3})
     acc = zeros(SVector{s.set.segments+1, KVec3})
@@ -477,8 +480,8 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); old=false, delta=0.0)
 end
 
 # same as above, but returns a tuple of two one dimensional arrays
-function init(s::KPS3, X=zeros(2 * (s.set.segments)); old=false, delta = 0.0)
-    res1_, res2_ = init_inner(s, X; old=old, delta = delta)
+function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0)
+    res1_, res2_ = init_inner(s, X; delta = delta)
     res1, res2  = vcat(reduce(vcat, res1_), [s.l_tether, 0]), vcat(reduce(vcat, res2_),[0,0])
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
@@ -486,7 +489,7 @@ end
 """
     spring_forces(s::AKM)
 
-Return an array of the scalar spring forces of all tether segements.
+Return an array of the scalar spring forces of all tether segments.
 """
 function spring_forces(s::KPS3)
     forces = zeros(SimFloat, s.set.segments)
@@ -502,7 +505,7 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     # helper function for the steady state finder
     function test_initial_condition!(F, x::Vector)
         y0, yd0 = init(s, x, delta=delta)
-        residual!(res, yd0, y0, s, 0.0)
+        residual!(res, yd0, y0, s)
         for i in 1:s.set.segments
             F[i]                = res[1 + 3*(i-1) + 3*s.set.segments]
             F[i+s.set.segments] = res[3 + 3*(i-1) + 3*s.set.segments]
@@ -511,8 +514,12 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     end
 
     if prn println("\nStarted function test_nlsolve...") end
-    results = nlsolve(test_initial_condition!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
+    jac! = make_jac(test_initial_condition!, length(X))
+    results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
     if prn println("\nresult: $results") end
+    if !converged(results)
+        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+    end
     results.zero
  end
 
@@ -521,8 +528,11 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
+
+The parameter upwind_dir is not used in the current implementation, but will be used in future versions 
+to set the initial direction of the wind.
 """
-function find_steady_state!(s::KPS3; prn=false, delta = 0.0, stiffness_factor=0.035, upwind_dir=-pi/2)
+function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
     zero = zeros(SimFloat, 2*s.set.segments)
     s.stiffness_factor=stiffness_factor
     zero = find_steady_state_inner(s, zero, prn; delta)

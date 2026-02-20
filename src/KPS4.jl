@@ -27,13 +27,13 @@ const SPRINGS_INPUT = [0.    1.  150.
 
 # KCU = p7, A = p8, B = p9, C = p10, D = p11
 
-# struct, defining the phyical parameters of one spring
+# struct, defining the physical parameters of one spring
 @with_kw struct Spring{I, S}
     p1::I = 1         # number of the first point
     p2::I = 2         # number of the second point
     length::S = 1.0   # current unstressed spring length
     axial_stiffness::S = 1.0 # spring constant [N/m]
-    axial_damping::S  = 0.1 # axial_damping coefficent [Ns/m]
+    axial_damping::S  = 0.1 # axial_damping coefficient [Ns/m]
 end
 
 const SP = Spring{Int16, SimFloat}
@@ -67,7 +67,7 @@ $(TYPEDFIELDS)
     "Reference to the atmospheric model as implemented in the package AtmosphericModels"
     am::AtmosphericModel = AtmosphericModel(set)
     "Reference to winch model as implemented in the package WinchModels"
-    wm::AbstractWinchModel
+    wm::Union{AsyncMachine, TorqueControlledMachine}
     "Integrator, storing the current state"
     integrator::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing} = nothing
     "Iterations, number of calls to the function residual!"
@@ -150,7 +150,7 @@ $(TYPEDFIELDS)
     steering::S =          0.0
     "steering after the kcu, before applying offset and depower sensitivity, -1.0 .. 1.0"
     kcu_steering::S =      0.0
-    "multiplier for the stiffniss of tether and bridle"
+    "multiplier for the stiffness of tether and bridle"
     stiffness_factor::S =  1.0
     "initial masses of the point masses"
     initial_masses::MVector{P, S} = ones(P)
@@ -192,6 +192,7 @@ Initialize the kite power model.
 """
 function clear!(s::KPS4)
     s.t_0 = 0.0                              # relative start time of the current time interval
+    s.iter = 0
     s.v_reel_out = s.set.v_reel_out
     s.last_v_reel_out = s.set.v_reel_out
     s.sync_speed = s.set.v_reel_out
@@ -211,22 +212,53 @@ function clear!(s::KPS4)
     s.drag_force .= [0.0, 0, 0]
     s.lift_force .= [0.0, 0, 0]
     s.side_force .= [0.0, 0, 0]
+    s.f_d .= [0.0, 0, 0]
+    s.f_s .= [0.0, 0, 0]
+    s.spring_force .= [0.0, 0, 0]
+    s.last_force .= [0.0, 0, 0]
+    s.vel_kite .= [0.0, 0, 0]
+    s.x .= [0.0, 0, 0]
+    s.y .= [0.0, 0, 0]
+    s.z .= [0.0, 0, 0]
+    for i in eachindex(s.pos)
+        s.pos[i] .= zeros(3)
+        s.vel[i] .= zeros(3)
+        s.res1[i] .= zeros(3)
+        s.res2[i] .= zeros(3)
+    end
+    s.side_cl = 0.0
+    s.side_slip = 0.0
+    s.alpha_2 = 0.0
+    s.alpha_3 = 0.0
+    s.alpha_4 = 0.0
+    s.param_cl = 0.2
+    s.param_cd = 1.0
+    s.psi = 0.0
     s.rho = s.set.rho_0
     s.bridle_factor = s.set.l_bridle / bridle_length(s.set)
     s.ks = deg2rad(s.set.max_steering) 
     s.kcu.depower = s.set.depower/100.0
     s.kcu.set_depower = s.kcu.depower
-    roll, pitch, yaw = orient_euler(s)
-    s.pitch = pitch
+    s.kcu.steering = 0.0
+    s.kcu.set_steering = 0.0
+    s.pitch = 0.0
     s.pitch_rate = 0.0
+    s.alpha_depower = 0.0
+    s.depower = 0.0
+    s.steering = 0.0
+    s.kcu_steering = 0.0
+    s.set_torque = nothing
+    s.set_force = nothing
+    s.bearing = nothing
+    s.attractor = nothing
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
 end
 
 function KPS4(kcu::KCU)
-    if kcu.set.winch_model == "AsyncMachine"
-        wm = AsyncMachine(kcu.set)
+    wm = if kcu.set.winch_model == "AsyncMachine"
+        AsyncMachine(kcu.set)
     elseif kcu.set.winch_model == "TorqueControlledMachine"
-        wm = TorqueControlledMachine(kcu.set)
+        TorqueControlledMachine(kcu.set)
     end
     # wm.last_set_speed = kcu.set.v_reel_out
     s = KPS4{SimFloat, KVec3, kcu.set.segments+KITE_PARTICLES+1, kcu.set.segments+KITE_SPRINGS, SP}(set=kcu.set, 
@@ -347,6 +379,11 @@ Updates the vector s.forces of the first parameter.
     s.alpha_3 = alpha_3
     s.alpha_4 = alpha_4
 
+    # Wrap alpha values to [-180, 180] to stay within the CL/CD spline data range
+    if alpha_2 > 180.0; alpha_2 -= 360.0; elseif alpha_2 < -180.0; alpha_2 += 360.0; end
+    if alpha_3 > 180.0; alpha_3 -= 360.0; elseif alpha_3 < -180.0; alpha_3 += 360.0; end
+    if alpha_4 > 180.0; alpha_4 -= 360.0; elseif alpha_4 < -180.0; alpha_4 += 360.0; end
+
     if s.set.version == 3
         drag_corr = 1.0
     else
@@ -465,7 +502,7 @@ function residual!(res, yd, y::Vector{SimFloat}, s::KPS4, time)
     yd_ =  MVector{S, SimFloat}(yd)
     residual!(res, yd_, y_, s, time)
 end
-function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, time) where S
+function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, _) where S
     T = S-2 # T: three times the number of particles excluding the origin
     segments = div(T,6) - KITE_PARTICLES
     
@@ -585,9 +622,13 @@ function cl_cd(s::KPS4)
     else
         drag_corr = DRAG_CORR
     end
-    CL2, CD2 = s.calc_cl(s.alpha_2), drag_corr * s.calc_cd(s.alpha_2)
-    CL3, CD3 = s.calc_cl(s.alpha_3), drag_corr * s.calc_cd(s.alpha_3)
-    CL4, CD4 = s.calc_cl(s.alpha_4), drag_corr * s.calc_cd(s.alpha_4)
+    a2, a3, a4 = s.alpha_2, s.alpha_3, s.alpha_4
+    if a2 > 180.0; a2 -= 360.0; elseif a2 < -180.0; a2 += 360.0; end
+    if a3 > 180.0; a3 -= 360.0; elseif a3 < -180.0; a3 += 360.0; end
+    if a4 > 180.0; a4 -= 360.0; elseif a4 < -180.0; a4 += 360.0; end
+    CL2, CD2 = s.calc_cl(a2), drag_corr * s.calc_cd(a2)
+    _, CD3   = s.calc_cl(a3), drag_corr * s.calc_cd(a3)
+    _, CD4   = s.calc_cl(a4), drag_corr * s.calc_cd(a4)
     if s.set.version == 3
         return CL2, CD2
     else
@@ -642,16 +683,15 @@ function turn(res, upwind_dir)
 end
 
 """
-    find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0.035, upwind_dir=-pi/2))
+    find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2))
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 """
-function find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0.035, upwind_dir=-pi/2)
+function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir=-pi/2)
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
-    iter = 0
 
     # helper function for the steady state finder
     function test_initial_condition!(F, x::Vector)
@@ -659,8 +699,11 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0
         y0, yd0 = init(s, x1; delta)
         try
             residual!(res, yd0, y0, s, 0.0)
-        catch e
-            println("Warning in test_initial_condition!")
+        catch _
+            @warn "Warning in test_initial_condition!"
+            # Fill F with large values so the solver treats this point as infeasible
+            F .= 1.0e6
+            return nothing
         end
         for i in 1:s.set.segments+KITE_PARTICLES-1
             if i != s.set.segments+KITE_PARTICLES-1
@@ -679,17 +722,19 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.01, stiffness_factor=0
         # copy the acceleration of point C in y direction
         i = s.set.segments+3 
         x = res[1 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
-        y = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
         F[end]                                 = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)] 
-        iter += 1
         return nothing 
     end
     if prn println("\nStarted function test_nlsolve...") end
     X00 = zeros(SimFloat, 2*(s.set.segments+KITE_PARTICLES-1)+2)
-    results = nlsolve(test_initial_condition!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
+    jac! = make_jac(test_initial_condition!, length(X00))
+    results = nlsolve(test_initial_condition!, jac!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
     if prn println("\nresult: $results") end
-    y0, yd0 = init(s, results.zero; upwind_dir)
+    if !converged(results)
+        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+    end
+    y00, yd00 = init(s, results.zero; upwind_dir)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    residual!(res, yd0, y0, s, 0.0)
-    y0, yd0
+    residual!(res, yd00, y00, s, 0.0)
+    y00, yd00
 end

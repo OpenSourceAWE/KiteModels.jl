@@ -24,22 +24,23 @@ end::Bool
 
 cd("..")
 KiteUtils.set_data_path("") 
+
 @testset verbose = true "Testing KiteModels..." begin
-    include("test_orientation.jl")
-    println("--> 1")
-    include("test_kps3.jl")
-    println("--> 2")
-    include("test_kps4.jl")
-    println("--> 3")
+    for (_, _, files) in walkdir(@__DIR__)
+        for file in files
+            if isnothing(match(r"^test-.*\.jl$", file))
+                continue
+            end
+            title = titlecase(replace(splitext(file[6:end])[1], "-" => " "))
+            title = rpad(title, 25)
+            @testset "$title" begin
+                Base.include(Module(), joinpath(@__DIR__, file))
+            end
+        end
+    end
+
     if build_is_production_build
         include("bench3.jl")
         include("bench4.jl")
     end
-    include("test_helpers.jl")
-    println("--> 4")
-    include("test_inertia_calculation.jl")
-    println("--> 5")
-    include("test_interface.jl")
-    println("--> 6")
-    include("aqua.jl")
 end

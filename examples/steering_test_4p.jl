@@ -3,7 +3,7 @@
 
 # apply different rel_steering values and plot turn rate
 using Printf
-using KiteModels, KitePodModels, KiteUtils, Pkg
+using KiteModels, KitePodModels, Pkg
 using KiteUtils: Settings, load_settings
 
 set::Settings = if haskey(ENV, "USE_V9")
@@ -104,7 +104,7 @@ function simulate(integrator, steps; plot=false)
 end
 
 
-integrator = KiteModels.init!(kps4;  delta=0.0, stiffness_factor=1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 simulate(integrator, STEPS; plot=true)
 
 function delay(x, y, t_max = 10)
