@@ -192,6 +192,7 @@ Initialize the kite power model.
 """
 function clear!(s::KPS4)
     s.t_0 = 0.0                              # relative start time of the current time interval
+    s.iter = 0
     s.v_reel_out = s.set.v_reel_out
     s.last_v_reel_out = s.set.v_reel_out
     s.sync_speed = s.set.v_reel_out
@@ -211,14 +212,45 @@ function clear!(s::KPS4)
     s.drag_force .= [0.0, 0, 0]
     s.lift_force .= [0.0, 0, 0]
     s.side_force .= [0.0, 0, 0]
+    s.f_d .= [0.0, 0, 0]
+    s.f_s .= [0.0, 0, 0]
+    s.spring_force .= [0.0, 0, 0]
+    s.last_force .= [0.0, 0, 0]
+    s.vel_kite .= [0.0, 0, 0]
+    s.x .= [0.0, 0, 0]
+    s.y .= [0.0, 0, 0]
+    s.z .= [0.0, 0, 0]
+    for i in eachindex(s.pos)
+        s.pos[i] .= zeros(3)
+        s.vel[i] .= zeros(3)
+        s.res1[i] .= zeros(3)
+        s.res2[i] .= zeros(3)
+    end
+    s.side_cl = 0.0
+    s.side_slip = 0.0
+    s.alpha_2 = 0.0
+    s.alpha_3 = 0.0
+    s.alpha_4 = 0.0
+    s.param_cl = 0.2
+    s.param_cd = 1.0
+    s.psi = 0.0
     s.rho = s.set.rho_0
     s.bridle_factor = s.set.l_bridle / bridle_length(s.set)
     s.ks = deg2rad(s.set.max_steering) 
     s.kcu.depower = s.set.depower/100.0
     s.kcu.set_depower = s.kcu.depower
-    _, pitch, _ = orient_euler(s)
-    s.pitch = pitch
+    s.kcu.steering = 0.0
+    s.kcu.set_steering = 0.0
+    s.pitch = 0.0
     s.pitch_rate = 0.0
+    s.alpha_depower = 0.0
+    s.depower = 0.0
+    s.steering = 0.0
+    s.kcu_steering = 0.0
+    s.set_torque = nothing
+    s.set_force = nothing
+    s.bearing = nothing
+    s.attractor = nothing
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
 end
 
@@ -346,6 +378,11 @@ Updates the vector s.forces of the first parameter.
     s.alpha_2 = alpha_2
     s.alpha_3 = alpha_3
     s.alpha_4 = alpha_4
+
+    # Wrap alpha values to [-180, 180] to stay within the CL/CD spline data range
+    if alpha_2 > 180.0; alpha_2 -= 360.0; elseif alpha_2 < -180.0; alpha_2 += 360.0; end
+    if alpha_3 > 180.0; alpha_3 -= 360.0; elseif alpha_3 < -180.0; alpha_3 += 360.0; end
+    if alpha_4 > 180.0; alpha_4 -= 360.0; elseif alpha_4 < -180.0; alpha_4 += 360.0; end
 
     if s.set.version == 3
         drag_corr = 1.0
@@ -585,9 +622,13 @@ function cl_cd(s::KPS4)
     else
         drag_corr = DRAG_CORR
     end
-    CL2, CD2 = s.calc_cl(s.alpha_2), drag_corr * s.calc_cd(s.alpha_2)
-    _, CD3   = s.calc_cl(s.alpha_3), drag_corr * s.calc_cd(s.alpha_3)
-    _, CD4   = s.calc_cl(s.alpha_4), drag_corr * s.calc_cd(s.alpha_4)
+    a2, a3, a4 = s.alpha_2, s.alpha_3, s.alpha_4
+    if a2 > 180.0; a2 -= 360.0; elseif a2 < -180.0; a2 += 360.0; end
+    if a3 > 180.0; a3 -= 360.0; elseif a3 < -180.0; a3 += 360.0; end
+    if a4 > 180.0; a4 -= 360.0; elseif a4 < -180.0; a4 += 360.0; end
+    CL2, CD2 = s.calc_cl(a2), drag_corr * s.calc_cd(a2)
+    _, CD3   = s.calc_cl(a3), drag_corr * s.calc_cd(a3)
+    _, CD4   = s.calc_cl(a4), drag_corr * s.calc_cd(a4)
     if s.set.version == 3
         return CL2, CD2
     else

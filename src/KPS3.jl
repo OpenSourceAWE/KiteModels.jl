@@ -174,6 +174,8 @@ function clear!(s::KPS3)
     s.axial_damping  = s.set.axial_damping / s.segment_length
     s.kcu.depower = s.set.depower/100.0
     s.kcu.set_depower = s.kcu.depower
+    s.kcu.steering = 0.0
+    s.kcu.set_steering = 0.0
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
 end
 
