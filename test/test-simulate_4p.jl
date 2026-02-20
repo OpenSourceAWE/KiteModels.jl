@@ -26,7 +26,7 @@ end
 
 function simulate(kps4, integrator, steps)
     iter = 0
-    for i in 1:steps
+    for _ in 1:steps
         next_step!(kps4, integrator; set_speed=0)
         iter += kps4.iter
     end
