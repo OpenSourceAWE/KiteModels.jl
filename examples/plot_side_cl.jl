@@ -82,15 +82,18 @@ STEERING = zeros(length(SET_STEERING))
 SIDE_CL  = zeros(length(SET_STEERING))
 for (i, set_steering) in pairs(SET_STEERING)
     local side_cl, integrator
-    integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=1, prn=STATISTIC)
+    kps4.set.max_iter = 1000
+    kps4.set.elevation = 69.4+0.4
+    integrator = KiteModels.init!(kps4;  delta=0.0006, stiffness_factor=0.035, prn=STATISTIC)
     side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
-    if side_cl == 0.0
-        integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=1, prn=STATISTIC)
-        side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
-    end
+    # if side_cl == 0.0
+    #     integrator = KiteModels.init!(kps4;  delta=0.0006, stiffness_factor=0.035, prn=STATISTIC)
+    #     side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
+    # end
     SIDE_CL[i] = side_cl
     STEERING[i] = steering
     println("steering: $set_steering, side_cl: $side_cl")
+    # break
 end
 # p = plot(SET_STEERING, SIDE_CL; xlabel="rel_steering [-]", 
 #          ylabel="side lift coefficient [-]", fig="Side lift coefficient vs steering")
