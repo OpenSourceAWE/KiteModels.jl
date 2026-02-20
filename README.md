@@ -17,10 +17,10 @@ SPDX-License-Identifier: MIT
 
 The models have the following subcomponents, implemented in separate packages:
 
-- AtmosphericModel from [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
+- AtmosphericModel from [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
 - WinchModel from [WinchModels](https://github.com/aenarete/WinchModels.jl)
 - KitePodModel from  [KitePodModels](https://github.com/aenarete/KitePodModels.jl)
-- The aerodynamic forces and moments of some of the models are calculated using the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl)
+- The aerodynamic forces and moments of some of the models are calculated using the package [VortexStepMethod](https://github.com/OpenSourceAWE/VortexStepMethod.jl)
 
 This package is part of Julia Kite Power Tools, which consists of the following packages:
 <p align="center"><img src="https://github.com/aenarete/WinchModels.jl/blob/main/docs/kite_power_tools.png" alt="Julia Kite Power Tools package overview" width="500" /></p>
