@@ -26,6 +26,7 @@ set.abs_tol=0.0006
 set.rel_tol=0.00001
 set.l_tether=200
 set.v_wind = 8.0
+set.winch_model = "TorqueControlledMachine" # calc_spectrum uses torque-based excitation
 # set.cmq = -0.0 # default: -0.09
 
 # the following values can be changed to match your interest
@@ -61,7 +62,7 @@ include("filters.jl")
 include("winch_controller.jl")
 wcs::WinchSpeedController = WinchSpeedController(dt=dt)
 
-function simulate(kps4, integrator, logger, steps, f_ex)
+function simulate(kps4, integrator, logger, steps, f_ex, sin_amplitude)
     local filtered_force
     SIN = 0.5*sin.(2*π*f_ex*TIME)
     iter = 0
@@ -80,7 +81,7 @@ function simulate(kps4, integrator, logger, steps, f_ex)
         delayed_v_reelout = apply_delay(kps4.v_reel_out, buffer2, i; delay=2)
         v_set = 0.0
         set_torque = calc_set_torque(set, wcs, v_set, delayed_v_reelout, filtered_force)
-        set_torque += 200*SIN[i]
+        set_torque += sin_amplitude*SIN[i]
         next_step!(kps4, integrator; set_torque, dt)
         # println(kps4.va_z)
         sys_state = KiteModels.SysState(kps4)
@@ -100,7 +101,9 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     kps4::KPS4 = KPS4(kcu)
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.04, prn=STATISTIC)
     set_depower_steering(kps4.kcu, depower, 0.0)
-    simulate(kps4, integrator, logger, STEPS, f_ex)
+    # scale excitation amplitude to the steady-state winch torque for any kite size
+    sin_amplitude = 6.8 * norm(kps4.forces[1]) * set.drum_radius / set.gear_ratio
+    simulate(kps4, integrator, logger, STEPS, f_ex, sin_amplitude)
     save_log(logger, "tmp")
     if PLOT
         p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"], 
