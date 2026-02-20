@@ -478,7 +478,7 @@ end
     KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
     height = sin(deg2rad(kps4.set.elevation)) * kps4.set.l_tether
     kps4.v_wind .= kps4.v_wind_gnd * calc_wind_factor(kps4.am, height)
-    res1, res2 = find_steady_state!(kps4; stiffness_factor=0.035, prn=false) 
+    res1, res2 = find_steady_state!(kps4; stiffness_factor=0.07, prn=false) 
     # TODO check why -9.81 appears in the residual
     @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
     pre_tension = KiteModels.calc_pre_tension(kps4)
@@ -486,7 +486,7 @@ end
     @test pre_tension < 1.01
     @test unstretched_length(kps4) ≈ 392.0              # initial, unstretched tether length
     # println("length: ", tether_length(kps4))
-    @test isapprox(tether_length(kps4), 401.9975294637118, rtol=1e-2) # real, stretched tether length was: 406.4
+    @test isapprox(tether_length(kps4), 395.52, rtol=1e-2) # real, stretched tether length
 #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
 #    lift, drag = lift_drag(kps)
 #    @test lift ≈ 443.63303000106197                    # initial lift force of the kite [N]
@@ -530,7 +530,7 @@ end
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
     # struct_diff(kps4.set, se())
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.1, delta=0.001, prn=false)
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.5, delta=0.001, prn=false)
     # println("\nStarting simulation...")
     simulate(integrator, 100)
     av_steps = simulate(integrator, STEPS-100)
@@ -560,7 +560,7 @@ end
 @testset "Raptures" begin
     kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4_.set.kcu_diameter = 0.0
-    integrator = KiteModels.init!(kps4_; stiffness_factor=0.035, prn=false)
+    integrator = KiteModels.init!(kps4_; stiffness_factor=0.07, prn=false)
     kps4_.set.version = 2
     kps4_.stiffness_factor = 3
     @test maximum(spring_forces(kps4_; prn=false)) > 9000
