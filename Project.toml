@@ -4,7 +4,7 @@ version = "0.11.0"
 authors = ["Uwe Fechner <fechner@aenarete.eu> and contributors"]
 
 [workspace]
-projects = ["examples", "docs", "test"]
+projects = ["examples", "examples_3d", "docs", "test"]
 
 [deps]
 AtmosphericModels = "c59cac55-771d-4f45-b14d-1c681463a295"
