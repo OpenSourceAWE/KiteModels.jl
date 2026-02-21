@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
 
 #### Fixed
 - examples_3d/parking_4p.jl is working now
+- examples_3d/show_kite.jl is working now
 
 ### KiteModels v0.11.0 2026-02-20
 #### Changed
