@@ -2,7 +2,7 @@
 
 julia_version = "1.11.9"
 manifest_format = "2.0"
-project_hash = "d3d43a7886ed95989bfd4f803e6ec0f3412fd512"
+project_hash = "865581231c0748323dd83b1c9254736166b4b1dc"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -320,9 +320,9 @@ version = "0.2.0+0"
 
 [[deps.DiffEqBase]]
 deps = ["ArrayInterface", "BracketingNonlinearSolve", "ConcreteStructs", "DocStringExtensions", "FastBroadcast", "FastClosures", "FastPower", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "Setfield", "Static", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
-git-tree-sha1 = "71eb86b6c30d629617e427263fee4cef1f0f51cf"
+git-tree-sha1 = "a3db6541b36fa5082dbce151d60cded925cdf303"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.206.0"
+version = "6.208.0"
 
     [deps.DiffEqBase.extensions]
     DiffEqBaseCUDAExt = "CUDA"
@@ -423,9 +423,9 @@ version = "0.7.16"
 
 [[deps.DiscretePIDs]]
 deps = ["Printf"]
-git-tree-sha1 = "a408dafd767df789eaef204c0b5d451f004bf572"
+git-tree-sha1 = "48220aac3474ee9371c731644bfddc46cb841d4b"
 uuid = "c1363496-6848-4723-8758-079b737f6baf"
-version = "0.1.7"
+version = "1.0.0"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
@@ -1100,15 +1100,15 @@ version = "1.8.1"
 
 [[deps.OrdinaryDiffEqBDF]]
 deps = ["ADTypes", "ArrayInterface", "DiffEqBase", "FastBroadcast", "LinearAlgebra", "MacroTools", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqSDIRK", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays", "TruncatedStacktraces"]
-git-tree-sha1 = "8ee2d193c90fd4963d7e0c5efd9d7af56832bb73"
+git-tree-sha1 = "52be1662eb3fcd4c26885d83e2626ec645e0780d"
 uuid = "6ad6398a-0878-4a85-9266-38940aa047c8"
-version = "1.17.0"
+version = "1.18.0"
 
 [[deps.OrdinaryDiffEqCore]]
 deps = ["ADTypes", "Accessors", "Adapt", "ArrayInterface", "ConcreteStructs", "DataStructures", "DiffEqBase", "DocStringExtensions", "EnumX", "EnzymeCore", "FastBroadcast", "FastClosures", "FastPower", "FillArrays", "FunctionWrappersWrappers", "InteractiveUtils", "LinearAlgebra", "Logging", "MacroTools", "MuladdMacro", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "SciMLStructures", "Static", "StaticArrayInterface", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
-git-tree-sha1 = "61ebd6dbcb288df48ab2dc0020d4a615cf335d5e"
+git-tree-sha1 = "a8d004cdb3506a3b99405726173bf76b7de813e1"
 uuid = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
-version = "3.5.2"
+version = "3.6.0"
 
     [deps.OrdinaryDiffEqCore.extensions]
     OrdinaryDiffEqCoreMooncakeExt = "Mooncake"
@@ -1337,9 +1337,9 @@ version = "0.1.0"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "Accessors", "Adapt", "ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "Moshi", "PreallocationTools", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLLogging", "SciMLOperators", "SciMLPublic", "SciMLStructures", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface"]
-git-tree-sha1 = "cfbb2b828940381def7e1ad6e45e402ebe6a2ebb"
+git-tree-sha1 = "48ee0ab0f2d361cedbc251378112ebce2e0b24c8"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.140.0"
+version = "2.142.0"
 
     [deps.SciMLBase.extensions]
     SciMLBaseChainRulesCoreExt = "ChainRulesCore"
@@ -1728,9 +1728,9 @@ version = "1.4.2"
 
 [[deps.WinchModels]]
 deps = ["DiscretePIDs", "KiteUtils", "Parameters"]
-git-tree-sha1 = "7d301a671e812d9a7d3d7163ea5dce2d9e7e5dc4"
+git-tree-sha1 = "f069217475c08e9dffc2a26457556efcc8e236f3"
 uuid = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
-version = "0.3.8"
+version = "0.3.9"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
