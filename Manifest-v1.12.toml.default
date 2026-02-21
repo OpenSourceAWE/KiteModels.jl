@@ -2,7 +2,7 @@
 
 julia_version = "1.12.5"
 manifest_format = "2.0"
-project_hash = "5e4da63255884a1fe0270cff72200b0225f86238"
+project_hash = "1776ca01c0fd96c8ac5982fec3f5d1bcd2191a38"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -400,9 +400,9 @@ version = "0.2.0+0"
 
 [[deps.DiffEqBase]]
 deps = ["ArrayInterface", "BracketingNonlinearSolve", "ConcreteStructs", "DocStringExtensions", "FastBroadcast", "FastClosures", "FastPower", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "Setfield", "Static", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
-git-tree-sha1 = "71eb86b6c30d629617e427263fee4cef1f0f51cf"
+git-tree-sha1 = "a0bf66dd9752c0654b9274651e3811345bdc44bb"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.206.0"
+version = "6.207.0"
 
     [deps.DiffEqBase.extensions]
     DiffEqBaseCUDAExt = "CUDA"
@@ -503,9 +503,9 @@ version = "0.7.16"
 
 [[deps.DiscretePIDs]]
 deps = ["Printf"]
-git-tree-sha1 = "a408dafd767df789eaef204c0b5d451f004bf572"
+git-tree-sha1 = "48220aac3474ee9371c731644bfddc46cb841d4b"
 uuid = "c1363496-6848-4723-8758-079b737f6baf"
-version = "0.1.7"
+version = "1.0.0"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
@@ -2051,9 +2051,9 @@ version = "1.4.2"
 
 [[deps.WinchModels]]
 deps = ["DiscretePIDs", "KiteUtils", "Parameters"]
-git-tree-sha1 = "7d301a671e812d9a7d3d7163ea5dce2d9e7e5dc4"
+git-tree-sha1 = "f069217475c08e9dffc2a26457556efcc8e236f3"
 uuid = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
-version = "0.3.8"
+version = "0.3.9"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
