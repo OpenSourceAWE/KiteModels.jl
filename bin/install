@@ -92,15 +92,19 @@ if [[ $julia_major == "1.11" ]]; then
     # Seed test and examples manifests from the main manifest so that
     # shared dependencies use the same package versions.
     # Pkg.resolve() would add the extra deps needed by test/examples.
-    rm -f examples/Manifest*.toml test/Manifest*.toml
+    rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
     cp "Manifest-v${julia_major}.toml" "examples/Manifest-v${julia_major}.toml"
     cp "Manifest-v${julia_major}.toml" "test/Manifest-v${julia_major}.toml"
+    cp "Manifest-v${julia_major}.toml" "examples_3d/Manifest-v${julia_major}.toml"
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
     julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
+    julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    echo "Precompiling examples_3d project..."
+    julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
 
     # Rename the manifest file to version-specific name
     if [ -f "examples/Manifest.toml" ]; then
@@ -111,6 +115,10 @@ if [[ $julia_major == "1.11" ]]; then
         mv test/Manifest.toml test/Manifest-v${julia_major}.toml
         echo "Renamed test/Manifest.toml to test/Manifest-v${julia_major}.toml"
     fi
+    if [ -f "examples_3d/Manifest.toml" ]; then
+        mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
+        echo "Renamed examples_3d/Manifest.toml to examples_3d/Manifest-v${julia_major}.toml"
+    fi
 else
     echo "Julia $julia_major uses workspaces; examples and test share the main manifest."
     echo "Precompiling examples project..."
@@ -118,6 +126,9 @@ else
     echo "Precompiling test project and running the tests..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project -e 'using Pkg; Pkg.test()'
+    echo "Instantiating and precompiling examples_3d project..."
+    julia --project=examples_3d -e 'using Pkg; Pkg.instantiate()'
+    julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
 fi
 
 echo "Installation complete!"
