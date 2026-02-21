@@ -16,7 +16,7 @@ if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     # pkg"add KiteModels#azimuth"
 end
 using KiteModels, KitePodModels, KiteUtils, Rotations, StaticArrays
-using ControlPlots, KiteViewers
+using KiteViewers, ControlPlots
 toc()
 
 set = deepcopy(se())
@@ -75,17 +75,17 @@ function simulate(integrator, steps, plot=PLOT)
             sleep(0.05)           
         end
         sys_state = SysState(kps4)
-        q = QuatRotation(sys_state.orient)
+        # q = QuatRotation(sys_state.orient)
         # roll, pitch, yaw = quat2euler(q)
         # println("Yaw: ", rad2deg(yaw), ", Pitch: ", rad2deg(pitch), ", Roll: ", rad2deg(roll))
 
-        sys_state.orient = quat2viewer(q)
+        # sys_state.orient = quat2viewer(q)
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
     end
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4, delta=0, stiffness_factor=0.5, prn=STATISTIC)
+integrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, STEPS)
