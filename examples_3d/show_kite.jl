@@ -80,6 +80,7 @@ q = QuatRotation(rot)
 viewer::Viewer3D = Viewer3D(true);
 segments=6
 state=demo_state_4p(segments+1, 12; azimuth_north=pi-yaw)
-state.orient = quat2viewer(q)
-update_system(viewer, state, kite_scale=0.25)
+# state.orient = quat2viewer(q)
+state.orient = MVector{4, Float32}(q.w, q.x, q.y, q.z)
+update_system(viewer, state, kite_scale=0.25; ned=true)
 nothing
