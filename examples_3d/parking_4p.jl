@@ -13,7 +13,7 @@ tic()
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples_3d")
 end
-using KiteModels, KitePodModels, KiteUtils, Rotations, StaticArrays
+using KiteModels, KitePodModels, Rotations, StaticArrays
 using KiteViewers
 using ControlPlots: plot, plot2d, plotx
 toc()
