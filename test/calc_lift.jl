@@ -44,7 +44,7 @@ c_d = Spline1D(deg2rad.(alpha_cd), cd_list)
 function acos2(arg)
     arg2 = min(max(arg, -one(arg)), one(arg))
     acos(arg2)
- end
+end
 
 function calc_lift(; n=10, left_line=150.0, right_line=150.0)
     # Define functions
