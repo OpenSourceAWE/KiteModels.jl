@@ -9,9 +9,9 @@ if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
 end
 @info "Loading packages ..."
 using AtmosphericModels, Colors, ControlSystemsBase, DSP, Dierckx, DiscretePIDs,
-    DocStringExtensions, JLD2, KitePodModels, KiteUtils, LinearAlgebra, NLsolve,
+    DocStringExtensions, JLD2, KitePodModels, KiteUtils, KiteViewers, LinearAlgebra, NLsolve,
     NonlinearSolve, OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve,
-    Parameters, REPL, StaticArrays, StatsBase, Sundials, WinchModels
+    Parameters, REPL, Rotations, StaticArrays, StatsBase, Sundials, WinchModels
 using BenchmarkTools, Documenter, PackageCompiler
 
 @info "Creating sysimage ..."
@@ -22,7 +22,7 @@ PackageCompiler.create_sysimage(
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
      :OrdinaryDiffEqNonlinearSolve, :StatsBase, :BenchmarkTools, :Documenter,
      :JLD2, :Colors, :REPL, :NonlinearSolve, :DSP, :DiscretePIDs, 
-     :ControlSystemsBase];
+     :ControlSystemsBase, :KiteViewers, :Rotations];
     sysimage_path="kps-image_tmp.so",
     include_transitive_dependencies=true,
     precompile_execution_file=joinpath("test", "test_for_precompile.jl")

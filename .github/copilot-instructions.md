@@ -87,7 +87,7 @@ Settings are in `data/` as YAML files. Key sections:
 - **ModelingToolkit**: Symbolic model generation (SymbolicAWEModel)
 - **VortexStepMethod**: Aerodynamics for RAM air kites
 - **KiteUtils**: Settings, state types, utilities
-- **ControlPlots** (optional extension): Plotting via `ext/KiteModelsControlPlotsExt.jl`
+- **ControlPlots**: Plotting used directly in example scripts
 
 ## Testing Notes
 

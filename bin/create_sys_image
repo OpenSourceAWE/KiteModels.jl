@@ -174,9 +174,11 @@ else
     fi
 fi
 if [[ $update == true ]]; then
+    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.update();"
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "include(\"./test/create_sys_image.jl\");"
 else
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.instantiate();"
+    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.instantiate();"
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
 fi
 
@@ -200,7 +202,7 @@ fi
 rm LocalPreferences.toml
 echo "Precompiling package KiteModels..."
 $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using KiteModels, KitePodModels, KiteUtils"
-echo "Precompiling package ControlPlots and KiteModelsControlPlotsExt ..."
+echo "Precompiling package ControlPlots ..."
 if [[ $branch != "" ]]; then
     $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using Pkg; Pkg.activate(\"test\"); using ControlPlots, KiteModels"
 else
