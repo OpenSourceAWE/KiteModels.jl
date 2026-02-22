@@ -12,11 +12,10 @@ using Pkg, Timers
 tic()
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples_3d")
-    # pkg"add KiteUtils#main"
-    # pkg"add KiteModels#azimuth"
 end
 using KiteModels, KitePodModels, KiteUtils, Rotations, StaticArrays
-using KiteViewers, ControlPlots
+using KiteViewers
+using ControlPlots: plot, plot2d, plotx
 toc()
 
 set = deepcopy(se())
