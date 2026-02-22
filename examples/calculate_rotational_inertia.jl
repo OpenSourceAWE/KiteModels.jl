@@ -1,6 +1,6 @@
 # Copyright (c) 2023, 2024 Daan van Wolffelaar,
 # SPDX-License-Identifier: MIT
-using KiteUtils
+using KiteUtils: load_settings
 using KiteModels
 
 function print_inertia_matrix(Ixx, Ixy, Ixz, Iyy, Iyz, Izz)
