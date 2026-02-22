@@ -186,10 +186,9 @@ if [[ $update == true ]]; then
 else
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.instantiate();"
     # Seed sub-project manifests from main manifest and resolve
-    rm -f examples_3d/Manifest*.toml test/Manifest*.toml docs/Manifest*.toml
+    rm -f examples_3d/Manifest*.toml test/Manifest*.toml
     cp "Manifest-v${julia_major}.toml" "examples_3d/Manifest-v${julia_major}.toml"
     cp "Manifest-v${julia_major}.toml" "test/Manifest-v${julia_major}.toml"
-    cp "Manifest-v${julia_major}.toml" "docs/Manifest-v${julia_major}.toml"
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.resolve(); Pkg.instantiate();"
     if [ -f "examples_3d/Manifest.toml" ]; then
         mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
@@ -198,6 +197,8 @@ else
     if [ -f "test/Manifest.toml" ]; then
         mv test/Manifest.toml test/Manifest-v${julia_major}.toml
     fi
+    # Resolve docs independently (different dep tree; seeding from main causes missing extensions)
+    rm -f docs/Manifest*.toml
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.resolve(); Pkg.instantiate();"
     if [ -f "docs/Manifest.toml" ]; then
         mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
