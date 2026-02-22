@@ -130,6 +130,7 @@ else
     julia --project=examples_3d -e 'using Pkg; Pkg.instantiate()'
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
 fi
+julia --project=examples_3d -e 'using KiteViewers'
 
 echo "Installation complete!"
 echo
