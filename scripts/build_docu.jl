@@ -15,11 +15,6 @@ function globaldependencies()
     globaldependencies
 end
 
-if !("LiveServer" in globaldependencies())
-    println("Installing LiveServer globally!")
-    run(`julia -e 'using Pkg; Pkg.add("LiveServer")'`)
-end
-
 if !("Documenter" ∈ keys(Pkg.project().dependencies))
     using Pkg
     Pkg.activate("docs")
