@@ -179,6 +179,8 @@ if [[ $update == true ]]; then
 else
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.instantiate();"
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.instantiate();"
+    rm -f test/Manifest.toml test/Manifest-v*.toml
+    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.resolve(); Pkg.instantiate();"
     $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
 fi
 
