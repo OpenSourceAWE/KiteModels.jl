@@ -20,7 +20,7 @@ push!(LOAD_PATH,joinpath(pwd(),"src"))
 PackageCompiler.create_sysimage(
     [:Dierckx, :StaticArrays, :Parameters, :NLsolve, :DocStringExtensions, :Sundials, :KiteUtils, 
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
-     :OrdinaryDiffEqNonlinearSolve, :StatsBase, :PackageCompiler, :BenchmarkTools, :Documenter,
+     :OrdinaryDiffEqNonlinearSolve, :StatsBase, :BenchmarkTools, :Documenter,
      :JLD2, :Colors, :REPL, :NonlinearSolve, :DSP, :DiscretePIDs, 
      :ControlSystemsBase];
     sysimage_path="kps-image_tmp.so",
