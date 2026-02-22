@@ -11,5 +11,4 @@ export JULIA_DEPOT_PATH=/tmp/testdepot
 export JULIA_PKG_SERVER_REGISTRY_PREFERANCE=eager
 git clone https://github.com/OpenSourceAWE/KiteModels.jl.git
 cd KiteModels.jl
-julia -e 'using Pkg; Pkg.add("TestEnv")'
 julia --project -e 'using Pkg; Pkg.instantiate()'
