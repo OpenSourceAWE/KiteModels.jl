@@ -84,8 +84,10 @@ function simulate(integrator, steps, plot=PLOT)
     end
     iter / steps
 end
+toc()
 
 integrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
+toc()
 
 println("\nStarting simulation...")
 simulate(integrator, STEPS)
