@@ -173,7 +173,7 @@ This model assumes the kite to consist of four-point masses with aerodynamic for
 
 ## Tether
 
-The tether is modeled as point masses, connected by spring-damper elements. Aerodynamic drag is modeled realistically. When reeling out or in the unstreched length of the spring-damper elements
+The tether is modeled as point masses, connected by spring-damper elements. Aerodynamic drag is modeled realistically. When reeling out or in the unstretched length of the spring-damper elements
 is varied. This does not translate into physics directly, but it avoids adding point masses at run-time, which would be even worse because it would introduce discontinuities. When using
 Dyneema or similar high-strength materials for the tether the resulting system is very stiff which is a challenge for the solver.
 
