@@ -4,13 +4,11 @@
 # park the kind while the wind direction changes
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using Pkg
-    using TestEnv; TestEnv.activate()
+    Pkg.activate(joinpath(@__DIR__))
 end
 using Timers; tic()
 
-using KiteControllers, KiteViewers, KiteModels, ControlPlots, Rotations, StatsBase
-import KiteControllers: calc_steering
+using KiteViewers, KiteModels, ControlPlots, Rotations
 
 if haskey(ENV, "USE_V9")
     set = deepcopy(load_settings("system_v9.yaml"))
@@ -28,19 +26,7 @@ pcs = pcm.ParkingControllerSettings(dt=0.05)
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 @assert set.sample_freq == 20
-wcs::WCSettings = WCSettings(dt = 1/set.sample_freq)
-@assert wc_settings() == "wc_settings.yaml"
-update(wcs); wcs.dt = 1/set.sample_freq
-fcs::FPCSettings = FPCSettings(dt = wcs.dt)
-@assert fpc_settings() == "fpc_settings.yaml"
-update(fcs); fcs.dt = wcs.dt
-fpps::FPPSettings = FPPSettings()
-@assert fpp_settings() == "fpp_settings.yaml"
-update(fpps)
-u_d0 = 0.01 * set.depower_offset
-u_d = 0.01 * set.depower
-ssc::SystemStateControl = SystemStateControl(wcs, fcs, fpps; u_d0, u_d, v_wind = set.v_wind)
-dt::Float64 = wcs.dt
+dt::Float64 = 1/set.sample_freq
 
 
 if KiteUtils.PROJECT == "system.yaml"
@@ -96,7 +82,6 @@ function sim_parking(integrator)
     max_time = 0
     t_gc_tot = 0
     sys_state = SysState(kps4)
-    on_new_systate(ssc, sys_state)
     while true
         time = i * dt 
         steering = 0.0
@@ -138,14 +123,12 @@ function sim_parking(integrator)
         AZIMUTH[i] = sys_state.azimuth
         AZIMUTH_EAST[i] = calc_azimuth_east(kps4)
         HEADING[i] = wrap2pi(sys_state.heading)
-        on_new_systate(ssc, sys_state)
         if mod(i, TIME_LAPSE_RATIO) == 0
             if KiteUtils.PROJECT == "system.yaml"
                 KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
             else
                 KiteViewers.update_system(viewer, sys_state; scale = 0.08*0.5, kite_scale=3)
             end
-            set_status(viewer, String(Symbol(ssc.state)))
             wait_until(start_time_ns + 1e9*dt, always_sleep=true) 
             mtime = 0
             if i > 10/dt 
