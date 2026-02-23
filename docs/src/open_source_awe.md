@@ -1,11 +1,4 @@
-```{=latex}
-\begin{center}
-\begingroup
-\Large\bfseries\linespread{1.2}\selectfont
-KiteModels.jl as example for an OpenSourceAWE project - a workshop\par
-\endgroup
-\end{center}
-```
+# KiteModels.jl as example for an OpenSourceAWE project - a workshop
 
 ## Introduction
 For the progress of airborne wind energy report it is important that new researchers can build on top of the results
@@ -66,10 +59,6 @@ and run one of the two example menus:
 
 ```julia
 menu() # or menu2()
-```
-
-```{=latex}
-\newpage
 ```
 
 ### The examples
@@ -277,6 +266,21 @@ environment:
 ```{=latex}
 \normalsize
 ```
+
+## Questions
+After this workshop, you should be able to answer the following questions:
+
+- What is the meaning of parking mode of operation?
+- Can rigid wing AWE systems operate in parking mode?
+- Which winch models are currently available?
+- How can the constants C1 and C2 of the turn-rate law be determined/ validated using this software?
+- How does the tether force depend on the wind speed?
+- How does the wind speed depend on the height in this model? How can that be configured?
+- What is the advantage and disadvantage of the one-point model compared to the four-point model?
+- How many tether segments are needed for a good accuracy in parking mode?
+- Why is it less important to have many tether segments during reel-out compared to reel-in?
+- Which kind of initial conditions are supported by this model?
+- Why is the high stiffness of the differential algebraic (DAE) system a problem, and how does Julia handle this issue?
 
 ## Outlook
 
