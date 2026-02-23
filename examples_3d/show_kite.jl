@@ -13,10 +13,8 @@ using Pkg, Timers
 tic()
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples_3d")
-    # pkg"add KiteUtils#main"
-    # pkg"add KiteModels#main"
 end
-using KiteUtils, Rotations, StaticArrays
+using Rotations, StaticArrays
 using KiteViewers
 toc()
 

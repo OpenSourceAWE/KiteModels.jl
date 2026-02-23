@@ -8,6 +8,8 @@ options =  if haskey(ENV, "USE_V9")
            "steering_test_4p = include(\"steering_test_4p.jl\")",
            "plot_parking_test = include(\"plot_parking_test.jl\")",
            "calculate_rot_inertia = include(\"calculate_rotational_inertia.jl\")",
+           "show_kite = include(\"../examples_3d/show_kite.jl\")",
+           "parking_4p = include(\"../examples_3d/parking_4p.jl\")",
            "build_docu = include(\"../scripts/build_docu.jl\")",
            "quit"]
 else
@@ -15,6 +17,8 @@ else
            "plot_side_cl = include(\"plot_side_cl.jl\")",
            "steering_test_4p = include(\"steering_test_4p.jl\")",
            "calculate_rot_inertia = include(\"calculate_rotational_inertia.jl\")",
+           "show_kite = include(\"../examples_3d/show_kite.jl\")",
+           "parking_4p = include(\"../examples_3d/parking_4p.jl\")",
            "build_docu = include(\"../scripts/build_docu.jl\")",
            "quit"]
 end
