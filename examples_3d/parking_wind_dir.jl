@@ -156,7 +156,7 @@ function sim_parking(integrator)
 end
 
 function play_parking()
-    integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.5)
+    integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
     toc()
     try
         sim_parking(integrator)
