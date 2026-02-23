@@ -287,4 +287,10 @@ After this workshop, you should be able to answer the following questions:
 
 ## Outlook
 
+### Help wanted
+If you want to contribute, have a look at the following issues:
+
+- [Add testcase flying horizontal circles without gravity](https://github.com/OpenSourceAWE/KiteModels.jl/issues/268)
+- [Implement path following controller](https://github.com/OpenSourceAWE/SimpleKiteControllers.jl/issues/5)
+
 ## References
