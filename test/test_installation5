@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+# This script tests the installation of KiteModels.jl by running the install script
+
+#!/bin/bash -eu
+rm -rf /tmp/testdepot
+mkdir /tmp/testdepot
+rm -rf /tmp/test
+mkdir /tmp/test
+cd /tmp/test
+export JULIA_DEPOT_PATH=/tmp/testdepot 
+export JULIA_PKG_SERVER_REGISTRY_PREFERANCE=eager
+git clone https://github.com/OpenSourceAWE/KiteModels.jl.git
+cd KiteModels.jl/bin
+./install
+
+# execution time on Desktop with Julia 1.12: 9:53 minutes
+# execution time on Desktop with Julia 1.11: 8:00 minutes
+# dito on Windows with Julia 1.12:
