@@ -9,6 +9,7 @@ fi
 export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 
 if [[ "$(uname -s)" == "Linux" ]]; then
+    export FONTCONFIG_FILE=/etc/fonts/fonts.conf
     # Preload Julia-bundled libraries to avoid version conflicts with older system libs.
     # On Ubuntu 22.04: OpenSSL 3.0.2 (artifacts need 3.3+), fontconfig 2.13 (missing
     # FcConfigSetDefaultSubstitute added in 2.15). The dynamic linker reuses already-loaded
