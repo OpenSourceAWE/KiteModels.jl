@@ -8,7 +8,7 @@ using KiteUtils: Settings, load_settings
 set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
-dt = 0.05
+dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600
 const PLOT = true

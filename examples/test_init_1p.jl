@@ -20,7 +20,7 @@ set.rel_tol=0.000001
 V_WIND = 14.5
 
 # the following values can be changed to match your interest
-dt = 0.05
+dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 1
 const PLOT = true

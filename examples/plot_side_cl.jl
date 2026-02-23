@@ -22,7 +22,7 @@ set.sample_freq = 50
 set.depower = 38.0
 
 # the following values can be changed to match your interest
-dt = 0.02
+dt::Float64 = 0.02
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 100
 const PLOT = true

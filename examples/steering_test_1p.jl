@@ -34,7 +34,7 @@ PRINT = false
 STATISTIC = false
 # end of user parameter section #
 
-dt = 1/set.sample_freq
+dt::Float64 = 1/set.sample_freq
 particles = set.segments + 1
 logger = Logger(particles, STEPS)
 

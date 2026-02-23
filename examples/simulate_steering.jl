@@ -12,7 +12,7 @@ set.abs_tol=0.0006
 set.rel_tol=0.00001
 
 # the following values can be changed to match your interest
-dt = 0.05
+dt::Float64 = 0.05
 STEPS = 600
 const PLOT = true
 FRONT_VIEW = true

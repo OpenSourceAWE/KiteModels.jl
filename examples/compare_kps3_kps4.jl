@@ -10,7 +10,7 @@ set.abs_tol=0.00006
 set.rel_tol=0.000001
 
 # the following values can be changed to match your interest
-dt = 0.05
+dt::Float64 = 0.05
 ALPHA_ZERO = 8.8            # for KPS4
 STEPS = round(0.5*600/dt*0.05)
 const PLOT = true

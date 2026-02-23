@@ -30,7 +30,7 @@ set.winch_model = "TorqueControlledMachine" # calc_spectrum uses torque-based ex
 # set.cmq = -0.0 # default: -0.09
 
 # the following values can be changed to match your interest
-dt = 0.05
+dt::Float64 = 0.05
 fg = 2            # cut-off frequency for the filter in Hz
 use_butter  = true
 order = 4         # order of the Butterworth filter
