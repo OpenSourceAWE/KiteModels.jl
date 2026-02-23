@@ -78,10 +78,10 @@ function simulate(integrator, steps, steering; plot=false)
     side_cl/5, kps4.steering/kps4.set.cs_4p
 end
 
-SET_STEERING = -0.7:0.02:0.7
-STEERING = zeros(length(SET_STEERING))
-SIDE_CL  = zeros(length(SET_STEERING))
-for (i, set_steering) in pairs(SET_STEERING)
+STEERING_RANGE::StepRangeLen = -0.7:0.02:0.7
+STEERING::Vector{Float64} = zeros(length(STEERING_RANGE))
+SIDE_CL::Vector{Float64}  = zeros(length(STEERING_RANGE))
+for (i, set_steering) in pairs(STEERING_RANGE)
     local side_cl, integrator
     integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
     side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
@@ -89,10 +89,10 @@ for (i, set_steering) in pairs(SET_STEERING)
     STEERING[i] = steering
     println("steering: $set_steering, side_cl: $side_cl")
 end
-# p = plot(SET_STEERING, SIDE_CL; xlabel="rel_steering [-]", 
+# p = plot(STEERING_RANGE, SIDE_CL; xlabel="rel_steering [-]", 
 #          ylabel="side lift coefficient [-]", fig="Side lift coefficient vs steering")
 # display(p)
-p2 = plot(SET_STEERING, SIDE_CL*(set.rel_side_area/100); xlabel="set_steering [-]", 
+p2 = plot(STEERING_RANGE, SIDE_CL*(set.rel_side_area/100); xlabel="set_steering [-]", 
          ylabel="side force coefficient [-]", fig="Side force coefficient vs set_steering")
 display(p2)
 p3 = plot(STEERING, SIDE_CL*(set.rel_side_area/100); xlabel="steering [-]", 
