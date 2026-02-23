@@ -14,7 +14,16 @@ export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 # system libs instead of the bundled ones, so we force the bundled versions in first.
 _PRELOADS=()
 _BUNDLED=$(find ~/.julia/artifacts -maxdepth 3 -name "libcrypto.so.3"   -path "*/lib/*" 2>/dev/null | head -1); [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-_BUNDLED=$(find ~/.julia/artifacts -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null | head -1); [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
+# Pick the fontconfig that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
+# Multiple artifact versions may coexist; `find | head -1` can return the wrong one.
+_BUNDLED=""
+for _fc in $(find ~/.julia/artifacts -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null); do
+    if nm -D "$_fc" 2>/dev/null | grep -q FcConfigSetDefaultSubstitute; then
+        _BUNDLED="$_fc"
+        break
+    fi
+done
+[[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
 if [[ ${#_PRELOADS[@]} -gt 0 ]]; then
     export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
 fi
