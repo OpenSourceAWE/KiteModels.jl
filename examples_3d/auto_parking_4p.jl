@@ -23,27 +23,25 @@ kps4::KPS4 = KPS4(kcu)
 @assert set.sample_freq == 20
 dt::Float64 = 1/set.sample_freq
 
-if KiteUtils.PROJECT == "system.yaml"
+MIN_DEPOWER, DISTURBANCE = if KiteUtils.PROJECT == "system.yaml"
     # result of tuning
-    pcs.kp_tr=0.07
-    pcs.ki_tr=0.0012
+    pcs.kp_tr = 0.07
+    pcs.ki_tr = 0.0012
     pcs.kp = 15
     pcs.ki = 0
-    MIN_DEPOWER       = 0.22
-    DISTURBANCE      = 0.1
     pcs.c1 = 0.149
     pcs.c2 = 0 # has no big effect, can also be set to zero c1 = 0.149 c2 = 5.428
+    0.22, 0.1
 else 
     # result of tuning
     println("not system.yaml")
-    pcs.kp_tr=0.05
-    pcs.ki_tr=0.0024
+    pcs.kp_tr = 0.05
+    pcs.ki_tr = 0.0024
     pcs.kp = 30
     pcs.ki = 1.0
-    MIN_DEPOWER       = 0.4
-    DISTURBANCE      = 0.4
     pcs.c1 = 0.048
     pcs.c2 = 0    # has no big effect, can also be set to zero
+    0.4, 0.4
 end
 @info "pcs.kp_tr=$(pcs.kp_tr), pcs.ki_tr=$(pcs.ki_tr), pcs.kp=$(pcs.kp), pcs.ki=$(pcs.ki), MIN_DEPOWER=$(MIN_DEPOWER)"
 pc = pcm.ParkingController(pcs)
@@ -67,15 +65,13 @@ PSI_DOT_SET::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 NDI_GAIN::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
 V_APP::Vector{Float64}         = zeros(Int64(MAX_TIME/dt))
 
-function simulate(integrator)
-    global sys_state
+function simulate(integrator, sys_state)
     start_time_ns = time_ns()
     clear_viewer(viewer)
     i=1; j=0; k=0
     GC.gc()
     max_time = 0
     t_gc_tot = 0
-    sys_state = SysState(kps4)
     while true
         steering = 0.0
         if i >= 100
@@ -143,8 +139,9 @@ end
 
 function play()
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
+    sys_state = SysState(kps4)
     toc()
-    simulate(integrator)
+    simulate(integrator, sys_state)
     GC.enable(true)
 end
 
@@ -155,8 +152,7 @@ function play1()
     end
 end
 
-on(viewer.btn_PLAY.clicks) do c; play1(); end
-on(viewer.btn_PARKING.clicks) do c; parking(); end
+on(viewer.btn_PLAY.clicks) do _; play1(); end
 
 play()
 stop(viewer)
