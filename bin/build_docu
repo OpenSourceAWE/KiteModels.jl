@@ -8,4 +8,4 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
 
-cd docs/src && pandoc open_source_awe.md --bibliography=references.bib --citeproc --variable colorlinks=true -o open_source_awe.pdf
+cd docs/src && pandoc open_source_awe.md --bibliography=references.bib --citeproc --variable colorlinks=true --variable geometry:margin=2cm -o open_source_awe.pdf
