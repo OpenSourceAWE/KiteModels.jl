@@ -18,7 +18,7 @@ using KiteViewers
 using ControlPlots: plot, plot2d, plotx
 toc()
 
-set = deepcopy(se())
+set::Settings = deepcopy(se())
 
 # the following values can be changed to match your interest
 dt = 0.05
