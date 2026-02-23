@@ -2,14 +2,19 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.1 2026-02-22
+### KiteModels v0.11.1 2026-02-24
 #### Changed
 - updated many dependencies
 - examples_3d is a workspaces now
+- improved `create_sys_image`
 
 #### Fixed
 - examples_3d/parking_4p.jl is working now
 - examples_3d/show_kite.jl is working now
+
+### Added
+- example `auto_parking.jl`
+- example `parking_wind_dir.jl`
 
 ### KiteModels v0.11.0 2026-02-20
 #### Changed
