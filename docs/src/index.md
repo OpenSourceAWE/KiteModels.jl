@@ -120,14 +120,15 @@ and run one of the two example menus:
 menu() # or menu2()
 ```
 
-To reduce the start time, you can create a system image:
+To reduce the start time, you can create a system image (this can take 30min):
 
 ```bash
 cd bin
 ./create_sys_image
 ```
 
-If you now launch Julia with `./bin/run_julia` and then run the above example again, it should be about twice as fast.
+If you now launch Julia with `./bin/run_julia` and then run the above example again, the time-to-first-plot
+should be much faster.
 
 ## News
 
