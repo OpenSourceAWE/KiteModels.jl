@@ -6,7 +6,7 @@ SPDX-License-Identifier: MIT
 #### Changed
 - updated many dependencies
 - examples_3d is a workspaces now
-- improved `create_sys_image`
+- improved `create_sys_image` and `install` scripts
 
 #### Fixed
 - examples_3d/parking_4p.jl is working now
