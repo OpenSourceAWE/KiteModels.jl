@@ -11,7 +11,7 @@ using Printf
 using Pkg, Timers
 tic()
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
-c
+    Pkg.activate(@__DIR__)
 end
 using KiteModels, KitePodModels, Rotations, StaticArrays
 using KiteViewers
@@ -106,4 +106,5 @@ end
 
 # print heading
 println("heading: $(round(heading[STEPS], digits=2))°")
-plot(v_time, heading; xlabel="time [s]", ylabel="heading [°]", fig="heading")
+p=plot(v_time, heading; xlabel="time [s]", ylabel="heading [°]", fig="heading")
+display(p)
