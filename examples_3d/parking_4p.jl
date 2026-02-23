@@ -11,7 +11,7 @@ using Printf
 using Pkg, Timers
 tic()
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples_3d")
+c
 end
 using KiteModels, KitePodModels, Rotations, StaticArrays
 using KiteViewers
