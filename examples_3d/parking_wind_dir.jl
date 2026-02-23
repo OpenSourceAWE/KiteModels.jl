@@ -4,7 +4,7 @@
 # park the kind while the wind direction changes
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate(joinpath(@__DIR__))
+    Pkg.activate(@__DIR__)
 end
 using Timers; tic()
 
