@@ -10,6 +10,8 @@ options =  if haskey(ENV, "USE_V9")
            "calculate_rot_inertia = include(\"calculate_rotational_inertia.jl\")",
            "show_kite = include(\"../examples_3d/show_kite.jl\")",
            "parking_4p = include(\"../examples_3d/parking_4p.jl\")",
+           "auto_parking_4p = include(\"../examples_3d/auto_parking_4p.jl\")",
+           "parking_wind_dir = include(\"../examples_3d/parking_wind_dir.jl\")",
            "build_docu = include(\"../scripts/build_docu.jl\")",
            "quit"]
 else
@@ -19,6 +21,8 @@ else
            "calculate_rot_inertia = include(\"calculate_rotational_inertia.jl\")",
            "show_kite = include(\"../examples_3d/show_kite.jl\")",
            "parking_4p = include(\"../examples_3d/parking_4p.jl\")",
+           "auto_parking_4p = include(\"../examples_3d/auto_parking_4p.jl\")",
+           "parking_wind_dir = include(\"../examples_3d/parking_wind_dir.jl\")",
            "build_docu = include(\"../scripts/build_docu.jl\")",
            "quit"]
 end
@@ -26,7 +30,7 @@ end
 function extra_menu()
     active = true
     while active
-        menu = RadioMenu(options, pagesize=8)
+        menu = RadioMenu(options, pagesize=12)
         choice = request("\nChoose function to execute or `q` to quit: ", menu)
 
         if choice != -1 && choice != length(options)
