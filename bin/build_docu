@@ -1,0 +1,12 @@
+# Copyright (c) 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+# script to create a pdf documentation of the mathematical background
+# requires pandoc to be installed
+
+if [[ $(basename $(pwd)) == "bin" ]]; then
+    cd ..
+fi
+
+cd docs/src && pandoc open_source_awe.md --bibliography=references.bib --citeproc --variable colorlinks=true -o open_source_awe.pdf
+# pandoc optimize_inductions.md --bibliography=references.bib --citeproc -s -o optimize_inductions.tex
