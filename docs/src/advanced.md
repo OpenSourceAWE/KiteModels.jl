@@ -9,6 +9,42 @@ Installation instructions: [Julia and VSCode](https://ufechner7.github.io/2024/0
 
 Whe using vscode, I do NOT use the Julia terminal provided by vscode, but the normal bash terminal which is also available in vscode by selecting **Terminal->New Terminal** From this terminal I start Julia with ```julia --project``` or a different command as explained below. This makes it easier to understand what happens and is also faster when you need to restart.
 
+## Using the JETLS.jl language server
+For code navigation, but also for getting warnings about problematic code it is useful
+to use the new [JETLS.jl](https://aviatesk.github.io/JETLS.jl/release/) language server. There is JETLS plugin for VSCode, but JETLS can also be used with many other editors. It is very new and still a bit sensitive. I suggest to use the following two
+configuration files:
+
+First, launch it single threaded to avoid problems with KiteViewers or ControlPlots. To do that, add the following `settings.json` file to the `.vscode` folder of your project:
+
+```json
+{
+  "jetls-client.executable": {
+      "path": "jetls",
+      "threads": "1,0"
+  }
+}
+```
+
+Second, use the following `.JETLSConfig.toml` file
+```
+formatter = "JuliaFormatter"
+
+[full_analysis]
+auto_instantiate = false            # boolean, default: true
+
+[diagnostic]
+all_files = false                   # boolean, default: true
+
+[[diagnostic.patterns]]
+pattern = "not concretized"
+match_by = "message"
+match_type = "regex"
+severity = "off"
+```
+This suppresses invalid "not concretized" warnings and runs JETLS.jl only on the files you opened, not on all files of your project.
+
+Sometimes JETLS.jl keeps running even after closing VSCode. This can eat up all your memory. In that case, on Linux you can use the command `killall julia` to terminate the language server and free the memory after closing VSCode.
+
 ## Forking the repository and creating a custom system image
 
 To reduce the startup time it is suggested to use a custom system image that contains all the packages you use on a daily base in compiled form.
