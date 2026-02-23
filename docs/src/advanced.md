@@ -26,7 +26,7 @@ First, launch it single threaded to avoid problems with KiteViewers or ControlPl
 ```
 
 Second, use the following `.JETLSConfig.toml` file
-```
+```toml
 formatter = "JuliaFormatter"
 
 [full_analysis]
