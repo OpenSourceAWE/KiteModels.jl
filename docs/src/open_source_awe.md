@@ -89,7 +89,20 @@ The following examples are provided when you type `menu()`:
 "calc_spectrum = include(\"calc_spectrum.jl\")"
 "plot_spectrum_ = include(\"plot_spectrum.jl\")"
 "calculate_rotational_inertia = include(\"calculate_rotational_inertia.jl\")"
-"quit"
+```
+
+The following examples are available if you type `menu2()`:
+
+```julia
+"plot_cl_cd_plate = include(\"plot_cl_cd_plate.jl\")"
+"plot_side_cl = include(\"plot_side_cl.jl\")"
+"steering_test_4p = include(\"steering_test_4p.jl\")"
+"calculate_rot_inertia = include(\"calculate_rotational_inertia.jl\")"
+"show_kite = include(\"../examples_3d/show_kite.jl\")"
+"parking_4p = include(\"../examples_3d/parking_4p.jl\")"
+"auto_parking_4p = include(\"../examples_3d/auto_parking_4p.jl\")"
+"parking_wind_dir = include(\"../examples_3d/parking_wind_dir.jl\")"
+"build_docu = include(\"../scripts/build_docu.jl\")"
 ```
 
 ## Outlook
