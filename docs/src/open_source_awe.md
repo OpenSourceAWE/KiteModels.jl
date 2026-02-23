@@ -282,7 +282,8 @@ After this workshop, you should be able to answer the following questions:
 - How many tether segments are needed for a good accuracy in parking mode?
 - Why is it less important to have many tether segments during reel-out compared to reel-in?
 - Which kind of initial conditions are supported by this model?
-- Why is the high stiffness of the differential algebraic (DAE) system a problem, and how does Julia handle this issue?
+- Why is the high stiffness of the differential algebraic (DAE) system a problem, and how does Julia handle this issue? Which work-around is used by Matlab/Simulink models?
+- How can you become member of the OpenSourceAWE organization?
 
 ## Outlook
 
