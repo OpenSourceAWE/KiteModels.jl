@@ -14,6 +14,7 @@ if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(@__DIR__)
 end
 using KiteModels, KitePodModels, Rotations, StaticArrays
+using OrdinaryDiffEqCore: ODEIntegrator
 using KiteViewers
 using ControlPlots: plot, plot2d, plotx
 toc()
@@ -26,12 +27,12 @@ set.solver="DFBDF"              # IDA or DFBDF
 set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
 STEPS = 352
 PRINT = false
-STATISTIC = false
-const PLOT=false
+STATISTIC  = false
+const PLOT = false
 UPWIND_DIR2       = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
 ZOOM = true
 FRONT_VIEW = true
-SHOW_KITE = true
+SHOW_KITE  = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -85,14 +86,14 @@ function simulate(integrator, steps, plot=PLOT)
 end
 toc()
 
-integrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
+integrator::ODEIntegrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 toc()
 
 println("\nStarting simulation...")
 simulate(integrator, STEPS)
 if PLOT
     p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
-    # display(p)
+    display(p)
 end
 # lift, drag = KiteModels.lift_drag(kps4)
 # println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
