@@ -9,7 +9,7 @@ end
 using Timers; tic()
 
 using KiteViewers, KiteModels, ControlPlots, Rotations
-using KiteUtils: load_settings, Settings
+using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 set.abs_tol=0.00006
