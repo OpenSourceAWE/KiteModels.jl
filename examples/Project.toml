@@ -15,6 +15,7 @@ Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Timers = "21f18d07-b854-4dab-86f0-c15a3821819a"
 
 [sources]
 KiteModels = {path = ".."}
