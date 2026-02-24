@@ -9,11 +9,11 @@ using LinearAlgebra
 
 using Printf
 
-using Pkg, Timers
-tic()
+using Pkg
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples_3d")
 end
+using Timers; tic()
 using Rotations, StaticArrays
 using KiteViewers
 toc()

@@ -8,11 +8,11 @@
 
 using Printf
 
-using Pkg, Timers
-tic()
+using Pkg
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(@__DIR__)
 end
+using Timers; tic()
 using KiteModels, KitePodModels, Rotations, StaticArrays
 using OrdinaryDiffEqCore: ODEIntegrator
 using KiteViewers
