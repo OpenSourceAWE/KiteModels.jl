@@ -99,7 +99,6 @@ if [[ $julia_major == "1.11" ]]; then
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
-    julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
@@ -141,8 +140,8 @@ else
     echo "Precompiling test project and running the tests..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project -e 'using Pkg; Pkg.test()'
-    julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling examples_3d project..."
+    julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
