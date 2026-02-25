@@ -2,19 +2,21 @@
 # SPDX-License-Identifier: MIT
 
 using Printf
-using KiteModels, LinearAlgebra, StatsBase
+using KiteModels, LinearAlgebra
 
-if haskey(ENV, "USE_V9")
-    set = deepcopy(load_settings("system_v9.yaml"))
+using KiteUtils: Settings, load_settings
+
+set::Settings = if haskey(ENV, "USE_V9")
+    deepcopy(load_settings("system_v9.yaml"))
 else
-    set = deepcopy(load_settings("system.yaml"))
+    deepcopy(load_settings("system.yaml"))
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("JLD2" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using ControlPlots, JLD2, DSP
+using ControlPlots, DSP, JLD2, StatsBase
 plt.close("all")
 
 #if !@isdefined Spectrum begin
@@ -29,7 +31,13 @@ plt.close("all")
 
 function plot_spectrum3(name)
     todb(mag) = 20 * log10(mag)
-    spectrum = jldopen("data/" * name * ".jld2") do file
+    filepath = "data/" * name * ".jld2"
+    if !isfile(filepath)
+        @warn "File not found: $filepath"
+        @info "Hint: run the example calc_spectrum first"
+        return
+    end
+    spectrum = jldopen(filepath) do file
         read(file, "spectrum")
     end
     plt.figure("spectrum")
