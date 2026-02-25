@@ -171,7 +171,7 @@ catch e
     Pkg.instantiate()
 end
 '
-# If Pkg.resolve() created a plain Manifest.toml (Julia 1.12 behaviour), rename it
+# If Pkg.resolve() created a plain Manifest.toml (Julia 1.12 behavior), rename it
 # to the version-specific filename so the rest of the scripts stay consistent.
 if [ -f "Manifest.toml" ]; then
     mv Manifest.toml "Manifest-v${julia_major}.toml"
