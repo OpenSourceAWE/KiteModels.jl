@@ -3,7 +3,7 @@
 
 # activate the examples_3d environment if needed
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(joinpath(@__DIR__))
 end
 using Timers; tic()
