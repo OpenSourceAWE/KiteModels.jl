@@ -6,6 +6,23 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
 
+# Check if juliaup is installed
+if ! command -v juliaup &> /dev/null; then
+    echo "Error: juliaup is not installed. Please install it first."
+    case "$(uname -s)" in
+        Linux|Darwin)
+            echo "  curl -fsSL https://install.julialang.org | sh"
+            ;;
+        MINGW*|MSYS*|CYGWIN*)
+            echo "  winget install julia -s msstore"
+            ;;
+        *)
+            echo "  See https://github.com/JuliaLang/juliaup for installation instructions."
+            ;;
+    esac
+    exit 1
+fi
+
 # Ask which Julia version to use
 echo "Which Julia version do you want to use?"
 echo "  1) Julia 1.11"
