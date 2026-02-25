@@ -143,6 +143,7 @@ if [[ $julia_major == "1.11" ]]; then
     julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
+    julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
