@@ -14,7 +14,7 @@ if ! command -v juliaup &> /dev/null; then
             echo "  curl -fsSL https://install.julialang.org | sh"
             ;;
         MINGW*|MSYS*|CYGWIN*)
-            echo "  winget install julia -s msstore"
+            echo "  winget install --name Julia --id 9NJNWW8PVKMN -e -s msstore"
             ;;
         *)
             echo "  See https://github.com/JuliaLang/juliaup for installation instructions."
