@@ -6,6 +6,29 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
 
+# Ask which Julia version to use
+echo "Which Julia version do you want to use?"
+echo "  1) Julia 1.11"
+echo "  2) Julia 1.12"
+read -rp "Enter 1 or 2 [default: 1]: " _julia_choice
+case "${_julia_choice}" in
+    1|"")
+        _desired_julia="1.11"
+        ;;
+    2)
+        _desired_julia="1.12"
+        ;;
+    *)
+        echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
+        exit 1
+        ;;
+esac
+echo "Installing and activating Julia ${_desired_julia}..."
+juliaup add "${_desired_julia}"
+juliaup default "${_desired_julia}"
+echo "Julia ${_desired_julia} is now the default."
+echo
+
 # Detect Julia version
 julia_version=$(julia --version | awk '{print($3)}')
 julia_major=${julia_version:0:3}
