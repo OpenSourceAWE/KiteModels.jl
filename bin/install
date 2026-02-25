@@ -228,6 +228,7 @@ else
         echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
     fi
 fi
+julia --project=examples_3d -e 'using ControlPlots'
 julia --project=examples_3d -e 'using KiteViewers'
 
 echo "Installation complete!"
