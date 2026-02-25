@@ -167,6 +167,12 @@ catch e
     Pkg.instantiate()
 end
 '
+# If Pkg.resolve() created a plain Manifest.toml (Julia 1.12 behaviour), rename it
+# to the version-specific filename so the rest of the scripts stay consistent.
+if [ -f "Manifest.toml" ]; then
+    mv Manifest.toml "Manifest-v${julia_major}.toml"
+    echo "Renamed Manifest.toml to Manifest-v${julia_major}.toml"
+fi
 echo "Precompiling main project..."
 julia --project -e 'using Pkg; Pkg.precompile()'
 
