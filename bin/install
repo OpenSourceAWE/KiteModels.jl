@@ -152,12 +152,16 @@ fi
 echo "Instantiating project..."
 julia --project -e '
 using Pkg
+# Always resolve first so the manifest is regenerated for the current Julia version.
+# This avoids failures when the .default manifest was created with a different Julia
+# version (e.g. 1.12 manifest used with Julia 1.11 would reference missing stdlibs).
 try
+    Pkg.resolve()
     Pkg.instantiate()
 catch e
-    @warn "Pkg.instantiate() failed, attempting fresh resolve..." exception=e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
     proj_dir = dirname(Base.active_project())
-    # Remove all manifest files to force a clean resolve
+    # Remove all manifest files to force a completely clean resolve
     for f in readdir(proj_dir)
         if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
             rm(joinpath(proj_dir, f), force=true)
