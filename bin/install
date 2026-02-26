@@ -186,13 +186,64 @@ if [[ $julia_major == "1.11" ]]; then
     # Resolve sub-projects independently to avoid version conflicts when the main
     # manifest contains versions newer than the local registry snapshot.
     rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-    julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    cp Manifest-v1.11.toml examples/Manifest-v1.11.toml
+    cp Manifest-v1.11.toml test/Manifest-v1.11.toml
+    cp Manifest-v1.11.toml examples_3d/Manifest-v1.11.toml
+    julia --project=examples -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
-    julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=test -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
-    julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=examples_3d -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling examples_3d project..."
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
 
@@ -211,7 +262,23 @@ if [[ $julia_major == "1.11" ]]; then
     fi
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
-    julia --project=docs -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=docs -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling docs project..."
     julia --project=docs -e 'using Pkg; Pkg.precompile()'
     if [ -f "docs/Manifest.toml" ]; then
@@ -223,19 +290,83 @@ else
     # Resolve sub-projects independently to avoid version conflicts when the main
     # manifest contains versions newer than the local registry snapshot.
     rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-    julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=examples -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
-    julia --project=test -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=test -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling test project and running the tests..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project -e 'using Pkg; Pkg.test()'
     echo "Precompiling examples_3d project..."
-    julia --project=examples_3d -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=examples_3d -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
-    julia --project=docs -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+    julia --project=docs -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+end
+'
     echo "Precompiling docs project..."
     julia --project=docs -e 'using Pkg; Pkg.precompile()'
     if [ -f "examples/Manifest.toml" ]; then
