@@ -155,7 +155,22 @@ using Pkg
 # Always resolve first so the manifest is regenerated for the current Julia version.
 # This avoids failures when the .default manifest was created with a different Julia
 # version (e.g. 1.12 manifest used with Julia 1.11 would reference missing stdlibs).
+function ensure_general_registry()
+    regs = try
+        Pkg.Registry.reachable_registries()
+    catch
+        Pkg.Registry.update()
+        Pkg.Registry.reachable_registries()
+    end
+    if !any(r -> r.name == "General", regs)
+        Pkg.Registry.add("General")
+    else
+        Pkg.Registry.update()
+    end
+end
+
 try
+    ensure_general_registry()
     Pkg.resolve()
     Pkg.instantiate()
 catch e
@@ -167,6 +182,7 @@ catch e
             rm(joinpath(proj_dir, f), force=true)
         end
     end
+    ensure_general_registry()
     Pkg.resolve()
     Pkg.instantiate()
 end
