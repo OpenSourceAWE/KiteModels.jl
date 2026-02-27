@@ -32,26 +32,6 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     unset _PRELOADS _BUNDLED
 fi
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    # Preload Julia-bundled libraries to avoid version conflicts with macOS system libs.
-    # macOS uses DYLD_INSERT_LIBRARIES (equivalent of Linux LD_PRELOAD).
-    _PRELOADS=()
-    _BUNDLED=$(find ~/.julia/artifacts -maxdepth 3 -name "libcrypto.3.dylib" -path "*/lib/*" 2>/dev/null | head -1); [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-    # Pick the fontconfig that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
-    _BUNDLED=""
-    for _fc in $(find ~/.julia/artifacts -maxdepth 3 -name "libfontconfig.1.dylib" -path "*/lib/*" 2>/dev/null); do
-        if nm -g "$_fc" 2>/dev/null | grep -q FcConfigSetDefaultSubstitute; then
-            _BUNDLED="$_fc"
-            break
-        fi
-    done
-    [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-    if [[ ${#_PRELOADS[@]} -gt 0 ]]; then
-        export DYLD_INSERT_LIBRARIES=$(IFS=:; echo "${_PRELOADS[*]}")
-    fi
-    unset _PRELOADS _BUNDLED
-fi
-
 julia_version=$(julia --version | awk '{print($3)}')
 julia_major=${julia_version:0:3} 
 if [[ $julia_major == "1.1" ]]; then
