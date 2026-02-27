@@ -8,6 +8,14 @@ fi
 
 export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    # Avoid Tk backend issues on macOS (e.g. non-responsive close button in PyPlot windows).
+    # Keep user override if MPLBACKEND is already set.
+    if [[ -z "${MPLBACKEND:-}" ]]; then
+        export MPLBACKEND=qtagg
+    fi
+fi
+
 if [[ "$(uname -s)" == "Linux" ]]; then
     export FONTCONFIG_FILE=/etc/fonts/fonts.conf
     # Preload Julia-bundled libraries to avoid version conflicts with older system libs.
