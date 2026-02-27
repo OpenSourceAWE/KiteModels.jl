@@ -78,3 +78,5 @@ Manifest-v1.12.toml
 Manifest-v1.12.toml.bak
 .JETLSConfig.toml
 docs/src/open_source_awe.pdf
+examples/Manifest.toml
+examples_3d/Manifest.toml
