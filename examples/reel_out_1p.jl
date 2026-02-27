@@ -10,7 +10,7 @@ set::Settings = deepcopy(load_settings("system.yaml"))
 # the following values can be changed to match your interest
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
-STEPS = 600
+STEPS = 500
 const PLOT = true
 FRONT_VIEW = false
 ZOOM = false
@@ -35,6 +35,8 @@ v_force = zeros(STEPS)
 
 function simulate(integrator, steps, plot=false)
     iter = 0
+    last_label_y = 5.0
+    lines, sc, txt = nothing, nothing, nothing
     for i in 1:steps
         if PRINT
             lift, drag = KiteModels.lift_drag(kps3)
@@ -54,8 +56,28 @@ function simulate(integrator, steps, plot=false)
         if plot 
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
-                                        segments=set.segments, fig="side_view")             
+                z_kite = kps3.pos[end][3]
+                z_max = maximum(pos[3] for pos in kps3.pos)
+                y_label = last_label_y
+                if isfinite(z_kite) && isfinite(z_max)
+                    y_axis_1 = 0.0
+                    y_axis_2 = z_max + 5.0
+                    y_low = min(y_axis_1, y_axis_2) + 0.5
+                    y_high = max(y_axis_1, y_axis_2) - 0.5
+                    y_label = clamp(z_kite - 14.0, y_low, y_high)
+                    last_label_y = y_label
+                end
+                lines, sc, txt = plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
+                                        segments=set.segments, fig="side_view", xlim=(0,120), dx=1.0, xy=(96.0, y_label))
+                if !isnothing(txt)
+                    txt.set_x(96.0)
+                    txt.set_y(y_label)
+                    txt.set_visible(true)
+                    try
+                        txt.set_annotation_clip(false)
+                    catch
+                    end
+                end
             end
         end
     end
@@ -76,10 +98,19 @@ else
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
 end
+if Sys.isapple()
+    plt.show(block = true)
+end
 lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
 p1 = plotx(v_time, v_speed, v_force; ylabels=["v_reelout  [m/s]", "tether_force [N]"], fig="winch")
 display(p1)
+if Sys.isapple()
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
 # savefig("docs/src/reelout_force_1p.png")
