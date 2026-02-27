@@ -36,6 +36,18 @@ kps3::KPS3 = KPS3(kcu)
 
 function simulate(s, integrator, steps, plot = false; fig = "")
     iter = 0
+    if plot
+        z_text = maximum(p[3] for p in s.pos) + 1.5
+        plot2d(
+            s.pos,
+            0.0;
+            zoom = ZOOM,
+            xlim = (35, 55),
+            xy = (52.0, z_text),
+            front = FRONT_VIEW,
+            fig,
+        )
+    end
     for i in 1:steps
         if PRINT
             lift, drag = lift_drag(s)
@@ -47,13 +59,15 @@ function simulate(s, integrator, steps, plot = false; fig = "")
         iter += s.iter
 
         if plot
-            reltime = i*dt-dt
+            reltime = i * dt
             if mod(i, 5) == 1
+                z_text = maximum(p[3] for p in s.pos) + 1.5
                 plot2d(
                     s.pos,
                     reltime;
                     zoom = ZOOM,
-                    xlim = (35, 55),
+                    xlim = (35, 75),
+                    xy = (52.0, z_text),
                     front = FRONT_VIEW,
                     fig,
                 )
@@ -65,6 +79,13 @@ end
 
 integrator = init!(kps3, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps3, integrator, STEPS, true; fig = "kps3")
+if Sys.isapple()
+    plt.show(block = true)
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
 
 lift, drag = lift_drag(kps3)
 println("KPS3")
@@ -75,6 +96,13 @@ println("Average number of callbacks per time step: $(round(av_steps, digits=2))
 kps4.set.alpha_zero = ALPHA_ZERO
 integrator = init!(kps4; delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps4, integrator, STEPS, true; fig = "kps4")
+if Sys.isapple()
+    plt.show(block = true)
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
 
 lift, drag = lift_drag(kps4)
 println("KPS4")

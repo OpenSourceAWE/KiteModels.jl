@@ -185,6 +185,14 @@ function plot_aoa()
     p1 = plot(sl.time, [sl.var_01, sl.var_02]; ylabel="AoA [°]", labels=["aoa_3", "aoa_4"], 
               fig="aoa side plates")
     display(p1)
+
+    if Sys.isapple()
+        plt.show(block=true)
+        try
+            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
 end
 
 save_log(logger, "tmp")

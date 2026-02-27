@@ -72,6 +72,12 @@ if PLOT
         fig = "winch",
     )
     display(p)
+    if Sys.isapple()
+        try
+            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
 end
 lift, drag = lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
