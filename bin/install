@@ -453,7 +453,7 @@ echo "./bin/run_julia"
 echo "and then get the menu with the examples by typing:"
 echo "menu()"
 
-# Add alias to .bashrc on Linux
+# Add alias to shell configuration file
 if [[ "$(uname -s)" == "Linux" && -f ~/.bashrc ]]; then
     if ! grep -q "alias jl='bin/run_julia'" ~/.bashrc; then
         echo "alias jl='bin/run_julia'" >> ~/.bashrc
@@ -461,4 +461,24 @@ if [[ "$(uname -s)" == "Linux" && -f ~/.bashrc ]]; then
         echo "Added alias 'jl' to ~/.bashrc"
         echo "Run 'source ~/.bashrc' or restart your terminal to use it"
     fi
+elif [[ "$(uname -s)" == "Darwin" ]]; then
+    # On macOS, check for zsh (default since Catalina) or bash configuration files
+    _config_file=""
+    if [[ -f ~/.zshrc ]]; then
+        _config_file=~/.zshrc
+    elif [[ -f ~/.bash_profile ]]; then
+        _config_file=~/.bash_profile
+    elif [[ -f ~/.bashrc ]]; then
+        _config_file=~/.bashrc
+    fi
+    
+    if [[ -n "$_config_file" ]]; then
+        if ! grep -q "alias jl='bin/run_julia'" "$_config_file"; then
+            echo "alias jl='bin/run_julia'" >> "$_config_file"
+            echo
+            echo "Added alias 'jl' to $_config_file"
+            echo "Run 'source $_config_file' or restart your terminal to use it"
+        fi
+    fi
+    unset _config_file
 fi
