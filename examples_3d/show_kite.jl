@@ -18,6 +18,18 @@ using Rotations, StaticArrays
 using KiteViewers
 toc()
 
+function bring_viewer_to_front()
+    if Sys.isapple()
+        sleep(0.2)
+        try
+            script = "tell application \"System Events\" to set frontmost of first process whose unix id is $(getpid()) to true"
+            run(pipeline(`osascript -e $script`, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
+    nothing
+end
+
 # yaw = deg2rad(0)   # noise pointing to the north
 yaw = deg2rad(180) # noise pointing to the south
 # yaw = deg2rad(-90)  # noise pointing to the west
@@ -81,4 +93,5 @@ state=demo_state_4p(segments+1, 12; azimuth_north=pi-yaw)
 # state.orient = quat2viewer(q)
 state.orient = MVector{4, Float32}(q.w, q.x, q.y, q.z)
 update_system(viewer, state, kite_scale=0.25; ned=true)
+bring_viewer_to_front()
 nothing
