@@ -64,3 +64,10 @@ function plot_spectrum3(name)
 end
 
 plot_spectrum3("spectrum2_8.0_-0.0")
+if Sys.isapple()
+    plt.show(block = true)
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
