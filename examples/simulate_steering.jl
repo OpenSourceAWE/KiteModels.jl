@@ -68,7 +68,15 @@ end
 integrator = KiteModels.init!(kps3; delta=0, stiffness_factor=0.04, prn=STATISTIC)
 
 av_steps = if PLOT
-    simulate(integrator, STEPS, true)
+    steps =simulate(integrator, STEPS, true)
+    if Sys.isapple()
+        plt.show(block = true)
+        try
+            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
+    steps
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
