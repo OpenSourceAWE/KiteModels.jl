@@ -36,6 +36,7 @@ function run_sandboxed(script_path::String)
     abs_path = normpath(joinpath(@__DIR__, script_path))
     module_name = Symbol("MenuSandbox_", time_ns())
     sandbox = Module(module_name)
+    Core.eval(sandbox, :(include(path::AbstractString) = Base.include($sandbox, path)))
     Base.include(sandbox, abs_path)
     nothing
 end
