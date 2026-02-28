@@ -165,3 +165,9 @@ p = plotx(T, rad2deg.(AZIMUTH), rad2deg.(HEADING), [100*(SET_STEERING), 100*(STE
           labels=["azimuth", "heading", ["set_steering", "steering"], ["psi_dot", "psi_dot_set"], "NDI_GAIN", "v_app"],  
           fig="Azimuth, heading, steering and more")
 display(p)
+if Sys.isapple()
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
