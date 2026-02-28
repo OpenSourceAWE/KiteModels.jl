@@ -90,6 +90,12 @@ if PLOT
     local p
     p = plotx(v_time, v_speed, v_force; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
     display(p)
+    if Sys.isapple()
+        try
+            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
 end
 # savefig("docs/src/reelout_force_4p.png")
 

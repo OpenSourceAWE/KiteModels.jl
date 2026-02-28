@@ -98,5 +98,11 @@ display(p2)
 p3 = plot(STEERING, SIDE_CL*(set.rel_side_area/100); xlabel="steering [-]", 
          ylabel="side force coefficient [-]", fig="Side force coefficient vs steering")
 display(p3)
+if Sys.isapple()
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
 
 

@@ -84,6 +84,13 @@ else
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
 end
+if Sys.isapple()
+    plt.show(block = true)
+    try
+        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+    catch
+    end
+end
 lift, drag = KiteModels.lift_drag(kps4)
 println("Ground wind speed: $(round(set.v_wind, digits=2)) m/s")
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
