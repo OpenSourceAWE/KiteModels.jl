@@ -137,6 +137,7 @@ else
 fi
 
 # Instantiate the project
+FAILED_RESOLVES=()
 echo "Instantiating project..."
 julia --project -e '
 using Pkg
@@ -174,7 +175,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("main project")
 # If Pkg.resolve() created a plain Manifest.toml (Julia 1.12 behavior), rename it
 # to the version-specific filename so the rest of the scripts stay consistent.
 if [ -f "Manifest.toml" ]; then
@@ -209,7 +210,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("examples (1.11)")
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
     julia --project=test -e '
@@ -228,7 +229,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("test (1.11)")
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project=examples_3d -e '
@@ -247,7 +248,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("examples_3d (1.11)")
     echo "Precompiling examples_3d project..."
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
 
@@ -282,7 +283,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("docs (1.11)")
     echo "Precompiling docs project..."
     julia --project=docs -e 'using Pkg; Pkg.precompile()'
     if [ -f "docs/Manifest.toml" ]; then
@@ -310,7 +311,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("examples (1.12)")
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
     julia --project=test -e '
@@ -329,7 +330,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("test (1.12)")
     echo "Precompiling test project and running the tests..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project -e 'using Pkg; Pkg.test()'
@@ -350,7 +351,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("examples_3d (1.12)")
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
@@ -370,7 +371,7 @@ catch e
     Pkg.resolve()
     Pkg.instantiate()
 end
-'
+' || FAILED_RESOLVES+=("docs (1.12)")
     echo "Precompiling docs project..."
     julia --project=docs -e 'using Pkg; Pkg.precompile()'
     if [ -f "examples/Manifest.toml" ]; then
@@ -394,6 +395,16 @@ julia --project=examples -e 'using ControlPlots, DSP'
 julia --project=examples_3d -e 'using ControlPlots'
 julia --project=examples_3d -e 'using KiteViewers'
 
+echo
+if [[ ${#FAILED_RESOLVES[@]} -eq 0 ]]; then
+    echo "Resolve/instantiate report: all resolve calls succeeded."
+else
+    echo "Resolve/instantiate report: the following resolve calls FAILED:"
+    for _label in "${FAILED_RESOLVES[@]}"; do
+        echo "  - ${_label}"
+    done
+fi
+echo
 echo "Installation complete!"
 echo
 echo "You can now launch Julia by typing"
