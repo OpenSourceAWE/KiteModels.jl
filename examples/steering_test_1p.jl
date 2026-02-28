@@ -152,4 +152,11 @@ end
 save_log(logger, "tmp")
 if PLOT
     plot_steering_vs_turn_rate()
+    if Sys.isapple()
+        plt.show(block = true)
+        try
+            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
 end
