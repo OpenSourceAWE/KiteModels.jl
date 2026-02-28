@@ -138,8 +138,9 @@ fi
 
 # Instantiate the project
 FAILED_RESOLVES=()
+RETRIED_RESOLVES=()
 echo "Instantiating project..."
-julia --project -e '
+_ec=0; julia --project -e '
 using Pkg
 # Always resolve first so the manifest is regenerated for the current Julia version.
 # This avoids failures when the .default manifest was created with a different Julia
@@ -174,8 +175,11 @@ catch e
     ensure_general_registry()
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("main project")
+' || _ec=$?
+if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("main project")
+elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("main project"); fi
 # If Pkg.resolve() created a plain Manifest.toml (Julia 1.12 behavior), rename it
 # to the version-specific filename so the rest of the scripts stay consistent.
 if [ -f "Manifest.toml" ]; then
@@ -194,7 +198,7 @@ if [[ $julia_major == "1.11" ]]; then
     cp Manifest-v1.11.toml examples/Manifest-v1.11.toml
     cp Manifest-v1.11.toml test/Manifest-v1.11.toml
     cp Manifest-v1.11.toml examples_3d/Manifest-v1.11.toml
-    julia --project=examples -e '
+    _ec=0; julia --project=examples -e '
 using Pkg
 try
     Pkg.resolve()
@@ -209,11 +213,14 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("examples (1.11)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.11)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.11)"); fi
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
-    julia --project=test -e '
+    _ec=0; julia --project=test -e '
 using Pkg
 try
     Pkg.resolve()
@@ -228,11 +235,14 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("test (1.11)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.11)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.11)"); fi
     echo "Precompiling test project..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
-    julia --project=examples_3d -e '
+    _ec=0; julia --project=examples_3d -e '
 using Pkg
 try
     Pkg.resolve()
@@ -247,8 +257,11 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("examples_3d (1.11)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.11)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.11)"); fi
     echo "Precompiling examples_3d project..."
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
 
@@ -267,7 +280,7 @@ end
     fi
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
-    julia --project=docs -e '
+    _ec=0; julia --project=docs -e '
 using Pkg
 try
     Pkg.resolve()
@@ -282,8 +295,11 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("docs (1.11)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.11)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.11)"); fi
     echo "Precompiling docs project..."
     julia --project=docs -e 'using Pkg; Pkg.precompile()'
     if [ -f "docs/Manifest.toml" ]; then
@@ -295,7 +311,7 @@ else
     # Resolve sub-projects independently to avoid version conflicts when the main
     # manifest contains versions newer than the local registry snapshot.
     rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-    julia --project=examples -e '
+    _ec=0; julia --project=examples -e '
 using Pkg
 try
     Pkg.resolve()
@@ -310,11 +326,14 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("examples (1.12)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.12)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.12)"); fi
     echo "Precompiling examples project..."
     julia --project=examples -e 'using Pkg; Pkg.precompile()'
-    julia --project=test -e '
+    _ec=0; julia --project=test -e '
 using Pkg
 try
     Pkg.resolve()
@@ -329,13 +348,16 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("test (1.12)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.12)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.12)"); fi
     echo "Precompiling test project and running the tests..."
     julia --project=test -e 'using Pkg; Pkg.precompile()'
     julia --project -e 'using Pkg; Pkg.test()'
     echo "Precompiling examples_3d project..."
-    julia --project=examples_3d -e '
+    _ec=0; julia --project=examples_3d -e '
 using Pkg
 try
     Pkg.resolve()
@@ -350,12 +372,15 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("examples_3d (1.12)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.12)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.12)"); fi
     julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
-    julia --project=docs -e '
+    _ec=0; julia --project=docs -e '
 using Pkg
 try
     Pkg.resolve()
@@ -370,8 +395,11 @@ catch e
     end
     Pkg.resolve()
     Pkg.instantiate()
+    exit(2)
 end
-' || FAILED_RESOLVES+=("docs (1.12)")
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.12)")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.12)"); fi
     echo "Precompiling docs project..."
     julia --project=docs -e 'using Pkg; Pkg.precompile()'
     if [ -f "examples/Manifest.toml" ]; then
@@ -396,13 +424,25 @@ julia --project=examples_3d -e 'using ControlPlots'
 julia --project=examples_3d -e 'using KiteViewers'
 
 echo
-if [[ ${#FAILED_RESOLVES[@]} -eq 0 ]]; then
-    echo "Resolve/instantiate report: all resolve calls succeeded."
+if [[ ${#FAILED_RESOLVES[@]} -eq 0 && ${#RETRIED_RESOLVES[@]} -eq 0 ]]; then
+    echo "Resolve/instantiate report: all resolve calls succeeded on the first attempt."
+elif [[ ${#FAILED_RESOLVES[@]} -eq 0 ]]; then
+    echo "Resolve/instantiate report: all resolve calls succeeded, but the following needed a clean retry"
+    echo "  (original pinned package versions were NOT used):"
+    for _label in "${RETRIED_RESOLVES[@]}"; do
+        echo "  - ${_label}"
+    done
 else
     echo "Resolve/instantiate report: the following resolve calls FAILED:"
     for _label in "${FAILED_RESOLVES[@]}"; do
         echo "  - ${_label}"
     done
+    if [[ ${#RETRIED_RESOLVES[@]} -gt 0 ]]; then
+        echo "  The following needed a clean retry (original pinned package versions were NOT used):"
+        for _label in "${RETRIED_RESOLVES[@]}"; do
+            echo "  - ${_label}"
+        done
+    fi
 fi
 echo
 echo "Installation complete!"
