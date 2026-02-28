@@ -11,7 +11,7 @@ if ! command -v juliaup &> /dev/null; then
     echo "Error: juliaup is not installed. Please install it first."
     case "$(uname -s)" in
         Linux|Darwin)
-            echo "  curl -fsSL https://install.julialang.org | sh"
+            echo "  curl -fsSL https://install.julialang.org | sh -s -- --default-channel 1.11"
             ;;
         MINGW*|MSYS*|CYGWIN*)
             echo "  winget install --name Julia --id 9NJNWW8PVKMN -e -s msstore"
