@@ -80,3 +80,10 @@ Manifest-v1.12.toml.bak
 docs/src/open_source_awe.pdf
 examples/Manifest.toml
 examples_3d/Manifest.toml
+/.idea/KiteModels.jl.iml
+/.idea/misc.xml
+/.idea/julia-settings.xml
+/.idea/modules.xml
+/.idea/.gitignore
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/vcs.xml
