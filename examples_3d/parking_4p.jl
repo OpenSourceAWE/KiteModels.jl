@@ -125,8 +125,5 @@ println("heading: $(round(heading[STEPS], digits=2))°")
 p=plot(v_time, heading; xlabel="time [s]", ylabel="heading [°]", fig="heading")
 display(p)
 if Sys.isapple()
-    try
-        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
-    catch
-    end
+    reactivate_host_app()
 end

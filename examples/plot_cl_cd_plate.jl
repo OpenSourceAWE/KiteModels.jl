@@ -31,19 +31,9 @@ function plot_cl_cd(alpha)
         cd[i] = kps4.calc_cd(alpha)
     end
     display(plot(ALPHA, [cl, cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="CL, CD", labels=["CL", "CD"], fig="CL_CD"))
-    if Sys.isapple()
-        try
-            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
-        catch
-        end
-    end
+    reactivate_host_app()
     display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", labels=["LoD"], fig="LoD"))
-    if Sys.isapple()
-        try
-            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
-        catch
-        end
-    end
+    reactivate_host_app()
 end
 
 ALPHA = -10:0.1:20

@@ -1,6 +1,6 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-using KiteModels: KPS4, init!, lift_drag, next_step!, winch_force
+using KiteModels: KPS4, init!, lift_drag, next_step!, reactivate_host_app, winch_force
 using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
 using Printf
@@ -72,12 +72,7 @@ if PLOT
         fig = "winch",
     )
     display(p)
-    if Sys.isapple()
-        try
-            run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
-        catch
-        end
-    end
+    reactivate_host_app()
 end
 lift, drag = lift_drag(kps4)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")

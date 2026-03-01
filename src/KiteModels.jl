@@ -36,7 +36,7 @@ export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, cal
 export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
-export copy_model_settings, kite_ref_frame, menu2, orient_euler, spring_forces, upwind_dir
+export copy_model_settings, kite_ref_frame, menu2, orient_euler, reactivate_host_app, spring_forces, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -88,6 +88,27 @@ include("init.jl") # functions to calculate the initial state vector, the initia
 
 function menu2()
     Main.include("examples/menu2.jl")
+end
+
+function reactivate_host_app()
+    Sys.isapple() || return nothing
+    term = get(ENV, "TERM_PROGRAM", "")
+    cmd = if term == "vscode"
+        `osascript -e 'tell application "Visual Studio Code" to activate'`
+    elseif term == "Apple_Terminal"
+        `osascript -e 'tell application "Terminal" to activate'`
+    elseif term == "iTerm.app" || term == "iTerm2"
+        `osascript -e 'tell application "iTerm" to activate'`
+    else
+        nothing
+    end
+    if cmd !== nothing
+        try
+            run(pipeline(cmd, stdout=devnull, stderr=devnull))
+        catch
+        end
+    end
+    nothing
 end
 
 # Calculate the lift and drag coefficient as a function of the angle of attack alpha.

@@ -1,7 +1,7 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 using Printf
-using KiteModels: KPS3, KPS4, init!, lift_drag, next_step!, winch_force
+using KiteModels: KPS3, KPS4, init!, lift_drag, next_step!, reactivate_host_app, winch_force
 using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
 
@@ -81,11 +81,8 @@ integrator = init!(kps3, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps3, integrator, STEPS, true; fig = "kps3")
 if Sys.isapple()
     plt.show(block = true)
-    try
-        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
-    catch
-    end
 end
+reactivate_host_app()
 
 lift, drag = lift_drag(kps3)
 println("KPS3")
@@ -98,11 +95,8 @@ integrator = init!(kps4; delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps4, integrator, STEPS, true; fig = "kps4")
 if Sys.isapple()
     plt.show(block = true)
-    try
-        run(pipeline(`osascript -e 'tell application "Visual Studio Code" to activate'`, stdout=devnull, stderr=devnull))
-    catch
-    end
 end
+reactivate_host_app()
 
 lift, drag = lift_drag(kps4)
 println("KPS4")
