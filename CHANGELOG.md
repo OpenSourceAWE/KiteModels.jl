@@ -2,9 +2,17 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.1 2026-02-24
+### KiteModels v0.11.1
 #### Changed
-- updated many dependencies
+- first version with good support for MacOS
+- the install script now installs qtagg for MacOS
+- bumped ControlPlots to 0.2.13 for MacOS support. Plots are blocking now.
+- bumped KiteViewers to 0.5.1 for MacOS support. Different text positions, new font.
+- updated many other dependencies
+- when a plot is closed, the main app gets activated (MacOS)
+- when the KiteViewer is displayed, it is brought into the foreground (MacOS)
+- updated all examples for MacOS support
+- the install script is more robust now and reports warnings at the end (if needed)
 - examples_3d is a workspaces now
 - improved `create_sys_image` and `install` scripts
 
