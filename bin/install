@@ -424,8 +424,21 @@ julia --project=examples_3d -e 'using ControlPlots'
 julia --project=examples_3d -e 'using KiteViewers'
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    echo "Installing QtAgg dependencies for PyPlot on macOS..."
-    julia -e '
+    if julia -e '
+try
+    using PyCall
+    pyimport("matplotlib")
+    pyimport("matplotlib.backends.backend_qtagg")
+catch
+    exit(1)
+end
+'; then
+        echo
+        echo "QtAgg already installed; skipping QtAgg dependency installation."
+    else
+        echo
+        echo "Installing QtAgg dependencies for PyPlot on macOS..."
+        julia -e '
 using Pkg
 
 for pkg in ["PyCall", "PyPlot", "Conda"]
@@ -448,6 +461,7 @@ Pkg.build("PyPlot")
 println("Installed matplotlib + pyqt in Conda.jl environment.")
 println("QtAgg should now be available for matplotlib/PyPlot.jl.")
 '
+    fi
 fi
 
 echo
@@ -472,11 +486,11 @@ else
     fi
 fi
 echo
-echo "Installation complete!"
+printf "\033[1;32mInstallation complete!\033[0m\n"
 echo
 echo "You can now launch Julia by typing"
 echo "cd .."
-echo "./bin/run_julia"
+echo "bin/run_julia"
 echo "and then get the menu with the examples by typing:"
 echo "menu()"
 
@@ -509,3 +523,5 @@ elif [[ "$(uname -s)" == "Darwin" ]]; then
     fi
     unset _config_file
 fi
+
+echo
