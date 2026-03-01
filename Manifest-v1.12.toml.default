@@ -2,7 +2,7 @@
 
 julia_version = "1.12.5"
 manifest_format = "2.0"
-project_hash = "2e1a729c76bacd2b0b04caa0c40337389650b11b"
+project_hash = "78c4683fc8e75cfd00171d0cbc6e3e18a526be8c"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -1320,9 +1320,9 @@ version = "0.11.2"
 
 [[deps.KiteViewers]]
 deps = ["FileIO", "GLMakie", "GeometryBasics", "Joysticks", "KiteUtils", "LinearAlgebra", "Parameters", "Pkg", "PrecompileTools", "Printf", "Reexport", "Rotations", "StaticArrays", "StructArrays", "Timers"]
-git-tree-sha1 = "437fdb8bed61b5a0434574ce1dfcd906be20b53f"
+git-tree-sha1 = "819d96b8e7ee1d967383598a18b76b33db65235d"
 uuid = "2e593061-95e7-45e4-95f4-df0491f2e601"
-version = "0.5.0"
+version = "0.5.1"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
@@ -1480,9 +1480,9 @@ weakdeps = ["ChainRulesCore", "SparseArrays", "Statistics"]
 
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ChainRulesCore", "ConcreteStructs", "DocStringExtensions", "EnumX", "GPUArraysCore", "InteractiveUtils", "Krylov", "Libdl", "LinearAlgebra", "MKL_jll", "Markdown", "OpenBLAS_jll", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "Setfield", "StaticArraysCore"]
-git-tree-sha1 = "37c3e62180f3f325425f5e75dfd4ce34104f2c09"
+git-tree-sha1 = "1e487940a06ed9562de685e5f336633cdc14e011"
 uuid = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
-version = "3.61.0"
+version = "3.62.0"
 
     [deps.LinearSolve.extensions]
     LinearSolveAMDGPUExt = "AMDGPU"
@@ -2364,9 +2364,9 @@ version = "0.1.0"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "Accessors", "Adapt", "ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "Moshi", "PreallocationTools", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLLogging", "SciMLOperators", "SciMLPublic", "SciMLStructures", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface"]
-git-tree-sha1 = "cf9dd577beed4378ba0537c2bd356578c5db8932"
+git-tree-sha1 = "4675d321bfebe190d22dc4d9de6af7e318d5174a"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.147.0"
+version = "2.148.0"
 
     [deps.SciMLBase.extensions]
     SciMLBaseChainRulesCoreExt = "ChainRulesCore"
