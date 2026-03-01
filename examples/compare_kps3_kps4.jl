@@ -91,7 +91,7 @@ println("winch_force [N]: $(round(winch_force(kps3), digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
 kps4.set.alpha_zero = ALPHA_ZERO
-integrator = init!(kps4; delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = init!(kps4; delta = 0.003, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps4, integrator, STEPS, true; fig = "kps4")
 if Sys.isapple()
     plt.show(block = true)
