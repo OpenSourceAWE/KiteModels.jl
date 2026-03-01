@@ -423,6 +423,33 @@ julia --project=examples -e 'using ControlPlots, DSP'
 julia --project=examples_3d -e 'using ControlPlots'
 julia --project=examples_3d -e 'using KiteViewers'
 
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "Installing QtAgg dependencies for PyPlot on macOS..."
+    julia -e '
+using Pkg
+
+for pkg in ["PyCall", "PyPlot", "Conda"]
+    if Base.find_package(pkg) === nothing
+        Pkg.add(pkg)
+    end
+end
+
+if get(ENV, "PYTHON", nothing) != ""
+    ENV["PYTHON"] = ""
+    Pkg.build("PyCall")
+end
+
+using Conda
+Conda.add("matplotlib")
+Conda.add("pyqt")
+
+Pkg.build("PyPlot")
+
+println("Installed matplotlib + pyqt in Conda.jl environment.")
+println("QtAgg should now be available for matplotlib/PyPlot.jl.")
+'
+fi
+
 echo
 if [[ ${#FAILED_RESOLVES[@]} -eq 0 && ${#RETRIED_RESOLVES[@]} -eq 0 ]]; then
     echo "Resolve/instantiate report: all resolve calls succeeded on the first attempt."
