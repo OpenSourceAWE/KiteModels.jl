@@ -125,5 +125,5 @@ println("heading: $(round(heading[STEPS], digits=2))°")
 p=plot(v_time, heading; xlabel="time [s]", ylabel="heading [°]", fig="heading")
 display(p)
 if Sys.isapple()
-    reactivate_host_app()
+    KiteModels.reactivate_host_app()
 end

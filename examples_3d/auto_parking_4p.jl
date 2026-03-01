@@ -181,5 +181,5 @@ p = plotx(T, rad2deg.(AZIMUTH), rad2deg.(HEADING), [100*(SET_STEERING), 100*(STE
           fig="Azimuth, heading, steering and more")
 display(p)
 if Sys.isapple()
-    reactivate_host_app()
+    KiteModels.reactivate_host_app()
 end
