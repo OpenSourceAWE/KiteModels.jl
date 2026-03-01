@@ -23,6 +23,21 @@ if ! command -v juliaup &> /dev/null; then
     exit 1
 fi
 
+# Check available disk space in home directory (require at least 5 GB)
+_required_kb=$((5 * 1024 * 1024))
+_available_kb=$(df -k "$HOME" | awk 'NR==2 {print $4}')
+if [[ -z "${_available_kb:-}" ]]; then
+    echo "Error: Could not determine free disk space for $HOME."
+    exit 1
+fi
+if (( _available_kb < _required_kb )); then
+    _available_gb=$(awk -v kb="$_available_kb" 'BEGIN {printf "%.2f", kb/1024/1024}')
+    echo "Error: Not enough free disk space in $HOME."
+    echo "At least 5.00 GB required, found ${_available_gb} GB."
+    exit 1
+fi
+unset _required_kb _available_kb _available_gb
+
 # Ask which Julia version to use
 echo "Which Julia version do you want to use?"
 echo "  1) Julia 1.11"
