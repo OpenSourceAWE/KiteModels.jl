@@ -14,7 +14,6 @@ if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
 end
 using Timers; tic()
 using KiteModels, KitePodModels, Rotations, StaticArrays
-using OrdinaryDiffEqCore: ODEIntegrator
 using KiteViewers
 using ControlPlots: plot, plot2d, plotx
 toc()
@@ -101,7 +100,7 @@ function simulate(integrator, steps, plot=PLOT)
 end
 toc()
 
-integrator::ODEIntegrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 toc()
 
 println("\nStarting simulation...")
