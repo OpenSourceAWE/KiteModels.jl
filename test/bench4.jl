@@ -6,10 +6,10 @@ if ! ("Test" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("test")
 end
 
-using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
+using BenchmarkTools, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
-set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
+set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 set = load_settings("system.yaml")
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
@@ -51,7 +51,7 @@ msg = String[]
         kps4.set.mass = 6.21
         kps4.set.c_s = 0.6
         kps4.set.axial_damping = 473.0     # unit axial_damping coefficient
-        kps4.set.axial_stiffness = 614600.0 # unit spring coefficent
+        kps4.set.axial_stiffness = 614600.0 # unit spring coefficient
         kps4.set.width = 4.9622
     end
 
@@ -67,8 +67,8 @@ msg = String[]
         kps4.stiffness_factor = 0.5
         kps4.set.alpha = 1.0/7.0
         length = 150.0
-        kps4.segment_length = length/se().segments
-        for i in 1:se().segments + KiteModels.KITE_PARTICLES + 1 
+        kps4.segment_length = length/(se()::Settings).segments
+        for i in 1:(se()::Settings).segments + KiteModels.KITE_PARTICLES + 1 
             kps4.forces[i] .= zeros(3)
         end
         return pos, vel, posd, veld
@@ -77,9 +77,10 @@ msg = String[]
     set_defaults()
 
     # benchmark calc_particle_forces!
+    _rand_i = rand(1:(se()::Settings).segments + KiteModels.KITE_PARTICLES + 1)
     t = @benchmark KiteModels.calc_particle_forces!(kps4, pos1, pos2, vel1, vel2, spring, segments, d_tether, rho, i) setup=(pos1 = KVec3(1.0, 2.0, 3.0);  
                                             pos2 = KVec3(2.0, 3.0, 4.0); vel1 = KVec3(3.0, 4.0, 5.0); vel2 = KVec3(4.0, 5.0, 6.0); kps4.v_wind_tether.=KVec3(8.0, 0.1, 0.0); spring=kps4.springs[1];
-                                            kps4.stiffness_factor = 0.5; segments=6.0; d_tether=se().d_tether/1000.0; rho=kps4.set.rho_0; i=rand(1:se().segments + KiteModels.KITE_PARTICLES + 1))
+                                            kps4.stiffness_factor = 0.5; segments=6.0; d_tether=(se()::Settings).d_tether/1000.0; rho=kps4.set.rho_0; i=$_rand_i)
     @test t.memory <= 128
     push!(msg, ("Mean time calc_particle_forces!: $(round(mean(t.times), digits=1)) ns"))
 
@@ -96,7 +97,7 @@ msg = String[]
     init_150()
     kps4.set.elevation = 60.0
     kps4.set.profile_law = Int(EXP)
-    for i in 1:se().segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:(se()::Settings).segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     pos, vel = KiteModels.init_inner(kps4)
@@ -105,7 +106,7 @@ msg = String[]
     alpha_depower = 0.1
     rel_steering = -0.1
     kps4.set.alpha_zero = 5.0
-    for i in 1:se().segments + KiteModels.KITE_PARTICLES + 1 
+    for i in 1:(se()::Settings).segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
     t = @benchmark KiteModels.calc_aero_forces!($kps4, $pos, $vel, $rho, $alpha_depower, $rel_steering)
@@ -139,6 +140,8 @@ msg = String[]
     # Julia 1.11 on Laptop on battery: 1035ns
     # Julia 1.11 on Laptop on battery, branch perf2: 1042ns
     # Julia 1.11 on Desktop, branch perf2: 835..899 ns on June 15, 2025 after 13:12
+    # Julia 1.11 on Desktop: 944..947 ns on March 2, 2026
+    # Julia 1.12 on Desktop: 1125..1128 ns on March 2, 2026
 
 end
 printstyled("Benchmark results for KPS4:\n"; bold = true)
