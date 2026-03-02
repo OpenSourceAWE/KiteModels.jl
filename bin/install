@@ -513,6 +513,25 @@ else
         done
     fi
 fi
+
+# Handle .JETLSConfig.toml configuration file
+_jetls_warning=0
+if [ ! -f ".JETLSConfig.toml" ]; then
+    if [ -f ".JETLSConfig.toml.default" ]; then
+        cp .JETLSConfig.toml.default .JETLSConfig.toml
+        echo "Copied .JETLSConfig.toml.default to .JETLSConfig.toml"
+    else
+        echo "Warning: .JETLSConfig.toml.default not found"
+    fi
+else
+    # Only warn if the files differ
+    if [ -f ".JETLSConfig.toml.default" ]; then
+        if ! cmp -s ".JETLSConfig.toml" ".JETLSConfig.toml.default"; then
+            _jetls_warning=1
+        fi
+    fi
+fi
+
 echo
 printf "\033[1;32mInstallation complete!\033[0m\n"
 echo
@@ -553,3 +572,9 @@ elif [[ "$(uname -s)" == "Darwin" ]]; then
 fi
 
 echo
+
+# Warn if .JETLSConfig.toml already existed
+if [[ $_jetls_warning -eq 1 ]]; then
+    echo "Warning: .JETLSConfig.toml already exists and was not overwritten."
+    echo "If you want to use the default configuration, delete it and run this script again."
+fi
