@@ -128,7 +128,6 @@ function plot_steering_vs_turn_rate()
     lg = load_log("tmp")
     sl = lg.syslog
 
-    # p2=plot(sl.time, sl.v_app; ylabel="v_app [m/s]", fig="v_app")
     delta = delay(sl.var_16, sl.var_15./sl.v_app)
     println("delay of turnrate: $(delta*dt) s")
     delayed_steering = shift_vector(sl.var_16, delta)    
