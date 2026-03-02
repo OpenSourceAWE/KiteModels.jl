@@ -39,11 +39,11 @@ logger = Logger(set.segments + 5, STEPS)
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
-for i=1:80
+for _ in 1:80
     next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, dt)
 end
 lift, drag = lift_drag(kps4)
-sys_state = KiteModels.SysState(kps4)
+sys_state::SysState = KiteModels.SysState(kps4)
 log!(logger, sys_state)
 elev = rad2deg(logger.elevation_vec[end])
 println("Lift: $lift, Drag: $drag, elev: $elev, Iterations: $(kps4.iter)")
