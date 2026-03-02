@@ -12,11 +12,11 @@ Scientific background: http://arxiv.org/abs/1406.6218 =#
 
 module KiteModels
 
-using PrecompileTools: @setup_workload, @compile_workload 
+using PrecompileTools: @compile_workload, @setup_workload 
 using Logging
-using Dierckx, Interpolations, StaticArrays, LinearAlgebra, Statistics, Parameters, NLsolve,
-      DocStringExtensions, OrdinaryDiffEqCore, OrdinaryDiffEqBDF, OrdinaryDiffEqNonlinearSolve,
-      NonlinearSolve, Suppressor
+using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NLsolve, NonlinearSolve,
+      OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve, Parameters,
+      StaticArrays, Statistics, Suppressor
 import Sundials
 using Pkg, Reexport
 import KiteUtils: init!, next_step!, update_sys_state!
