@@ -10,7 +10,7 @@ using KiteModels, KitePodModels
 
 # TODO: test for different elevation angles and wind speeds
 
-set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
+set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 set = deepcopy(load_settings("system.yaml"))
 kcu = KCU(set)
 kps4 = KPS4(kcu)

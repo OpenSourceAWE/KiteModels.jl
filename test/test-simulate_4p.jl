@@ -8,7 +8,7 @@ end
 using LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
-set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
+set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 
 function init_150(kps4)
     kps4.set.l_tethers[1] = 150.0

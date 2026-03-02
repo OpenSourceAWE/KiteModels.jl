@@ -6,7 +6,7 @@
 using KiteModels
 using Test
 
-set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
+set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 set = deepcopy(load_settings("system.yaml"))
 
 TEST_KCU = KCU(set)
