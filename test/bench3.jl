@@ -9,10 +9,9 @@ end
 using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
-const SEGMENTS = se().segments
-
-set_data_path(joinpath(dirname(dirname(pathof(KiteModels))), "data"))
+set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 set = load_settings("system.yaml")
+const SEGMENTS = set.segments
 kcu::KCU = KCU(set)
 kps::KPS3 = KPS3(kcu)
 
@@ -23,7 +22,7 @@ const res3 = vcat(reduce(vcat, vcat(res1, res2)), zeros(2))
 msg=""
 @testset verbose = true "KPS3 benchmarking....    " begin
 
-function set_defaults()
+function set_defaults(kps)
     KiteModels.clear!(kps)
     kps.set.l_tethers[1] = 150.0
     kps.set.elevation = 60.0
@@ -47,7 +46,7 @@ function init_392()
     kps.set.c_s = 0.6
 end
 
-set_defaults()
+set_defaults(kps)
 function test_initial_condition(params::Vector)
     my_state = kps
     y0, yd0 = KiteModels.init(my_state, params)
@@ -80,11 +79,13 @@ end
     # println(res2)
 end
 
-t = @benchmark residual!(res, yd, y, p) setup = (res1 = zeros(SVector{SEGMENTS, KVec3}); res2 = deepcopy(res1); 
-                                                               res = vcat(reduce(vcat, vcat(res1, res2)), zeros(2)); pos = deepcopy(res1);
-                                                               pos[1] .= [1.0,2,3]; vel = deepcopy(res1); X = zeros(SimFloat, 2*kps.set.segments); 
-                                                               (y0, yd0) = KiteModels.init(kps, X); yd=yd0; y=y0;
-                                                               p = kps)
+let res1 = zeros(SVector{SEGMENTS, KVec3}),
+        res2 = zeros(SVector{SEGMENTS, KVec3}),
+        X    = zeros(SimFloat, 2 * kps.set.segments)
+    res_b = vcat(reduce(vcat, vcat(res1, res2)), zeros(2))
+    y0, yd0 = KiteModels.init(kps, X)
+    global t = @benchmark residual!($res_b, $yd0, $y0, $kps)
+end
 
 
 @test t.memory <= 240
