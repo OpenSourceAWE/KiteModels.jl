@@ -37,7 +37,7 @@ function make_jac(f!, n_vars)
     return jac!
 end
 
-# Functions to calculate the inital state vector, the inital masses and initial springs
+# Functions to calculate the initial state vector, the initial masses and initial springs
 
 function init_springs!(s::KPS4)
     l_0     = s.set.l_tether / s.set.segments 
@@ -127,7 +127,7 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
     for i in 2:s.set.segments+1
         vel[i] .+= (pos[i+1] - pos[i]) * (s.set.v_reel_out*(i-1)/s.set.segments)
     end
-    # the velocity vector of the kite particles is the same as the velocity of the last tether pointj
+    # the velocity vector of the kite particles is the same as the velocity of the last tether point
     for i in s.set.segments+2:s.set.segments+KITE_PARTICLES+1
         vel[i] .+= vel[s.set.segments+1] 
     end
@@ -146,7 +146,7 @@ end
 
 # Calculate the initial vectors pos and vel. Tether with the initial elevation angle
 # se().elevation, particle zero fixed at origin.
-# X is a vector of deviations in x and z positions, to be varied to find the inital equilibrium
+# X is a vector of deviations in x and z positions, to be varied to find the initial equilibrium
 function init_pos_vel(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)))
     pos, vel, acc = init_pos_vel_acc(s, X; old=true)
     pos, vel
