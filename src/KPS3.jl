@@ -150,9 +150,9 @@ function clear!(s::KPS3)
     s.t_0 = 0.0                              # relative start time of the current time interval
     s.v_reel_out = 0.0
     s.last_v_reel_out = 0.0
-    s.v_wind_gnd    .= [s.set.v_wind, 0, 0]    # wind vector at reference height
-    s.v_wind_tether .= [s.set.v_wind, 0, 0]
-    s.v_apparent    .= [s.set.v_wind, 0, 0]
+    s.v_wind_gnd    .= [Float64(s.set.v_wind), 0, 0]    # wind vector at reference height
+    s.v_wind_tether .= [Float64(s.set.v_wind), 0, 0]
+    s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
     height = sin(deg2rad(s.set.elevation::Float64)) * s.set.l_tether::Float64
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
     s.alpha_depower = 0.0
@@ -226,7 +226,7 @@ function calc_aero_forces(s::KPS3, pos_kite, v_kite, rho, rel_steering)
     # some additional drag is created while steering
     s.drag_force    .*= K * s.param_cd * BRIDLE_DRAG * (1.0 + 0.6 * abs(rel_steering)) 
     s.cor_steering    = s.set.c2_cor / v_app_norm * sin(s.psi) * cos(s.beta) # in paper named i_(s,c), Eq. 30
-    s.steering_force .= -K * s.set.rel_side_area/100.0 * s.set.c_s * (-rel_steering + s.cor_steering) .* s.kite_y
+    s.steering_force .= -K * Float64(s.set.rel_side_area)/100.0 * Float64(s.set.c_s) * (-rel_steering + s.cor_steering) .* s.kite_y
     s.last_force     .= -(s.lift_force + s.drag_force + s.steering_force) 
     nothing
 end

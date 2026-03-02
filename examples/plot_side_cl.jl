@@ -92,10 +92,10 @@ end
 # p = plot(STEERING_RANGE, SIDE_CL; xlabel="rel_steering [-]", 
 #          ylabel="side lift coefficient [-]", fig="Side lift coefficient vs steering")
 # display(p)
-p2 = plot(STEERING_RANGE, SIDE_CL*(set.rel_side_area/100); xlabel="set_steering [-]", 
+p2 = plot(STEERING_RANGE, SIDE_CL*(set.rel_side_area::Float64/100); xlabel="set_steering [-]", 
          ylabel="side force coefficient [-]", fig="Side force coefficient vs set_steering")
 display(p2)
-p3 = plot(STEERING, SIDE_CL*(set.rel_side_area/100); xlabel="steering [-]", 
+p3 = plot(STEERING, SIDE_CL*(set.rel_side_area::Float64/100); xlabel="steering [-]", 
          ylabel="side force coefficient [-]", fig="Side force coefficient vs steering")
 display(p3)
 reactivate_host_app()

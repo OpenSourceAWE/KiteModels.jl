@@ -150,7 +150,7 @@ function set_depower_steering!(s::AKM, depower, steering)
     s.depower  = depower
     s.kcu_steering = steering
     s.alpha_depower = calc_alpha_depower(s.kcu, depower)
-    s.steering = (steering - s.set.c0) / (1.0 + s.set.k_ds * (s.alpha_depower / deg2rad(s.set.alpha_d_max)))
+    s.steering = (steering - Float64(s.set.c0)) / (1.0 + Float64(s.set.k_ds) * (s.alpha_depower / deg2rad(Float64(s.set.alpha_d_max))))
     nothing
 end
 
@@ -557,7 +557,7 @@ An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initializa
 """
 function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     clear!(s)
-    upwind_dir = deg2rad(s.set.upwind_dir)
+    upwind_dir = deg2rad(Float64(s.set.upwind_dir))
     s.stiffness_factor = stiffness_factor
     
     y0, yd0 =try

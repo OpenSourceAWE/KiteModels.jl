@@ -585,7 +585,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         init_392(kps4)
         clear!(kps4)
         KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
-        height = sin(deg2rad(kps4.set.elevation)) * kps4.set.l_tether
+        height = sin(deg2rad(Float64(kps4.set.elevation))) * Float64(kps4.set.l_tether)
         kps4.v_wind .= kps4.v_wind_gnd * calc_wind_factor(kps4.am, height)
         res1, res2 = find_steady_state!(kps4; stiffness_factor = 0.07, prn = false)
         # TODO check why -9.81 appears in the residual

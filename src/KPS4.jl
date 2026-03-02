@@ -196,9 +196,9 @@ function clear!(s::KPS4)
     s.v_reel_out = s.set.v_reel_out
     s.last_v_reel_out = s.set.v_reel_out
     s.sync_speed = s.set.v_reel_out
-    s.v_wind_gnd    .= [s.set.v_wind, 0, 0]    # wind vector at reference height
-    s.v_wind_tether .= [s.set.v_wind, 0, 0]
-    s.v_apparent    .= [s.set.v_wind, 0, 0]
+    s.v_wind_gnd    .= [Float64(s.set.v_wind), 0, 0]    # wind vector at reference height
+    s.v_wind_tether .= [Float64(s.set.v_wind), 0, 0]
+    s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
     height = sin(deg2rad(s.set.elevation::Float64)) * (s.set.l_tether::Float64)
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
 
@@ -236,7 +236,7 @@ function clear!(s::KPS4)
     s.psi = 0.0
     s.rho = s.set.rho_0
     s.bridle_factor = s.set.l_bridle / bridle_length(s.set)
-    s.ks = deg2rad(s.set.max_steering) 
+    s.ks = deg2rad(Float64(s.set.max_steering)) 
     s.kcu.depower = s.set.depower::Float64/100.0
     s.kcu.set_depower = s.kcu.depower
     s.kcu.steering = 0.0
@@ -348,7 +348,7 @@ Parameters:
 Updates the vector s.forces of the first parameter.
 """
 @inline function calc_aero_forces!(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
-    rel_side_area = s.set.rel_side_area/100.0    # defined in percent
+    rel_side_area = Float64(s.set.rel_side_area)/100.0   # defined in percent
     K = 1 - rel_side_area                        # correction factor for the drag
     # pos_B, pos_C, pos_D: position of the kite particles B, C, and D
     # v_B,   v_C,   v_D:   velocity of the kite particles B, C, and D
@@ -372,9 +372,9 @@ Updates the vector s.forces of the first parameter.
     va_k = R_k_w' * SVector{3}(va_2)
     s.side_slip = atan(va_k[2], -va_k[1])
 
-    alpha_2 = rad2deg(π - acos2(normalize(va_xz2) ⋅ x) - alpha_depower)     + s.set.alpha_zero
-    alpha_3 = rad2deg(π - acos2(normalize(va_xy3) ⋅ x) + rel_steering * s.ks) + s.set.alpha_ztip
-    alpha_4 = rad2deg(π - acos2(normalize(va_xy4) ⋅ x) - rel_steering * s.ks) + s.set.alpha_ztip
+    alpha_2 = rad2deg(π - acos2(normalize(va_xz2) ⋅ x) - alpha_depower)     + Float64(s.set.alpha_zero)
+    alpha_3 = rad2deg(π - acos2(normalize(va_xy3) ⋅ x) + rel_steering * s.ks) + Float64(s.set.alpha_ztip)
+    alpha_4 = rad2deg(π - acos2(normalize(va_xy4) ⋅ x) - rel_steering * s.ks) + Float64(s.set.alpha_ztip)
     s.alpha_2 = alpha_2
     s.alpha_3 = alpha_3
     s.alpha_4 = alpha_4
@@ -617,7 +617,7 @@ function winch_force(s::KPS4) norm(s.last_force) end
 Calculate the lift and drag coefficients of the kite, based on the current angles of attack.
 """
 function cl_cd(s::KPS4)
-    rel_side_area = s.set.rel_side_area/100.0  # defined in percent
+    rel_side_area = Float64(s.set.rel_side_area)/100.0 # defined in percent
     K = 1 - rel_side_area                      # correction factor for the drag
     if s.set.version == 3
         drag_corr = 1.0
