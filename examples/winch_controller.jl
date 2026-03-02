@@ -7,10 +7,10 @@ end
 using DiscretePIDs, KiteUtils
 # low level winch controller; this code will be moved to WinchControllers.jl in the future
 
-mutable struct WinchSpeedController
+mutable struct WinchSpeedController{T<:DiscretePID}
     kp::Float64
     ki::Float64
-    pid::DiscretePID
+    pid::T
 end
 function WinchSpeedController(;kp=20.0, ki=5.0, dt)
     pid = DiscretePID(;K=kp, Ti=kp/ki, Ts=dt)
