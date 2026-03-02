@@ -17,3 +17,9 @@ pattern = "copy!.*Random.TaskLocalRNG.*Nothing"
 match_by = "message"
 match_type = "regex"
 severity = "off"
+
+[[diagnostic.patterns]]
+pattern = "`integrator` is not defined"
+match_by = "message"
+match_type = "literal"
+severity = "off"
