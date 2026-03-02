@@ -325,7 +325,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         init_150(kps4)
         kps4.set.elevation = 60.0
         kps4.set.profile_law = Int(EXP)
-        pos, vel, acc = KiteModels.init_pos_vel_acc(kps4, old = true, delta = 1e-6)
+        pos, vel, _ = KiteModels.init_pos_vel_acc(kps4, old = true, delta = 1e-6)
         posd = copy(vel)
         veld = zero(vel)
         kps4.v_wind_gnd .= [7.0, 0.1, 0.0]
