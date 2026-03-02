@@ -26,6 +26,7 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using AtmosphericModels
 using Rotations
 import Base.zero
+import Base.@kwdef
 import OrdinaryDiffEqCore.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
