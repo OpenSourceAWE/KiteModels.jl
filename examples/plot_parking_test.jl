@@ -26,8 +26,7 @@ using KiteUtils: Settings, load_settings
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
 else
-    deepcopy(load_settings("system.yaml"))
-    @error "No valid data for the V3 kite available."
+    error("No valid data for the V3 kite available.")
 end
 
 using Pkg
