@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.1
+### KiteModels v0.11.1 2026-03-02
 #### Changed
 - first version with good support for MacOS
 - the install script now installs qtagg for MacOS
@@ -20,7 +20,7 @@ SPDX-License-Identifier: MIT
 - examples_3d/parking_4p.jl is working now
 - examples_3d/show_kite.jl is working now
 
-### Added
+#### Added
 - example `auto_parking.jl`
 - example `parking_wind_dir.jl`
 
@@ -56,7 +56,7 @@ SPDX-License-Identifier: MIT
 - Breaking: rename `force` to `winch_force` when SysState is referred to
 - Make tests more robust by deleting unused files from the temporary directory and by increasing tolerances
 
-### Added
+#### Added
 - the configuration file `.JETLSConfig.toml`
 - the script `reuse_lint` to check the licenses
 
