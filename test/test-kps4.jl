@@ -10,7 +10,7 @@ using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 
-@testset verbose = true "KPS4 tests...." begin
+# @testset verbose = true "KPS4 tests...." begin
 
     function set_defaults(kps4)
         kps4.set.l_tethers[1] = 150.0
@@ -579,13 +579,14 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
     end
 
     @testset "test_find_steady_state" begin
-        local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+        local se_::Settings = deepcopy(load_settings("system.yaml"))
+        local kps4 = KPS4(KCU(se_))
         kps4.set.kcu_diameter = 0.0
         kps4.set.max_iter = 500
         init_392(kps4)
         clear!(kps4)
         KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
-        height = sin(deg2rad(Float64(kps4.set.elevation))) * Float64(kps4.set.l_tether)
+        height = sin(deg2rad(kps4.set.elevations[1])) * kps4.set.l_tethers[1]
         kps4.v_wind .= kps4.v_wind_gnd * calc_wind_factor(kps4.am, height)
         res1, res2 = find_steady_state!(kps4; stiffness_factor = 0.07, prn = false)
         # TODO check why -9.81 appears in the residual
@@ -677,5 +678,5 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         @test res2[6] ≈ 0.0
     end
 
-end
+# end
 nothing
