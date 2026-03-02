@@ -102,11 +102,18 @@ DEP = zeros(length(DEPOWER))
 ELEV = zeros(length(DEPOWER))
 V_WIND_KITE = zeros(length(DEPOWER))
 
+# Initialize kps4 at global scope - will be reassigned in the loop below 
+kcu = KCU(set)
+kps4 = KPS4(kcu)
+
 elev = set.elevation
 i = 1
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu, integrator, logger
+    cl = 0.0
+    cd = 0.0
+    aoa = 0.0
 
     logger = Logger(set.segments + 5, STEPS)
     DEP[i] = depower
@@ -178,8 +185,11 @@ for depower in DEPOWER
     i+=1
 end
 
+# Initialize cl and cd for the final calculation
 cl = zeros(length(AOA))
 cd = zeros(length(AOA))
+
+# Use kps4 from the loop above to calculate cl/cd values
 for (i, alpha) in pairs(AOA)
     global cl, cd
     cl[i] = kps4.calc_cl(alpha)
