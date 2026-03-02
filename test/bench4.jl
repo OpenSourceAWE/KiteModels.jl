@@ -17,7 +17,7 @@ kps4::KPS4 = KPS4(kcu)
 msg = String[]
 @testset verbose = true "KPS4 benchmarking...     " begin
 
-    function set_defaults(kps4)
+    function set_defaults(kps4::KPS4)
         KiteModels.clear!(kps4)
         kps4.set.l_tethers[1] = 150.0
         kps4.set.elevation = 60.0

@@ -542,7 +542,7 @@ end
 
 """
     init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false) -> OrdinaryDiffEqCore.ODEIntegrator
+                      prn=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -553,9 +553,9 @@ Parameters:
 - prn: if set to true, print the detailed solver results
 
 Returns:
-An instance of an `ODEIntegrator`.
+An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)
+function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     clear!(s)
     upwind_dir = deg2rad(s.set.upwind_dir)
     s.stiffness_factor = stiffness_factor
@@ -592,7 +592,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)
     differential_vars = ones(Bool, length(y0))
     prob    = DAEProblem{true}(residual!, yd0, y0, tspan, s; differential_vars)
     integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
-                                         initializealg=OrdinaryDiffEqCore.NoInit())
+                        initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
         s.pitch_rate = 0
@@ -601,6 +601,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)
     end
     s.v_reel_out = s.set.v_reel_out
     s.integrator = integrator
+    return integrator
 end
 
 

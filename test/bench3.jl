@@ -22,7 +22,7 @@ const res3 = vcat(reduce(vcat, vcat(res1, res2)), zeros(2))
 msg=""
 @testset verbose = true "KPS3 benchmarking....    " begin
 
-function set_defaults(kps)
+function set_defaults(kps::KPS3)
     KiteModels.clear!(kps)
     kps.set.l_tethers[1] = 150.0
     kps.set.elevation = 60.0
