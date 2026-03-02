@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 # plot the lift and drag coefficients as function of angle of attack
-# TODO: fix JETLS warnings
 
 using Printf
 using KiteModels, LinearAlgebra
@@ -77,12 +76,13 @@ end
 
 CL = zeros(length(DEPOWER))
 CD = zeros(length(DEPOWER))
-const AOA = zeros(length(DEPOWER))
+AOA = zeros(length(DEPOWER))
 DEP = zeros(length(DEPOWER))
 
 elev = set.elevation
 i = 1
 set.v_wind = V_WIND # 25
+kps4::KPS4 = KPS4(KCU(set))  # Initialize before loop
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu
@@ -148,6 +148,7 @@ end
 cl = zeros(length(AOA))
 cd = zeros(length(AOA))
 for (i, alpha) in pairs(AOA)
+    # kps4 is already global (initialized at module level)
     global cl, cd
     cl[i] = kps4.calc_cl(alpha)
     cd[i] = kps4.calc_cd(alpha)
