@@ -151,6 +151,16 @@ else
     fi
 fi
 
+# Remove any existing Manifest.toml symlink (left by a previous install run) so Julia
+# creates a fresh regular file rather than writing through the old symlink.
+# Also remove the version-specific symlink if it is a symlink (not a real file), to
+# prevent Julia from writing through it into the wrong manifest.
+rm -f Manifest.toml
+if [ -L "Manifest-v${julia_major}.toml" ]; then
+    rm -f "Manifest-v${julia_major}.toml"
+    echo "Removed stale symlink Manifest-v${julia_major}.toml"
+fi
+
 # Instantiate the project
 FAILED_RESOLVES=()
 RETRIED_RESOLVES=()
@@ -201,6 +211,10 @@ if [ -f "Manifest.toml" ]; then
     mv Manifest.toml "Manifest-v${julia_major}.toml"
     echo "Renamed Manifest.toml to Manifest-v${julia_major}.toml"
 fi
+# Create a symlink Manifest.toml -> Manifest-v${julia_major}.toml
+rm -f Manifest.toml
+ln -s "Manifest-v${julia_major}.toml" Manifest.toml
+echo "Created symlink Manifest.toml -> Manifest-v${julia_major}.toml"
 echo "Precompiling main project..."
 julia --project -e 'using Pkg; Pkg.precompile()'
 

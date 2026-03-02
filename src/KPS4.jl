@@ -199,7 +199,7 @@ function clear!(s::KPS4)
     s.v_wind_gnd    .= [s.set.v_wind, 0, 0]    # wind vector at reference height
     s.v_wind_tether .= [s.set.v_wind, 0, 0]
     s.v_apparent    .= [s.set.v_wind, 0, 0]
-    height = sin(deg2rad(s.set.elevation)) * (s.set.l_tether)
+    height = sin(deg2rad(s.set.elevation::Float64)) * (s.set.l_tether)
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
 
     s.l_tether = s.set.l_tether
@@ -541,9 +541,11 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, _) where S
     end
     if s.wm isa AsyncMachine
         res[end] = v_reel_outd - calc_acceleration(s.wm, s.sync_speed, v_reel_out, norm(s.forces[1]), true)       
-    else
+    elseif !isnothing(s.wm)
         res[end] = v_reel_outd - calc_acceleration(s.wm, v_reel_out, norm(s.forces[1]); set_speed=s.sync_speed, 
             set_torque=s.set_torque, use_brake)
+    else
+        res[end] = v_reel_outd
     end
     # copy and flatten result
     for i in 2:div(T,6)+1
@@ -797,7 +799,7 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
     pos[1] .= [0.0, delta, 0.0]
     vel[1] .= [delta, delta, delta]
     acc[1] .= [delta, delta, delta]
-    sin_el, cos_el = sin(s.set.elevation / 180.0 * pi), cos(s.set.elevation / 180.0 * pi)
+    sin_el, cos_el = sin(s.set.elevation::Float64 / 180.0 * pi), cos(s.set.elevation::Float64 / 180.0 * pi)
     for i in 1:s.set.segments
         radius = -i * (s.set.l_tether/s.set.segments)
         pos[i+1] .= [-cos_el * radius + X[i], delta, -sin_el * radius + X[s.set.segments+KITE_PARTICLES-1+i]]

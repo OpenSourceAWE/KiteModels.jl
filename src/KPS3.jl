@@ -153,12 +153,12 @@ function clear!(s::KPS3)
     s.v_wind_gnd    .= [s.set.v_wind, 0, 0]    # wind vector at reference height
     s.v_wind_tether .= [s.set.v_wind, 0, 0]
     s.v_apparent    .= [s.set.v_wind, 0, 0]
-    height = sin(deg2rad(s.set.elevation)) * s.set.l_tether
+    height = sin(deg2rad(s.set.elevation::Float64)) * s.set.l_tether::Float64
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
     s.alpha_depower = 0.0
     s.l_tether = s.set.l_tether
     s.segment_length = s.l_tether / s.set.segments
-    s.beta = deg2rad(s.set.elevation)
+    s.beta = deg2rad(s.set.elevation::Float64)
     s.rho = calc_rho(s.am, height)
     if s.set.version == 1
         # for compatibility with the python code and paper
@@ -172,7 +172,7 @@ function clear!(s::KPS3)
     end
     s.axial_stiffness = s.set.axial_stiffness / s.segment_length
     s.axial_damping  = s.set.axial_damping / s.segment_length
-    s.kcu.depower = s.set.depower/100.0
+    s.kcu.depower = s.set.depower::Float64/100.0
     s.kcu.set_depower = s.kcu.depower
     s.kcu.steering = 0.0
     s.kcu.set_steering = 0.0
@@ -422,7 +422,13 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
     end
     # winch calculations
     res[end-1] = lengthd - v_reel_out
-    res[end] = v_reel_outd - calc_acceleration(s.wm, v_reel_out, norm(s.forces[1]); set_speed=s.sync_speed, set_torque=s.set_torque, use_brake=true)
+    if s.wm isa AsyncMachine
+        res[end] = v_reel_outd - calc_acceleration(s.wm::AsyncMachine, s.sync_speed, v_reel_out, norm(s.forces[1]), true)
+    elseif !isnothing(s.wm)
+        res[end] = v_reel_outd - calc_acceleration(s.wm::TorqueControlledMachine, v_reel_out, norm(s.forces[1]); set_speed=s.sync_speed, set_torque=s.set_torque, use_brake=true)
+    else
+        res[end] = v_reel_outd
+    end
     s.vel_kite .= vel[end-2]
     s.v_reel_out = v_reel_out
     # @assert ! isnan(norm(res))
@@ -448,8 +454,8 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
     set_cl_cd!(s, 10.0/180.0 * π)
 
     for i in 0:s.set.segments
-        radius =  -i * s.set.l_tether / s.set.segments
-        elevation = s.set.elevation
+        radius =  -i * s.set.l_tether::Float64 / s.set.segments::Int64
+        elevation = s.set.elevation::Float64
         sin_el, cos_el = sin(elevation / 180.0 * π), cos(elevation / 180.0 * π)
         if i == 0
             pos[i+1] .= SVec3(0.0, DELTA, 0.0)
