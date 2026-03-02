@@ -83,9 +83,13 @@ elev = set.elevation
 i = 1
 set.v_wind = V_WIND # 25
 kps4::KPS4 = KPS4(KCU(set))  # Initialize before loop
+
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu
+    cl = 0.0
+    cd = 0.0
+    aoa = 0.0
     if depower < 0.356
         depower = 0.356
     end
@@ -145,17 +149,15 @@ for depower in DEPOWER
     i+=1
 end
 
-cl = zeros(length(AOA))
-cd = zeros(length(AOA))
+cl_model = zeros(length(AOA))
+cd_model = zeros(length(AOA))
 for (i, alpha) in pairs(AOA)
-    # kps4 is already global (initialized at module level)
-    global cl, cd
-    cl[i] = kps4.calc_cl(alpha)
-    cd[i] = kps4.calc_cd(alpha)
+    cl_model[i] = kps4.calc_cl(alpha)
+    cd_model[i] = kps4.calc_cd(alpha)
 end
 
-display(plot(AOA, [CL, cl], xlabel="AOA [deg]", ylabel="CL", labels=["CL","cl"], fig="CL vs AOA"))
-display(plot(AOA, [CD, cd], xlabel="AOA [deg]", ylabel="CD", labels=["CD","cd"], fig="CD vs AOA"))
+display(plot(AOA, [CL, cl_model], xlabel="AOA [deg]", ylabel="CL", labels=["CL","cl_model"], fig="CL vs AOA"))
+display(plot(AOA, [CD, cd_model], xlabel="AOA [deg]", ylabel="CD", labels=["CD","cd_model"], fig="CD vs AOA"))
 # AOA= 0:0.05:20
 # calc_cd1 = KiteModels.Spline1D(se().alpha_cd, se().cd_list)
 # plot(AOA, calc_cd1.(AOA), fig="calc_cd1", xlabel="AOA [deg]", ylabel="CD")
