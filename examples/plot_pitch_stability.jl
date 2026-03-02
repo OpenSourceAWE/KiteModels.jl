@@ -136,9 +136,8 @@ if PRINT
     println(", elevation: $(round((elev), digits=2)), height:$(round(height, digits=2))")
 end
 if PLOT
-    p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"], 
-            fig="depower: $(depower), cmq:"*repr(set.cmq))
-    display(p)
+    display(plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"], 
+            fig="depower: $(depower), cmq:"*repr(set.cmq)))
     sleep(0.2)
 end
 save_log(logger, "tmp")
