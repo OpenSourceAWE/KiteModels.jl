@@ -12,3 +12,9 @@ exclude = [
 exclude_path = [
   "docs/build"
 ]
+
+[ignore]
+# Ignore all links to GitHub
+url = [
+    "https://github.com/*"
+]
