@@ -2,6 +2,14 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### unreleased
+#### Changed
+- fixed most JETLS warnings, only two left
+- fixed many warnings in the examples
+- suppressed some more warnings in `.JETLSConfig.toml.default`
+- the install script now copies `.JETLSConfig.toml.default` to `.JETLSConfig.toml` if it does not exist yet
+- deleted unused code
+
 ### KiteModels v0.11.1 2026-03-02
 #### Changed
 - first version with good support for MacOS
