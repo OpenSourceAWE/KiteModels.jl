@@ -68,12 +68,7 @@ end
 integrator = KiteModels.init!(kps3; delta=0, stiffness_factor=0.04, prn=STATISTIC)
 
 av_steps = if PLOT
-    steps =simulate(integrator, STEPS, true)
-    if Sys.isapple()
-        plt.show(block = true)
-    end
-    reactivate_host_app()
-    steps
+    simulate(integrator, STEPS, true)
 else
     println("\nStarting simulation...")
     simulate(integrator, 100)
@@ -83,6 +78,10 @@ else
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
 end
+if Sys.isapple()
+    plt.show(block = true)
+end
+reactivate_host_app()
 lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
