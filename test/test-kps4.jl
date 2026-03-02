@@ -51,7 +51,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         KiteModels.clear!(kps4)
     end
 
-    function init3(kps4)
+    function init3(kps4::KPS4)
         kps4.set.alpha = 0.08163
         kps4.set.l_tethers[1] = 150.0 # - kps4.set.height_k - kps4.set.h_bridle
         kps4.set.area = 10.18
