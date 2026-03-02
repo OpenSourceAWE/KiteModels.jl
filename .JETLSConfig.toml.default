@@ -11,3 +11,9 @@ pattern = "not concretized"
 match_by = "message"
 match_type = "regex"
 severity = "off"
+
+[[diagnostic.patterns]]
+pattern = "copy!.*Random.TaskLocalRNG.*Nothing"
+match_by = "message"
+match_type = "regex"
+severity = "off"
