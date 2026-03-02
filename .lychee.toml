@@ -5,16 +5,10 @@ exclude = [
   "^https://doi.org/FIXME$",
   "^https://OpenSourceAWE.github.io/KiteModels.jl/stable$",
   "^https://research.tudelft.nl/",
-
-  "zenodo.org/badge/DOI/FIXME$"
+  "zenodo.org/badge/DOI/FIXME$",
+  "https://github.com/*"
 ]
 
 exclude_path = [
   "docs/build"
-]
-
-[ignore]
-# Ignore all links to GitHub
-url = [
-    "https://github.com/*"
 ]
