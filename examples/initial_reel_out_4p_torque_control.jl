@@ -49,7 +49,7 @@ function simulate(integrator, steps, plot=false)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
         # force needed to overcome friction
-        dforce = 3.94 * set.v_reel_out
+        dforce = 3.94 * set.v_reel_outs[1]
         if kps4.t_0 > 15.0
             dforce = +4.5
         end
