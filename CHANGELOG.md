@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### unreleased
+### KiteModels v0.11.2 2026-03-03
 #### Changed
 - fixed most JETLS warnings, only two left
 - fixed many warnings in the examples
