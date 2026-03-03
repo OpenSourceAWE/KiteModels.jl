@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
 - suppressed some more warnings in `.JETLSConfig.toml.default`
 - the install script now copies `.JETLSConfig.toml.default` to `.JETLSConfig.toml` if it does not exist yet
 - deleted unused code
+- moved the initialization functions from init.jl to KPS4.jl and renamed `init.jl` to `utils.jl`
 
 ### KiteModels v0.11.1 2026-03-02
 #### Changed

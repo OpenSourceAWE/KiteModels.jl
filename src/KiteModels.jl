@@ -84,7 +84,7 @@ end
 
 include("KPS4.jl") # include code, specific for the four point kite model
 include("KPS3.jl") # include code, specific for the one point kite model
-include("init.jl") # functions to calculate the initial state vector, the initial masses and initial springs
+include("utils.jl") # functions to calculate the initial state vector, the initial masses and initial springs
 
 function menu2()
     Main.include("examples/menu2.jl")
