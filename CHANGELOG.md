@@ -5,7 +5,7 @@ SPDX-License-Identifier: MIT
 ### KiteModels v0.11.3 2026-03-04
 #### Changed
 - bumped KiteUtils to 0.11.3
-- add parameter `dtmin` to the solver settings to improve stability
+- add parameter `dtmax` to the solver settings to improve stability
 
 ### KiteModels v0.11.2 2026-03-03
 #### Changed
