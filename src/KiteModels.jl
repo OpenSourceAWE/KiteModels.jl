@@ -592,7 +592,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)::Union{Ordi
     differential_vars = ones(Bool, length(y0))
     prob    = DAEProblem{true}(residual!, yd0, y0, tspan, s; differential_vars)
     integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
-                        initializealg=OrdinaryDiffEqCore.NoInit())
+                        dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
         s.pitch_rate = 0
