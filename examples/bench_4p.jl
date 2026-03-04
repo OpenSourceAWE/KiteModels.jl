@@ -89,3 +89,9 @@ println("Average number of callbacks per time step: $av_steps")
 # Simulation speed: 751.89 times realtime.
 # lift, drag  [N]: 498.79, 106.75
 # Average number of callbacks per time step: 7.67
+
+# Ryzen 7950X, Solver: DFBDF, Julia 1.11, 04-03-2026
+# Total simulation time: 0.006 s
+# Simulation speed: 772.5 times realtime.
+# lift, drag  [N]: 498.83, 106.73
+# Average number of callbacks per time step: 8.21
