@@ -199,10 +199,10 @@ function clear!(s::KPS4)
     s.v_wind_gnd    .= [Float64(s.set.v_wind), 0, 0]    # wind vector at reference height
     s.v_wind_tether .= [Float64(s.set.v_wind), 0, 0]
     s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
-    height = sin(deg2rad(s.set.elevation::Float64)) * (s.set.l_tether::Float64)
+    height = sin(deg2rad(s.set.elevation::Float64)) * (s.set.l_tethers[1])
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
 
-    s.l_tether = s.set.l_tether
+    s.l_tether = s.set.l_tethers[1]
     s.segment_length = s.l_tether / s.set.segments
     init_masses!(s)
     init_springs!(s)
@@ -390,9 +390,9 @@ Updates the vector s.forces of the first parameter.
         drag_corr = DRAG_CORR
     end
 
-    CL2, CD2 = s.calc_cl(alpha_2)::SimFloat, drag_corr * s.calc_cd(alpha_2)::SimFloat
-    CL3, CD3 = s.calc_cl(alpha_3)::SimFloat, drag_corr * s.calc_cd(alpha_3)::SimFloat
-    CL4, CD4 = s.calc_cl(alpha_4)::SimFloat, drag_corr * s.calc_cd(alpha_4)::SimFloat
+    CL2, CD2 = s.calc_cl(alpha_2), drag_corr * s.calc_cd(alpha_2)
+    CL3, CD3 = s.calc_cl(alpha_3), drag_corr * s.calc_cd(alpha_3)
+    CL4, CD4 = s.calc_cl(alpha_4), drag_corr * s.calc_cd(alpha_4)
     s.side_cl = CL4 - CL3
     L2 = (-0.5 * rho * (norm(va_xz2))^2 * s.set.area * CL2) * normalize(va_2 × y)
     L3 = (-0.5 * rho * (norm(va_xy3))^2 * s.set.area * rel_side_area * CL3) * normalize(va_3 × z)
@@ -747,7 +747,7 @@ const PRE_STRESS  = 0.9998   # Multiplier for the initial spring lengths.
 # Functions to calculate the initial state vector, the initial masses and initial springs
 
 function init_springs!(s::KPS4)
-    l_0     = s.set.l_tether::SimFloat / s.set.segments 
+    l_0     = s.set.l_tethers[1] / s.set.segments 
     particles = KiteUtils.get_particles(s.set.height_k, s.set.h_bridle, s.set.width, s.set.m_k)
     for j in 1:size(SPRINGS_INPUT)[1]
         # build the tether segments
@@ -776,7 +776,7 @@ end
 function init_masses!(s::KPS4)
     MASS_FACTOR = 1.0
     s.masses = zeros(s.set.segments+KITE_PARTICLES+1)
-    l_0 = s.set.l_tether::SimFloat / s.set.segments 
+    l_0 = s.set.l_tethers[1] / s.set.segments 
     for i in 1:s.set.segments
         s.masses[i]   += 0.5 * l_0 * s.set.rho_tether * (s.set.d_tether/2000.0)^2 * pi
         s.masses[i+1] += 0.5 * l_0 * s.set.rho_tether * (s.set.d_tether/2000.0)^2 * pi
@@ -801,7 +801,7 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
     acc[1] .= [delta, delta, delta]
     sin_el, cos_el = sin(s.set.elevation::Float64 / 180.0 * pi), cos(s.set.elevation::Float64 / 180.0 * pi)
     for i in 1:s.set.segments
-        radius = -i * (s.set.l_tether::SimFloat/s.set.segments)
+        radius = -i * (s.set.l_tethers[1]/s.set.segments)
         pos[i+1] .= [-cos_el * radius + X[i], delta, -sin_el * radius + X[s.set.segments+KITE_PARTICLES-1+i]]
         vel[i+1] .= [delta, delta, 0]
         acc[i+1] .= [delta, delta, -9.81]
@@ -832,7 +832,7 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
         s.pos[i] .= pos[i]
     end
     for i in 2:s.set.segments+1
-        vel[i] .+= (pos[i+1] - pos[i]) * (s.set.v_reel_out::SimFloat*(i-1)/s.set.segments)
+        vel[i] .+= (pos[i+1] - pos[i]) * (s.set.v_reel_out*(i-1)/s.set.segments)
     end
     # the velocity vector of the kite particles is the same as the velocity of the last tether point
     for i in s.set.segments+2:s.set.segments+KITE_PARTICLES+1
@@ -843,7 +843,7 @@ end
 
 function set_initial_velocity!(s::KPS4)
     for i in 2:s.set.segments+1
-        s.vel[i] .= (s.pos[i+1] - s.pos[i]) * (s.set.v_reel_out::SimFloat*(i-1)/s.set.segments)
+        s.vel[i] .= (s.pos[i+1] - s.pos[i]) * (s.set.v_reel_out*(i-1)/s.set.segments)
     end
     # the velocity vector of the kite particles is the same as the velocity of the last tether point
     for i in s.set.segments+2:s.set.segments+KITE_PARTICLES+1
