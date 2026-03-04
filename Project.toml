@@ -1,6 +1,6 @@
 name = "KiteModels"
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.11.2"
+version = "0.11.3"
 authors = ["Uwe Fechner <fechner@aenarete.eu> and contributors"]
 
 [workspace]
@@ -44,7 +44,7 @@ DiscretePIDs = "0.1.5, 1.0"
 DocStringExtensions = "0.9.4"
 Interpolations = "0.15.1, 0.16"
 KitePodModels = "0.4.0"
-KiteUtils = "0.11.1"
+KiteUtils = "0.11.3"
 LinearAlgebra = "1.10, 1.11, 1.12"
 LinearSolve = "3.59"
 Logging = "1.10, 1.11, 1.12"

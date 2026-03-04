@@ -2,6 +2,11 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.3 2026-03-04
+#### Changed
+- bumped KiteUtils to 0.11.3
+- add parameter `dtmin` to the solver settings to improve stability
+
 ### KiteModels v0.11.2 2026-03-03
 #### Changed
 - fixed most JETLS warnings, only two left
