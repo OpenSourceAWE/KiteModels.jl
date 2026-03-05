@@ -20,6 +20,7 @@ if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
 using ControlPlots, DSP, JLD2
+using ControlPlots: plt
 plt.close("all")
 
 set.abs_tol=0.0006
@@ -37,7 +38,6 @@ order = 4         # order of the Butterworth filter
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 640
 const PLOT = false
-PRINT = true
 STATISTIC = false
 DEPOWER       = 0.38
 F_EX_MIN = 0.1
@@ -97,7 +97,7 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     logger = Logger(set.segments + 5, STEPS)
     set.depower = 100*depower
     set.elevation = 67.0
-    kcu::KCU = KCU(set)
+    kcu = KCU(set)
     kps4::KPS4 = KPS4(kcu)
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.04, prn=STATISTIC)
     set_depower_steering(kps4.kcu, depower, 0.0)
@@ -106,13 +106,13 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     simulate(kps4, integrator, logger, STEPS, f_ex, sin_amplitude)
     save_log(logger, "tmp")
     if PLOT
-        p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"], 
+        p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"],
                 fig="depower: $(depower), f_ex: "*repr(round(f_ex, digits=3)))
         display(p)
         plot_force_speed("tmp", f_ex)
         sleep(0.2)
     end
-    
+
 end
 
 function calc_aoa_eff(filename, f_ex)
