@@ -64,7 +64,7 @@ wcs::WinchSpeedController = WinchSpeedController(dt=dt)
 
 function simulate(kps4, integrator, logger, steps, f_ex, sin_amplitude)
     local filtered_force
-    SIN = 0.5*sin.(2*π*f_ex*TIME)
+    SIN = 0.5 * sin.(2π * f_ex * TIME)
     iter = 0
     last_measurement = 0.0
     butter = create_filter(fg; dt, order)
