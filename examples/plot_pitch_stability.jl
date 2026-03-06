@@ -96,18 +96,11 @@ function simulate(kps4, integrator, logger, steps)
     nothing
 end
 
-
-AOA = zeros(length(DEPOWER))
-ELEV = zeros(length(DEPOWER))
-V_WIND_KITE = zeros(length(DEPOWER))
-
 elev = set.elevation
 depower = DEPOWER
 
 logger = Logger(set.segments + 5, STEPS)
 set.depower = 100*depower
-
-# set.depower_gain = 5
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
@@ -136,7 +129,7 @@ if PRINT
     println(", elevation: $(round((elev), digits=2)), height:$(round(height, digits=2))")
 end
 if PLOT
-    display(plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"], 
+    display(plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"],
             fig="depower: $(depower), cmq:"*repr(set.cmq)))
     sleep(0.2)
 end
