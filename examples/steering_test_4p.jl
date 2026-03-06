@@ -34,7 +34,6 @@ end
 const PLOT = true
 FRONT_VIEW = true
 ZOOM = true
-PRINT = false
 STATISTIC = false
 # end of user parameter section #
 
@@ -51,6 +50,7 @@ if PLOT
         Pkg.activate("examples")
     end
     using ControlPlots, StatsBase
+    using ControlPlots: plt
     close("all")
 end
 
@@ -93,11 +93,11 @@ function simulate(integrator, steps; plot=false)
         sys_state.var_01 = kps4.alpha_3
         sys_state.var_02 = kps4.alpha_4
         log!(logger, sys_state)
-        
+
         if plot
             if mod(i, 5) == 1
                 plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
-                       fig="steering_test_4p")                       
+                       fig="steering_test_4p")
             end
         end
     end
@@ -138,7 +138,7 @@ function plot_steering_vs_turn_rate()
     # p2=plot(sl.time, sl.v_app; ylabel="v_app [m/s]", fig="v_app")
     delta = delay(sl.steering, psi_dot ./ sl.v_app)
     println("delay of turnrate: $(delta*dt) s")
-    delayed_steering = shift_vector(sl.steering, delta)    
+    delayed_steering = shift_vector(sl.steering, delta)
     G = psi_dot ./ sl.v_app ./ delayed_steering # °/s / m/s = °/m
     for (i, _) in enumerate(G)
         if abs(delayed_steering[i]) < 0.1
@@ -149,7 +149,7 @@ function plot_steering_vs_turn_rate()
     G_std = std(filter(!isnan, G))
     println("mean turnrate_law factor: $(round(G_mean, digits=3)) °/m ± $(round(G_std/G_mean*100, digits=2)) %")
     println("mean turnrate_law factor: $(round(deg2rad(G_mean), digits=4)) rad/m ± $(round(G_std/G_mean*100, digits=2)) %")
-    p1 = plot(sl.time, delayed_steering, sl.var_15./sl.v_app; 
+    p1 = plot(sl.time, delayed_steering, sl.var_15./sl.v_app;
               ylabels=["delayed_steering", "turnrate/v_app [°/m]"],
               ylims=[(-0.6, 0.6), (-G_mean*0.6, G_mean*0.6)],
               fig="steering vs turnrate")
@@ -165,7 +165,7 @@ function calc_c1_c2(v_app, psi, beta, psi_dot, steering)
     col1 = v_app .* steering
     col2 = sin.(psi) .* cos.(beta) ./ v_app
     A = [col1 col2]
-    # Then solve with c = A\b. That’ll get you a least-squares solution to the problem, 
+    # Then solve with c = A\b. That’ll get you a least-squares solution to the problem,
     # the one that minimizes sum res^2, using QR decomposition.
     c = A \ psi_dot
     return c[1], c[2]
@@ -173,7 +173,7 @@ end
 
 function plot_turnrate_law(c1, c2, time, v_app, psi, beta, psi_dot, steering)
     est_steering = psi_dot ./ (v_app * c1) .- c2 ./ (c1 .* v_app.^2) .* sin.(psi) .* cos.(beta)
-    p1 = plot(time, steering, est_steering; ylabels=["delayed_steering", "est_steering"], 
+    p1 = plot(time, steering, est_steering; ylabels=["delayed_steering", "est_steering"],
               ylims=[(-0.6, 0.6), (-0.6, 0.6)],
               fig="steering vs est_steering")
     display(p1)
@@ -182,7 +182,7 @@ end
 function plot_aoa()
     lg = load_log("tmp")
     sl = lg.syslog
-    p1 = plot(sl.time, [sl.var_01, sl.var_02]; ylabel="AoA [°]", labels=["aoa_3", "aoa_4"], 
+    p1 = plot(sl.time, [sl.var_01, sl.var_02]; ylabel="AoA [°]", labels=["aoa_3", "aoa_4"],
               fig="aoa side plates")
     display(p1)
 

@@ -17,6 +17,7 @@ if ! ("JLD2" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
 using ControlPlots, DSP, JLD2, StatsBase
+using ControlPlots: plt
 plt.close("all")
 
 #if !@isdefined Spectrum begin
