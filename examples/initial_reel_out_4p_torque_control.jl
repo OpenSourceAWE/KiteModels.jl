@@ -16,7 +16,7 @@ FRONT_VIEW = false
 ZOOM = true
 PRINT = false
 STATISTIC = false
-ALPHA_ZERO = 8.8 
+ALPHA_ZERO = 8.8
 # end of user parameter section #
 
 set.alpha_zero = ALPHA_ZERO
@@ -35,7 +35,6 @@ using ControlPlots, SciMLBase
 
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
-v_set_speed = zeros(STEPS)
 v_force = zeros(STEPS)
 SOL = nothing
 
@@ -74,12 +73,12 @@ function simulate(integrator, steps, plot=false)
             break
         end
         iter += kps4.iter
-        
+
         if plot
             reltime = i*dt-dt
             if mod(i, 10) == 1
-                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, xlim=(37, 88), 
-                                        segments=set.segments, fig="side_view")            
+                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, xlim=(37, 88),
+                                        segments=set.segments, fig="side_view")
             end
         end
     end
@@ -108,8 +107,8 @@ println("Average number of callbacks per time step: $(round(av_steps, digits=2))
 
 if PLOT
     local p
-    p = plotx(v_time, v_speed, v_force; 
-              ylabels=["v_reelout  [m/s]","tether_force [N]"], 
+    p = plotx(v_time, v_speed, v_force;
+              ylabels=["v_reelout  [m/s]","tether_force [N]"],
               fig="winch")
     display(p)
 end
