@@ -24,14 +24,11 @@ set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
 const PLOT = true
-PRINT = true
 STATISTIC = false
-DEPOWER = 0.47:-0.005:0.355
 UPWIND_DIR = -90 + 10
 # end of user parameter section #
 
 elev = set.elevation
-i = 1
 set.v_wind = V_WIND # 25
 set.upwind_dir = UPWIND_DIR
 logger = Logger(set.segments + 5, STEPS)
