@@ -24,19 +24,16 @@ dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 1
 const PLOT = true
-PRINT = true
 STATISTIC = false
-DEPOWER = 0.47:-0.005:0.355
 # end of user parameter section #
 
 elev = set.elevation
-i = 1
 set.v_wind = V_WIND # 25
 logger = Logger(set.segments + 1, STEPS)
 
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
-integrator = KiteModels.init!(kps3; delta=0.03, stiffness_factor=0.1, prn=STATISTIC)
+_ = KiteModels.init!(kps3; delta=0.03, stiffness_factor=0.1, prn=STATISTIC)
 lift, drag = lift_drag(kps3)
 sys_state::SysState = KiteModels.SysState(kps3)
 log!(logger, sys_state)
@@ -77,4 +74,3 @@ println("v_wind_kite: ", ss.v_wind_kite)
 # y:[0.0, 1.0, 0.0]
 # z:[-0.10028689952711267, -2.8981421002141166e-19, -0.9949585608372032]
 # alpha2, alpha3, alpha4: 7.546125780476343 10.000000853773646 10.000000853773646
-
