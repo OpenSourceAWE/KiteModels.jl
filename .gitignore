@@ -87,3 +87,4 @@ examples_3d/Manifest.toml
 /.idea/.gitignore
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/vcs.xml
+/mwes/mwe_27.jl
