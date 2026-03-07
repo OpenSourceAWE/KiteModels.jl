@@ -30,7 +30,6 @@ end
 const PLOT = true
 FRONT_VIEW = true
 ZOOM = true
-PRINT = false
 STATISTIC = false
 # end of user parameter section #
 
@@ -89,11 +88,11 @@ function simulate(integrator, steps; plot=false)
         sys_state.var_16 = get_steering(kps3.kcu)
         sys_state.var_15 = rad2deg(heading - last_heading) / dt
         log!(logger, sys_state)
-        
+
         if plot
             if mod(i, 5) == 1
                 plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
-                       fig="steering_test_1p")                       
+                       fig="steering_test_1p")
             end
         end
     end
@@ -130,7 +129,7 @@ function plot_steering_vs_turn_rate()
 
     delta = delay(sl.var_16, sl.var_15./sl.v_app)
     println("delay of turnrate: $(delta*dt) s")
-    delayed_steering = shift_vector(sl.var_16, delta)    
+    delayed_steering = shift_vector(sl.var_16, delta)
     G = sl.var_15./sl.v_app./delayed_steering
     for (i, _) in enumerate(G)
         if abs(delayed_steering[i]) < 0.1
@@ -140,7 +139,7 @@ function plot_steering_vs_turn_rate()
     G_mean = mean(filter(!isnan, G))
     G_std = std(filter(!isnan, G))
     println("mean turnrate_law factor: $(G_mean) ± $(G_std/G_mean*100) %")
-    p1 = plot(sl.time, delayed_steering, sl.var_15./sl.v_app; 
+    p1 = plot(sl.time, delayed_steering, sl.var_15./sl.v_app;
               ylabels=["delayed_steering", "turnrate/v_app [°/m]"],
               ylims=[(-0.6, 0.6), (-G_mean*0.6, G_mean*0.6)],
               fig="steering vs turnrate")
