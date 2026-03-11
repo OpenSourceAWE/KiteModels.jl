@@ -8,7 +8,8 @@ if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
 end
 using Timers; tic()
 
-using KiteViewers, KiteModels, ControlPlots, Rotations
+using KiteViewers
+using ControlPlots, KiteModels, Rotations
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
