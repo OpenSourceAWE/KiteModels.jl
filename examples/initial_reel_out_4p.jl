@@ -1,7 +1,7 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 using LinearAlgebra, Printf
-using KiteModels: KCU, KPS4, OrdinaryDiffEqCore.ODEIntegrator, init!, lift_drag, next_step!, winch_force
+using KiteModels: KCU, KPS4, init!, lift_drag, next_step!, winch_force
 using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))
@@ -70,7 +70,7 @@ function simulate(integrator, steps, plot=false)
     iter / steps
 end
 
-integrator::ODEIntegrator = init!(kps4; delta=0.000, stiffness_factor=0.25, prn=STATISTIC)
+integrator = init!(kps4; delta=0.000, stiffness_factor=0.25, prn=STATISTIC)
 kps4.sync_speed = set.v_reel_out
 
 av_steps = if PLOT
