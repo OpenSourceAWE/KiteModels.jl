@@ -8,3 +8,4 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
 fi
 
 jetls -t 1,0 -- check --root=. examples/*.jl
+jetls -t 1,0 -- check --root=. examples_3d/*.jl
