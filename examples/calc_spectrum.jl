@@ -134,16 +134,19 @@ function plot_force_speed(filename, f_ex)
 end
 todb(mag) = 20 * log10(mag)
 
-f_ex = F_EX_MIN
-for i in 1:N_EX
-    global f_ex
-    F_EX[i] = f_ex
-    sim_and_plot(set; f_ex=f_ex)
-    aoa_eff = calc_aoa_eff("tmp", f_ex)
-    AOA_EFF[i] = aoa_eff
-    println("AOA amplitude: ", round(aoa_eff, digits=3), "°")
-    f_ex *= 1.018
+function calc_spectrum!(F_EX, AOA_EFF)
+    f_ex = F_EX_MIN
+    for i in 1:N_EX
+        F_EX[i] = f_ex
+        sim_and_plot(set; f_ex=f_ex)
+        aoa_eff = calc_aoa_eff("tmp", f_ex)
+        AOA_EFF[i] = aoa_eff
+        println("AOA amplitude: ", round(aoa_eff, digits=3), "°")
+        f_ex *= 1.018
+    end
+    nothing
 end
+calc_spectrum!(F_EX, AOA_EFF)
 mutable struct Spectrum
     name::String
     cmq::Float64
