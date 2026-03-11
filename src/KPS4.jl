@@ -390,9 +390,9 @@ Updates the vector s.forces of the first parameter.
         drag_corr = DRAG_CORR
     end
 
-    CL2, CD2 = s.calc_cl(alpha_2), drag_corr * s.calc_cd(alpha_2)
-    CL3, CD3 = s.calc_cl(alpha_3), drag_corr * s.calc_cd(alpha_3)
-    CL4, CD4 = s.calc_cl(alpha_4), drag_corr * s.calc_cd(alpha_4)
+    CL2, CD2 = s.calc_cl(alpha_2)::Float64, drag_corr * s.calc_cd(alpha_2)::Float64
+    CL3, CD3 = s.calc_cl(alpha_3)::Float64, drag_corr * s.calc_cd(alpha_3)::Float64
+    CL4, CD4 = s.calc_cl(alpha_4)::Float64, drag_corr * s.calc_cd(alpha_4)::Float64
     s.side_cl = CL4 - CL3
     L2 = (-0.5 * rho * (norm(va_xz2))^2 * s.set.area * CL2) * normalize(va_2 × y)
     L3 = (-0.5 * rho * (norm(va_xy3))^2 * s.set.area * rel_side_area * CL3) * normalize(va_3 × z)
@@ -832,7 +832,7 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
         s.pos[i] .= pos[i]
     end
     for i in 2:s.set.segments+1
-        vel[i] .+= (pos[i+1] - pos[i]) * (s.set.v_reel_out*(i-1)/s.set.segments)
+        vel[i] .+= (pos[i+1] - pos[i]) * (s.set.v_reel_outs[1]*(i-1)/s.set.segments)
     end
     # the velocity vector of the kite particles is the same as the velocity of the last tether point
     for i in s.set.segments+2:s.set.segments+KITE_PARTICLES+1
@@ -843,7 +843,7 @@ end
 
 function set_initial_velocity!(s::KPS4)
     for i in 2:s.set.segments+1
-        s.vel[i] .= (s.pos[i+1] - s.pos[i]) * (s.set.v_reel_out*(i-1)/s.set.segments)
+        s.vel[i] .= (s.pos[i+1] - s.pos[i]) * (s.set.v_reel_outs[1]*(i-1)/s.set.segments)
     end
     # the velocity vector of the kite particles is the same as the velocity of the last tether point
     for i in s.set.segments+2:s.set.segments+KITE_PARTICLES+1
@@ -866,7 +866,9 @@ end
 
 # same as above, but returns a tuple of two one dimensional arrays
 function init(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES-1)+1); old=false, delta=0.0, upwind_dir=nothing)
-    res1_, res2_ = Base.invokelatest(init_inner, s, X; old=old, delta = delta)
+    pos, vel, acc = init_pos_vel_acc(s, X; old=old, delta=delta)
+    res1_ = vcat(pos[2:end], vel[2:end])
+    res2_ = vcat(vel[2:end], acc[2:end])
     res1__ = reduce(vcat, res1_)
     res2__ = reduce(vcat, res2_)
     if !isnothing(upwind_dir)
