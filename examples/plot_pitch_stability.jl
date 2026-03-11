@@ -104,7 +104,7 @@ set.depower = 100*depower
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
-set.elevation += 5
+set.elevations[1] += 5
 set.v_wind = V_WIND_200
 integrator = KiteModels.init!(kps4; delta=0.001*0, stiffness_factor=1, prn=STATISTIC)
 if ! isnothing(integrator)
