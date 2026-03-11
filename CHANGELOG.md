@@ -2,6 +2,15 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.4 2026-03-11
+#### Changed
+- all files in src and all files in the examples now free of warnings
+- the install script now keeps the currently active Julia version
+
+#### Added
+- the script bin/jetls which checks the syntax of the src files
+- the script bin/jetls_examples which checks the syntax in the examples
+
 ### KiteModels v0.11.3 2026-03-04
 #### Changed
 - bumped KiteUtils to 0.11.3
