@@ -1,0 +1,10 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+if [[ $(basename $(pwd)) == "bin" ]]; then
+    cd ..
+fi
+
+jetls -t 1,0 -- check --root=. examples/*.jl
