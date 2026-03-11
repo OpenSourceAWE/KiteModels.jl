@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+if [[ $(basename $(pwd)) == "bin" ]]; then
+    cd ..
+fi
+
+jetls check --root=. src/

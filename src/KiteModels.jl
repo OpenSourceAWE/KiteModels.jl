@@ -590,7 +590,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)::Union{Ordi
     abstol  = s.set.abs_tol # max error in m/s and m
 
     differential_vars = ones(Bool, length(y0))
-    prob    = DAEProblem{true}(residual!, yd0, y0, tspan, s; differential_vars)
+    prob    = DAEProblem{true}((res, yd, y, p, t) -> Base.invokelatest(residual!, res, yd, y, p, t), yd0, y0, tspan, s; differential_vars)
     integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)

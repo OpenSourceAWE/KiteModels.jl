@@ -866,7 +866,7 @@ end
 
 # same as above, but returns a tuple of two one dimensional arrays
 function init(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES-1)+1); old=false, delta=0.0, upwind_dir=nothing)
-    res1_, res2_ = init_inner(s, X; old=old, delta = delta)
+    res1_, res2_ = Base.invokelatest(init_inner, s, X; old=old, delta = delta)
     res1__ = reduce(vcat, res1_)
     res2__ = reduce(vcat, res2_)
     if !isnothing(upwind_dir)

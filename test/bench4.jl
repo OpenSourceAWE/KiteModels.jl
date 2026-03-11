@@ -60,7 +60,7 @@ msg = String[]
         init_150()
         kps4.set.elevation = 60.0
         kps4.set.profile_law = Int(EXP)
-        pos, vel = KiteModels.init_inner(kps4)
+        pos, vel = Base.invokelatest(KiteModels.init_inner, kps4)
         posd = copy(vel)
         veld = zero(vel)
         kps4.v_wind_gnd .= [7.0, 0.1, 0.0]
@@ -85,7 +85,7 @@ msg = String[]
     push!(msg, ("Mean time calc_particle_forces!: $(round(mean(t.times), digits=1)) ns"))
 
     # benchmark inner_loop!
-    pos, vel = KiteModels.init_inner(kps4)
+    pos, vel = Base.invokelatest(KiteModels.init_inner, kps4)
     t = @benchmark KiteModels.inner_loop!(kps4, pos, vel, v_wind_gnd, segments, d_tether) setup=(kps4.set.elevation = 60.0; kps4.set.profile_law = Int(EXP);
                                         kps4.set.alpha = 1.0/7.0; pos = $pos; vel=$vel;
                                         v_wind_gnd = KVec3(7.0, 0.1, 0.0); kps4.stiffness_factor = 0.5; segments = kps4.set.segments; d_tether = kps4.set.d_tether/1000.0)
@@ -100,7 +100,7 @@ msg = String[]
     for i in 1:(se()::Settings).segments + KiteModels.KITE_PARTICLES + 1 
         kps4.forces[i] .= zeros(3)
     end
-    pos, vel = KiteModels.init_inner(kps4)
+    pos, vel = Base.invokelatest(KiteModels.init_inner, kps4)
     rho = 1.25
     kps4.v_wind .= KVec3(8.0, 0.2, 0.0)
     alpha_depower = 0.1

@@ -487,7 +487,7 @@ end
 
 # same as above, but returns a tuple of two one dimensional arrays
 function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0)
-    res1_, res2_ = init_inner(s, X; delta = delta)
+    res1_, res2_ = Base.invokelatest(init_inner, s, X; delta = delta)
     res1, res2  = vcat(reduce(vcat, res1_), [s.l_tether, 0]), vcat(reduce(vcat, res2_),[0,0])
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
