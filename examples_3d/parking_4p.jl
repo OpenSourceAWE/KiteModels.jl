@@ -18,18 +18,6 @@ using KiteViewers
 using ControlPlots: plot, plot2d, plotx
 toc()
 
-function bring_viewer_to_front()
-    if Sys.isapple()
-        sleep(0.2)
-        try
-            script = "tell application \"System Events\" to set frontmost of first process whose unix id is $(getpid()) to true"
-            run(pipeline(`osascript -e $script`, stdout=devnull, stderr=devnull))
-        catch
-        end
-    end
-    nothing
-end
-
 set::Settings = deepcopy(se())
 
 # the following values can be changed to match your interest

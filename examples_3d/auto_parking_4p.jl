@@ -57,18 +57,6 @@ SHOW_KITE         = true
 
 viewer::Viewer3D = Viewer3D(SHOW_KITE, "WinchON")
 
-function bring_viewer_to_front()
-    if Sys.isapple()
-        sleep(0.2)
-        try
-            script = "tell application \"System Events\" to set frontmost of first process whose unix id is $(getpid()) to true"
-            run(pipeline(`osascript -e $script`, stdout=devnull, stderr=devnull))
-        catch
-        end
-    end
-    nothing
-end
-
 T::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
 AZIMUTH::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 HEADING::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
