@@ -251,4 +251,5 @@ if [[ $branch != "" ]]; then
 else
     $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using ControlPlots, KiteModels"
 fi
+julia --project=docs -J bin/kps-image-${julia_major}-${branch}.so -e "using LiveServer, Documenter, Pkg; Pkg.instantiate()"
 
