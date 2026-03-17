@@ -2,6 +2,10 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.5 2026-03-17
+#### Fixed
+- fixed citation metadata in CITATION.cff
+
 ### KiteModels v0.11.4 2026-03-11
 #### Changed
 - all files in `src` and all files in the `examples` now free of warnings
