@@ -1,5 +1,14 @@
 cff-version: 1.2.0
 message: "If you are using this software, please cite it as shown below."
+title: "KiteModels.jl"
+authors:
+  - family-names: "Fechner"
+    given-names: "Uwe"
+  - family-names: "van de Lint"
+    given-names: "Bart"
+version: "0.11.4"
+date-released: "2026-03-11"
+repository-code: "https://github.com/OpenSourceAWE/KiteModels.jl"
 preferred-citation:
   type: article
   authors:
