@@ -16,24 +16,25 @@ STATISTIC = false
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
-kps4::KPS4 = KPS4(kcu)
+kps3::KPS3 = KPS3(kcu)
+println("Number of states: $(KiteModels.states(kps3))")
 
 function simulate(integrator, steps)
     iter = 0
     for _ = 1:steps
         if PRINT
-            lift, drag = KiteModels.lift_drag(kps4)
+            lift, drag = KiteModels.lift_drag(kps3)
             @printf "%.2f: " round(integrator.t, digits = 2)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
 
-        next_step!(kps4, integrator; set_speed = 0, dt = dt)
-        iter += kps4.iter
+        next_step!(kps3, integrator; set_speed = 0, dt = dt)
+        iter += kps3.iter
     end
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4; delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = KiteModels.init!(kps3; delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100)
@@ -41,7 +42,7 @@ runtime = @elapsed av_steps = simulate(integrator, STEPS-100)
 println("\nTotal simulation time: $(round(runtime, digits=3)) s")
 speed = (STEPS-100) / runtime * dt
 println("Simulation speed: $(round(speed, digits=2)) times realtime.")
-lift, drag = KiteModels.lift_drag(kps4)
+lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 

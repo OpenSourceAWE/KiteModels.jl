@@ -1,6 +1,6 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-using KiteModels: KPS4, init!, lift_drag, next_step!, reactivate_host_app, winch_force
+using KiteModels: KPS4, init!, lift_drag, next_step!, reactivate_host_app, states, winch_force
 using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
 using Printf
@@ -25,6 +25,7 @@ const PLOT = true
 
 kcu::KCU   = KCU(set)
 kps4::KPS4 = KPS4(kcu)
+println("Number of states: $(states(kps4))")
 
 v_time  = zeros(STEPS)
 v_speed = zeros(STEPS)
