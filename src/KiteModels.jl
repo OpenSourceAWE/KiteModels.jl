@@ -36,7 +36,7 @@ export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, cal
 export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
-export copy_model_settings, kite_ref_frame, menu2, orient_euler, reactivate_host_app, spring_forces, upwind_dir
+export copy_model_settings, kite_ref_frame, menu2, orient_euler, reactivate_host_app, spring_forces, states, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -182,6 +182,24 @@ Return the lift-over-drag ratio.
 function lift_over_drag(s::AKM)
     lift, drag = lift_drag(s)
     return lift / drag
+end
+
+"""
+    states(s::KPS3)
+
+Return the number of states of the KPS3 model.
+"""
+function states(s::KPS3)
+    6 * s.set.segments + 2
+end
+
+"""
+    states(s::KPS4)
+
+Return the number of states of the KPS4 model.
+"""
+function states(s::KPS4)
+    6 * (s.set.segments + KITE_PARTICLES) + 2
 end
 
 """
