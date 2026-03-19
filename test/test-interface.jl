@@ -24,6 +24,12 @@ end
     @test kps4.am isa AtmosphericModel
     @test kps4.iter isa Int64
 end
+
+@testset "states interface" begin
+    @test KiteModels.states(kps3) == 6 * kps3.set.segments + 2
+    @test KiteModels.states(kps4) == 6 * (kps4.set.segments + KiteModels.KITE_PARTICLES) + 2
+end
+
 @testset "KPS3 init! interface" begin
     kps4.set.upwind_dir = rad2deg(-pi/2)
     integ = init!(kps3; stiffness_factor=0.5, delta=0.0001, prn=false)
