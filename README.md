@@ -188,12 +188,6 @@ You can run the examples with:
 menu()
 ```
 
-You can also run the ram-air-kite example like this:
-
-```julia
-include("examples/ram_air_kite.jl")
-```
-
 ## One point model
 
 This model assumes the kite to be a point mass. This is sufficient to model the aerodynamic forces, but the dynamic concerning the turning action of the kite is not realistic.
