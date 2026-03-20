@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-update=false
 julia_version=""
 _yes_to_all=false
 
@@ -11,10 +10,6 @@ export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --update)
-            update=true
-            shift
-            ;;
         --version)
             if [[ $# -lt 2 ]]; then
                 echo "Error: --version requires a version argument"
@@ -30,8 +25,6 @@ while [[ $# -gt 0 ]]; do
         *)
             echo "Invalid parameter! Use:"
             echo "./create_sys_image"
-            echo "or"
-            echo "./create_sys_image --update"
             echo "or"
             echo "./create_sys_image --version 1.x"
             echo "or"
@@ -154,90 +147,42 @@ else
     rm -f data/model_1.12_*.bin
 fi
 
-if [[ $update == true ]]; then
-    echo "Updating packages..."
-    export JULIA_PKG_SERVER_REGISTRY_PREFERENCE="eager"
-    if test -f "Manifest.toml"; then
-        mv Manifest.toml Manifest.toml.bak
-    fi
-    if [[ $julia_major == "1.10" ]]; then
-        if test -f "Manifest-v1.10.toml"; then
-            mv Manifest-v1.10.toml Manifest-v1.10.toml.bak
-        fi
-    elif [[ $julia_major == "1.11" ]]; then
-        if test -f "Manifest-v1.11.toml"; then
-            mv Manifest-v1.11.toml Manifest-v1.11.toml.bak
-        fi
-    else
-        if test -f "Manifest-v1.12.toml"; then
-            mv Manifest-v1.12.toml Manifest-v1.12.toml.bak
-        fi
-    fi
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"PyCall\"); Pkg.build(\"PyCall\")"
-    if [[ $PYTHON == "" ]]; then
-        $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"Conda\"); using Conda; Conda.add(\"matplotlib\"); using ControlPlots"
-    fi
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.update()"
-    if [[ $julia_major == "1.10" ]]; then
-        mv Manifest.toml Manifest-v1.10.toml
-    elif [[ $julia_major == "1.11" ]]; then
-        mv Manifest.toml Manifest-v1.11.toml
-    else
-        mv Manifest.toml Manifest-v1.12.toml
-    fi
+if [[ $julia_major == "1.10" ]]; then
+    cp Manifest-v1.10.toml.default Manifest-v1.10.toml
+    echo "Using Manifest-v1.10.toml.default ..."        
+elif [[ $julia_major == "1.11" ]]; then
+    cp Manifest-v1.11.toml.default Manifest-v1.11.toml
+    echo "Using Manifest-v1.11.toml.default ..."
 else
-    if [[ $julia_major == "1.10" ]]; then
-        cp Manifest-v1.10.toml.default Manifest-v1.10.toml
-        echo "Using Manifest-v1.10.toml.default ..."        
-    elif [[ $julia_major == "1.11" ]]; then
-        cp Manifest-v1.11.toml.default Manifest-v1.11.toml
-        echo "Using Manifest-v1.11.toml.default ..."
-    else
-        cp Manifest-v1.12.toml.default Manifest-v1.12.toml
-        echo "Using Manifest-v1.12.toml.default ..."
-    fi
+    cp Manifest-v1.12.toml.default Manifest-v1.12.toml
+    echo "Using Manifest-v1.12.toml.default ..."
 fi
-if [[ $update == true ]]; then
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.update();"
-    if [ -f "examples/Manifest.toml" ]; then
-        mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
-    fi
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.update();"
-    if [ -f "examples_3d/Manifest.toml" ]; then
-        mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
-    fi
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.update();"
-    $JULIA_CMD --startup-file=no --project -e "include(\"./test/create_sys_image.jl\");"
-    if [ -f "test/Manifest.toml" ]; then
-        mv test/Manifest.toml test/Manifest-v${julia_major}.toml
-    fi
-else
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
-    # Seed sub-project manifests from main manifest and resolve
-    rm -f examples/Manifest*.toml examples_3d/Manifest*.toml test/Manifest*.toml
-    cp "Manifest-v${julia_major}.toml" "examples/Manifest-v${julia_major}.toml"
-    cp "Manifest-v${julia_major}.toml" "examples_3d/Manifest-v${julia_major}.toml"
-    cp "Manifest-v${julia_major}.toml" "test/Manifest-v${julia_major}.toml"
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.resolve(); Pkg.instantiate();"
-    if [ -f "examples/Manifest.toml" ]; then
-        mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
-    fi
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.resolve(); Pkg.instantiate();"
-    if [ -f "examples_3d/Manifest.toml" ]; then
-        mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
-    fi
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.resolve(); Pkg.instantiate();"
-    if [ -f "test/Manifest.toml" ]; then
-        mv test/Manifest.toml test/Manifest-v${julia_major}.toml
-    fi
-    # Resolve docs independently (different dep tree; seeding from main causes missing extensions)
-    rm -f docs/Manifest*.toml
-    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.resolve(); Pkg.instantiate();"
-    if [ -f "docs/Manifest.toml" ]; then
-        mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
-    fi
-    $JULIA_CMD --startup-file=no --heap-size-hint=8000M --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
+
+$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
+# Seed sub-project manifests from main manifest and resolve
+rm -f examples/Manifest*.toml examples_3d/Manifest*.toml test/Manifest*.toml
+cp "Manifest-v${julia_major}.toml" "examples/Manifest-v${julia_major}.toml"
+cp "Manifest-v${julia_major}.toml" "examples_3d/Manifest-v${julia_major}.toml"
+cp "Manifest-v${julia_major}.toml" "test/Manifest-v${julia_major}.toml"
+$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.resolve(); Pkg.instantiate();"
+if [ -f "examples/Manifest.toml" ]; then
+    mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
 fi
+$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.resolve(); Pkg.instantiate();"
+if [ -f "examples_3d/Manifest.toml" ]; then
+    mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
+fi
+$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.resolve(); Pkg.instantiate();"
+if [ -f "test/Manifest.toml" ]; then
+    mv test/Manifest.toml test/Manifest-v${julia_major}.toml
+fi
+# Resolve docs independently (different dep tree; seeding from main causes missing extensions)
+rm -f docs/Manifest*.toml
+$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.resolve(); Pkg.instantiate();"
+if [ -f "docs/Manifest.toml" ]; then
+    mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
+fi
+$JULIA_CMD --startup-file=no --heap-size-hint=8000M --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
 
 if [[ $branch != "" ]]; then
     SOFILE="bin/kps-image-${julia_major}-${branch}.so"
