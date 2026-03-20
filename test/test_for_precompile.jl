@@ -177,4 +177,9 @@ let
     plot(v_time, heading; xlabel="time [s]", ylabel="heading [°]", fig="heading")
 end
 
+GC.gc(true)
+let mem = Sys.free_memory() / 1024^2
+    @info "Free memory: $(round(mem; digits=1)) MB"
+end
+
 @info "Precompile script has completed execution."
