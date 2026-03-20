@@ -17,6 +17,7 @@ using BenchmarkTools, Documenter, PackageCompiler
 @info "Creating sysimage ..."
 push!(LOAD_PATH,joinpath(pwd(),"src"))
 
+GC.gc(true)
 PackageCompiler.create_sysimage(
     [:Dierckx, :StaticArrays, :Parameters, :NLsolve, :DocStringExtensions, :Sundials, :KiteUtils, 
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
