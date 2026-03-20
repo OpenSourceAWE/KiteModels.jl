@@ -18,6 +18,10 @@ using BenchmarkTools, Documenter, PackageCompiler
 push!(LOAD_PATH,joinpath(pwd(),"src"))
 
 GC.gc(true)
+let mem = Sys.free_memory() / 1024^2
+    @info "Free memory: $(round(mem; digits=1)) MB"
+end
+
 PackageCompiler.create_sysimage(
     [:Dierckx, :StaticArrays, :Parameters, :NLsolve, :DocStringExtensions, :Sundials, :KiteUtils, 
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
