@@ -622,6 +622,8 @@ else
     fi
 fi
 
+julia --project="examples" -e 'using Pkg; Pkg.precompile(); using ControlPlots'
+
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0
 if [ ! -f ".JETLSConfig.toml" ]; then
