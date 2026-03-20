@@ -4,6 +4,7 @@
 
 update=false
 julia_version=""
+_yes_to_all=false
 
 export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 
@@ -22,6 +23,10 @@ while [[ $# -gt 0 ]]; do
             julia_version="$2"
             shift 2
             ;;
+        -y|--yes)
+            _yes_to_all=true
+            shift
+            ;;
         *)
             echo "Invalid parameter! Use:"
             echo "./create_sys_image"
@@ -29,6 +34,10 @@ while [[ $# -gt 0 ]]; do
             echo "./create_sys_image --update"
             echo "or"
             echo "./create_sys_image --version 1.x"
+            echo "or"
+            echo "./create_sys_image -y"
+            echo "or"
+            echo "./create_sys_image --yes"
             exit 1
             ;;
     esac
@@ -69,20 +78,25 @@ if [ -x "$PYTHON_PATH" ]; then
         export PYTHON=$PYTHON_PATH
     else
         echo "Matplotlib is not found."
-        read -p "Do you want to install matplotlib with Conda? (y/n): " choice
-        case "$choice" in 
-          y|Y ) 
+        if [[ $_yes_to_all == true ]]; then
+            echo "Installing matplotlib with Conda..."
             export PYTHON=""
-            ;;
-          n|N ) 
-            echo "Exiting without installing matplotlib."
-            exit 1
-            ;;
-          * ) 
-            echo "Invalid choice. Exiting."
-            exit 1
-            ;;
-        esac
+        else
+            read -p "Do you want to install matplotlib with Conda? (y/n): " choice
+            case "$choice" in 
+              y|Y ) 
+                export PYTHON=""
+                ;;
+              n|N ) 
+                echo "Exiting without installing matplotlib."
+                exit 1
+                ;;
+              * ) 
+                echo "Invalid choice. Exiting."
+                exit 1
+                ;;
+            esac
+        fi
     fi
 else
     echo "Python is not found."

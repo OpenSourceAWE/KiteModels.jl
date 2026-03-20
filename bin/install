@@ -2,6 +2,27 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+_yes_to_all=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -y|--yes)
+            _yes_to_all=true
+            shift
+            ;;
+        *)
+            echo "Invalid parameter! Use:"
+            echo "./install"
+            echo "or"
+            echo "./install -y"
+            echo "or"
+            echo "./install --yes"
+            exit 1
+            ;;
+    esac
+done
+
 if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
@@ -47,10 +68,17 @@ else
     _default_choice=1
     _default_julia="1.11"
 fi
-echo "Which Julia version do you want to use?"
-echo "  1) Julia 1.11"
-echo "  2) Julia 1.12"
-read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
+
+if [[ $_yes_to_all == true ]]; then
+    _julia_choice=""
+    echo "Using Julia version: ${_default_julia}"
+else
+    echo "Which Julia version do you want to use?"
+    echo "  1) Julia 1.11"
+    echo "  2) Julia 1.12"
+    read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
+fi
+
 case "${_julia_choice}" in
     1)
         _desired_julia="1.11"
@@ -475,9 +503,10 @@ end
         echo
         echo "QtAgg already installed; skipping QtAgg dependency installation."
     else
-        echo
-        echo "Installing QtAgg dependencies for PyPlot on macOS..."
-        julia -e '
+        if [[ $_yes_to_all == true ]]; then
+            echo
+            echo "Installing QtAgg dependencies for PyPlot on macOS..."
+            julia -e '
 using Pkg
 
 for pkg in ["PyCall", "PyPlot", "Conda"]
@@ -500,6 +529,41 @@ Pkg.build("PyPlot")
 println("Installed matplotlib + pyqt in Conda.jl environment.")
 println("QtAgg should now be available for matplotlib/PyPlot.jl.")
 '
+        else
+            echo
+            echo "Installing QtAgg dependencies for PyPlot on macOS..."
+            read -rp "Do you want to install matplotlib and pyqt? (y/n) [default: y]: " _install_choice
+            case "${_install_choice}" in
+                n|N)
+                    echo "Skipping QtAgg dependency installation."
+                    ;;
+                *)
+                    julia -e '
+using Pkg
+
+for pkg in ["PyCall", "PyPlot", "Conda"]
+    if Base.find_package(pkg) === nothing
+        Pkg.add(pkg)
+    end
+end
+
+if get(ENV, "PYTHON", nothing) != ""
+    ENV["PYTHON"] = ""
+    Pkg.build("PyCall")
+end
+
+using Conda
+Conda.add("matplotlib")
+Conda.add("pyqt")
+
+Pkg.build("PyPlot")
+
+println("Installed matplotlib + pyqt in Conda.jl environment.")
+println("QtAgg should now be available for matplotlib/PyPlot.jl.")
+'
+                    ;;
+            esac
+        fi
     fi
 fi
 
