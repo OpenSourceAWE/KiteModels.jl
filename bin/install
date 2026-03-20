@@ -3,21 +3,37 @@
 # SPDX-License-Identifier: MIT
 
 _yes_to_all=false
+update=false
+
+print_usage() {
+    echo "Usage:"
+    echo "./install"
+    echo "./install --update"
+    echo "./install -y"
+    echo "./install --yes"
+    echo "./install --update -y"
+    echo "./install -h"
+    echo "./install --help"
+}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        --update)
+            update=true
+            shift
+            ;;
         -y|--yes)
             _yes_to_all=true
             shift
             ;;
         *)
             echo "Invalid parameter! Use:"
-            echo "./install"
-            echo "or"
-            echo "./install -y"
-            echo "or"
-            echo "./install --yes"
+            print_usage
             exit 1
             ;;
     esac
@@ -170,24 +186,30 @@ if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
     exit 1
 fi
 
-# Copy the appropriate default manifest
-if [[ $julia_major == "1.11" ]]; then
-    if [ -f "Manifest-v1.11.toml.default" ]; then
-        cp Manifest-v1.11.toml.default Manifest-v1.11.toml
-        echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
+if [[ $update == false ]]; then
+    # Copy the appropriate default manifest
+    if [[ $julia_major == "1.11" ]]; then
+        if [ -f "Manifest-v1.11.toml.default" ]; then
+            cp Manifest-v1.11.toml.default Manifest-v1.11.toml
+            echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
+        else
+            echo "Warning: Manifest-v1.11.toml.default not found"
+            exit 1
+        fi
     else
-        echo "Warning: Manifest-v1.11.toml.default not found"
-        exit 1
+        # Default to 1.12 for newer versions
+        if [ -f "Manifest-v1.12.toml.default" ]; then
+            cp Manifest-v1.12.toml.default Manifest-v1.12.toml
+            echo "Copied Manifest-v1.12.toml.default to Manifest-v1.12.toml"
+        else
+            echo "Warning: Manifest-v1.12.toml.default not found"
+            exit 1
+        fi
     fi
 else
-    # Default to 1.12 for newer versions
-    if [ -f "Manifest-v1.12.toml.default" ]; then
-        cp Manifest-v1.12.toml.default Manifest-v1.12.toml
-        echo "Copied Manifest-v1.12.toml.default to Manifest-v1.12.toml"
-    else
-        echo "Warning: Manifest-v1.12.toml.default not found"
-        exit 1
-    fi
+    # Update mode: start from a clean state without a manifest and let Pkg.update() generate it.
+    rm -f Manifest.toml "Manifest-v${julia_major}.toml"
+    echo "--update selected: removed existing manifests for Julia ${julia_major}"
 fi
 
 # Remove any existing Manifest.toml symlink (left by a previous install run) so Julia
@@ -206,12 +228,15 @@ fi
 # Instantiate the project
 FAILED_RESOLVES=()
 RETRIED_RESOLVES=()
-echo "Instantiating project..."
-_ec=0; julia --project -e '
+if [[ $update == true ]]; then
+    echo "Updating main project..."
+else
+    echo "Instantiating project..."
+fi
+_ec=0; KITEMODELS_INSTALL_UPDATE="$update" julia --project -e '
 using Pkg
-# Always resolve first so the manifest is regenerated for the current Julia version.
-# This avoids failures when the .default manifest was created with a different Julia
-# version (e.g. 1.12 manifest used with Julia 1.11 would reference missing stdlibs).
+# Resolve in normal mode, update in --update mode. Both paths regenerate a manifest
+# for the current Julia version and avoid stale/cross-version manifest issues.
 function ensure_general_registry()
     regs = try
         Pkg.Registry.reachable_registries()
@@ -228,10 +253,14 @@ end
 
 try
     ensure_general_registry()
-    Pkg.resolve()
+    if get(ENV, "KITEMODELS_INSTALL_UPDATE", "false") == "true"
+        Pkg.update()
+    else
+        Pkg.resolve()
+    end
     Pkg.instantiate()
 catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    @warn "Main project package operation failed, attempting clean retry..." exception=e
     proj_dir = dirname(Base.active_project())
     # Remove all manifest files to force a completely clean resolve
     for f in readdir(proj_dir)
@@ -240,14 +269,18 @@ catch e
         end
     end
     ensure_general_registry()
-    Pkg.resolve()
+    if get(ENV, "KITEMODELS_INSTALL_UPDATE", "false") == "true"
+        Pkg.update()
+    else
+        Pkg.resolve()
+    end
     Pkg.instantiate()
     exit(2)
 end
 ' || _ec=$?
 if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("main project")
 elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("main project"); fi
-# If Pkg.resolve() created a plain Manifest.toml (Julia 1.12 behavior), rename it
+# If package operations created a plain Manifest.toml (Julia 1.12 behavior), rename it
 # to the version-specific filename so the rest of the scripts stay consistent.
 if [ -f "Manifest.toml" ]; then
     mv Manifest.toml "Manifest-v${julia_major}.toml"
