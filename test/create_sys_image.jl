@@ -25,7 +25,7 @@ end
 PackageCompiler.create_sysimage(
     [:Dierckx, :StaticArrays, :Parameters, :NLsolve, :DocStringExtensions, :Sundials, :KiteUtils, 
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
-     :OrdinaryDiffEqNonlinearSolve, :StatsBase, :BenchmarkTools, :Documenter,
+     :OrdinaryDiffEqNonlinearSolve,
      :JLD2, :Colors, :REPL, :NonlinearSolve, :DSP, :DiscretePIDs, 
      :ControlSystemsBase, :KiteViewers, :Rotations];
     sysimage_path="kps-image_tmp.so",
