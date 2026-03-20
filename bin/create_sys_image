@@ -173,11 +173,11 @@ if [[ $update == true ]]; then
             mv Manifest-v1.12.toml Manifest-v1.12.toml.bak
         fi
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"PyCall\"); Pkg.build(\"PyCall\")"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"PyCall\"); Pkg.build(\"PyCall\")"
     if [[ $PYTHON == "" ]]; then
-        $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"Conda\"); using Conda; Conda.add(\"matplotlib\"); using ControlPlots"
+        $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.add(\"Conda\"); using Conda; Conda.add(\"matplotlib\"); using ControlPlots"
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.update()"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.update()"
     if [[ $julia_major == "1.10" ]]; then
         mv Manifest.toml Manifest-v1.10.toml
     elif [[ $julia_major == "1.11" ]]; then
@@ -198,45 +198,45 @@ else
     fi
 fi
 if [[ $update == true ]]; then
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.update();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.update();"
     if [ -f "examples/Manifest.toml" ]; then
         mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.update();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.update();"
     if [ -f "examples_3d/Manifest.toml" ]; then
         mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.update();"
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "include(\"./test/create_sys_image.jl\");"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.update();"
+    $JULIA_CMD --startup-file=no --project -e "include(\"./test/create_sys_image.jl\");"
     if [ -f "test/Manifest.toml" ]; then
         mv test/Manifest.toml test/Manifest-v${julia_major}.toml
     fi
 else
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.instantiate();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
     # Seed sub-project manifests from main manifest and resolve
     rm -f examples/Manifest*.toml examples_3d/Manifest*.toml test/Manifest*.toml
     cp "Manifest-v${julia_major}.toml" "examples/Manifest-v${julia_major}.toml"
     cp "Manifest-v${julia_major}.toml" "examples_3d/Manifest-v${julia_major}.toml"
     cp "Manifest-v${julia_major}.toml" "test/Manifest-v${julia_major}.toml"
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.resolve(); Pkg.instantiate();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples\"); Pkg.resolve(); Pkg.instantiate();"
     if [ -f "examples/Manifest.toml" ]; then
         mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.resolve(); Pkg.instantiate();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"examples_3d\"); Pkg.resolve(); Pkg.instantiate();"
     if [ -f "examples_3d/Manifest.toml" ]; then
         mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.resolve(); Pkg.instantiate();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"test\"); Pkg.resolve(); Pkg.instantiate();"
     if [ -f "test/Manifest.toml" ]; then
         mv test/Manifest.toml test/Manifest-v${julia_major}.toml
     fi
     # Resolve docs independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.resolve(); Pkg.instantiate();"
+    $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pkg.resolve(); Pkg.instantiate();"
     if [ -f "docs/Manifest.toml" ]; then
         mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
     fi
-    $JULIA_CMD --startup-file=no --pkgimages=no --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
+    $JULIA_CMD --startup-file=no --heap-size-hint=8000M --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
 fi
 
 if [[ $branch != "" ]]; then
@@ -249,11 +249,6 @@ if test -f $SOFILE; then
 fi
 mv kps-image_tmp.so $SOFILE
 $JULIA_CMD --startup-file=no  --project -e "using Pkg; Pkg.precompile()"
-if [ -d src ]; then
-    cd src
-    touch *.jl # make sure all modules get recompiled in the next step
-    cd ..
-fi
 
 # enable pre-compilation
 rm LocalPreferences.toml
