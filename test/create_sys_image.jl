@@ -20,11 +20,10 @@ push!(LOAD_PATH,joinpath(pwd(),"src"))
 GC.gc(true)
 let mem = Sys.free_memory() / 1024^2
     @info "Free memory: $(round(mem; digits=1)) MB"
-    try
-        image_threads = ENV["JULIA_IMAGE_THREADS"]
-        @info "JULIA_IMAGE_THREADS: $image_threads"
-    catch
-        @info JULIA_IMAGE_THREADS not defined!
+    if haskey(ENV, "JULIA_IMAGE_THREADS")
+        @info "JULIA_IMAGE_THREADS: $(ENV["JULIA_IMAGE_THREADS"])"
+    else
+        @info "JULIA_IMAGE_THREADS not defined!"
     end
 end
 
