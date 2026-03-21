@@ -2,6 +2,13 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### Unreleased
+#### Added
+- the functions `copy_examples_3d()` and `install_examples_3d()`
+
+### Fixed
+- the `create_sys_image2` script now includes `KiteViewers` only if needed for the 3d examples
+
 ### KiteModels v0.11.5 2026-03-17
 #### Fixed
 - fixed citation metadata in CITATION.cff
