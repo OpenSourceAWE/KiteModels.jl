@@ -29,14 +29,14 @@ import Base.zero
 import OrdinaryDiffEqCore.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
-export calc_set_cl_cd!, copy_bin, copy_examples, update_sys_state!                     # helper functions
+export calc_set_cl_cd!, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
 export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
 export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
 export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
-export copy_model_settings, kite_ref_frame, menu2, orient_euler, reactivate_host_app, spring_forces, states, upwind_dir
+export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app, spring_forces, states, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -684,19 +684,34 @@ end
 Copy all example scripts to the folder "examples"
 (it will be created if it doesn't exist).
 """
-function copy_examples()
+function copy_examples(; overwrite=true)
     PATH = "examples"
     if ! isdir(PATH) 
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples", readdir(src_path))
+    copy_files("examples", readdir(src_path); overwrite)
 end
 
-function copy_model_settings()
+"""
+    copy_examples_3d()
+
+Copy all 3D example scripts to the folder "examples_3d"
+(it will be created if it doesn't exist).
+"""
+function copy_examples_3d(; overwrite=true)
+    PATH = "examples_3d"
+    if ! isdir(PATH)
+        mkdir(PATH)
+    end
+    src_path = joinpath(@__DIR__, "..", PATH)
+    copy_files("examples_3d", readdir(src_path); overwrite)
+end
+
+function copy_model_settings(; overwrite=true)
     files = ["settings.yaml", "system.yaml"]
     dst_path = abspath(joinpath(pwd(), "data"))
-    copy_files("data", files)
+    copy_files("data", files; overwrite)
     set_data_path(joinpath(pwd(), "data"))
     println("Copied $(length(files)) files to $(dst_path) !")
 end
@@ -712,14 +727,40 @@ function install_examples(add_packages=true)
     end
 end
 
-function copy_files(relpath, files)
+"""
+    install_examples_3d(add_packages=true, overwrite=false)
+
+Install 3D examples into the current working directory.
+
+This function copies the `examples_3d` scripts and required helper files. If `add_packages`
+is `true`, it also installs the packages used by the 3D example scripts.
+If `overwrite` is `false`, existing files are kept.
+"""
+function install_examples_3d(add_packages=true, overwrite=false)
+    copy_examples_3d(; overwrite)
+    if overwrite || !isfile(joinpath("data", "settings.yaml")) || !isfile(joinpath("data", "system.yaml"))
+        copy_settings()
+    end
+    copy_bin(; overwrite)
+    copy_model_settings(; overwrite)
+    if add_packages
+        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots",
+                 "LaTeXStrings", "StatsBase", "Timers", "Rotations", "KiteViewers"])
+    end
+end
+
+function copy_files(relpath, files; overwrite=true)
     if ! isdir(relpath) 
         mkdir(relpath)
     end
     src_path = joinpath(@__DIR__, "..", relpath)
     for file in files
-        cp(joinpath(src_path, file), joinpath(relpath, file), force=true)
-        chmod(joinpath(relpath, file), 0o774)
+        src = joinpath(src_path, file)
+        dst = joinpath(relpath, file)
+        if overwrite || !isfile(dst)
+            cp(src, dst, force=true)
+            chmod(dst, 0o774)
+        end
     end
     files
 end
@@ -747,27 +788,42 @@ end
 Copy the scripts create_sys_image and run_julia to the folder "bin"
 (it will be created if it doesn't exist).
 """
-function copy_bin()
+function copy_bin(; overwrite=true)
     PATH = "bin"
     if ! isdir(PATH) 
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    cp(joinpath(src_path, "create_sys_image2"), joinpath(PATH, "create_sys_image"), force=true)
-    cp(joinpath(src_path, "run_julia"), joinpath(PATH, "run_julia"), force=true)
-    chmod(joinpath(PATH, "create_sys_image"), 0o774)
-    chmod(joinpath(PATH, "run_julia"), 0o774)
+    dst = joinpath(PATH, "create_sys_image")
+    if overwrite || !isfile(dst)
+        cp(joinpath(src_path, "create_sys_image2"), dst, force=true)
+        chmod(dst, 0o774)
+    end
+    dst = joinpath(PATH, "run_julia")
+    if overwrite || !isfile(dst)
+        cp(joinpath(src_path, "run_julia"), dst, force=true)
+        chmod(dst, 0o774)
+    end
     PATH = "test"
     if ! isdir(PATH) 
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    cp(joinpath(src_path, "create_sys_image2.jl"), joinpath(PATH, "create_sys_image.jl"), force=true)
-    cp(joinpath(src_path, "test_for_precompile.jl"), joinpath(PATH, "test_for_precompile.jl"), force=true)
-    cp(joinpath(src_path, "update_packages.jl"), joinpath(PATH, "update_packages.jl"), force=true)
-    chmod(joinpath(PATH, "create_sys_image.jl"), 0o664)
-    chmod(joinpath(PATH, "test_for_precompile.jl"), 0o664)
-    chmod(joinpath(PATH, "update_packages.jl"), 0o664)
+    dst = joinpath(PATH, "create_sys_image.jl")
+    if overwrite || !isfile(dst)
+        cp(joinpath(src_path, "create_sys_image2.jl"), dst, force=true)
+        chmod(dst, 0o664)
+    end
+    dst = joinpath(PATH, "test_for_precompile.jl")
+    if overwrite || !isfile(dst)
+        cp(joinpath(src_path, "test_for_precompile.jl"), dst, force=true)
+        chmod(dst, 0o664)
+    end
+    dst = joinpath(PATH, "update_packages.jl")
+    if overwrite || !isfile(dst)
+        cp(joinpath(src_path, "update_packages.jl"), dst, force=true)
+        chmod(dst, 0o664)
+    end
 end
 
 include("precompile.jl")

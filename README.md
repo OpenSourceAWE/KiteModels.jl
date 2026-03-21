@@ -87,6 +87,7 @@ You can copy the examples to your project with:
 ```julia
 using KiteModels
 KiteModels.install_examples()
+KiteModels.install_examples_3d() # this step is optional, it will cost some extra time
 ```
 
 This also adds the extra packages, needed for the examples to the project. Furthermore, it creates a folder `data`

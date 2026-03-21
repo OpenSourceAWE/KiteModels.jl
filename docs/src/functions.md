@@ -75,6 +75,8 @@ residual!
 
 ```@docs
 copy_examples
+copy_examples_3d
+install_examples_3d
 copy_bin
 calc_drag
 calculate_rotational_inertia!
