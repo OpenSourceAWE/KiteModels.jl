@@ -2,9 +2,14 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### Unreleased
+### KiteModels v0.11.6 2026-03-21
 #### Added
 - the functions `copy_examples_3d()` and `install_examples_3d()`
+- add the functions `states(kps)` to determine the number of states of a model
+- add parameter `-y` `--yes` to install script
+
+#### Changed
+- add parameter `--update` to `install` script and remove it from `create_sys_image` script
 
 ### Fixed
 - the `create_sys_image2` script now includes `KiteViewers` only if needed for the 3d examples
