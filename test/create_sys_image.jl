@@ -5,7 +5,8 @@
 using Pkg
 if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(joinpath(@__DIR__, "..", "test"))
-    Pkg.update()
+    Pkg.resolve()
+    Pkg.instantiate()
 end
 @info "Loading packages ..."
 using AtmosphericModels, Colors, ControlSystemsBase, DSP, Dierckx, DiscretePIDs,
