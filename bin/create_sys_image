@@ -76,21 +76,40 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     # FcConfigSetDefaultSubstitute added in 2.15). The dynamic linker reuses already-loaded
     # system libs instead of the bundled ones, so we force the bundled versions in first.
     _PRELOADS=()
-    _BUNDLED=$(find ~/.julia/artifacts -maxdepth 3 -name "libcrypto.so.3"   -path "*/lib/*" 2>/dev/null | head -1); [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-    # Pick the fontconfig that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
-    # Multiple artifact versions may coexist; `find | head -1` can return the wrong one.
+    
+    # Get all Julia depot paths (used during different build stages)
+    _DEPOT_PATHS=()
+    if [[ -n "${JULIA_DEPOT_PATH:-}" ]]; then
+        IFS=':' read -ra _DEPOT_PATHS <<< "$JULIA_DEPOT_PATH"
+    else
+        _DEPOT_PATHS=("$HOME/.julia")
+    fi
+    
+    # Search for libcrypto in all depot paths
     _BUNDLED=""
-    for _fc in $(find ~/.julia/artifacts -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null); do
-        if nm -D "$_fc" 2>/dev/null | grep -q FcConfigSetDefaultSubstitute; then
-            _BUNDLED="$_fc"
-            break
-        fi
+    for _depot in "${_DEPOT_PATHS[@]}"; do
+        _BUNDLED=$(find "$_depot/artifacts" -maxdepth 3 -name "libcrypto.so.3" -path "*/lib/*" 2>/dev/null | head -1)
+        [[ -n "$_BUNDLED" ]] && break
     done
     [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
+    
+    # Pick the fontconfig that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
+    # Multiple artifact versions may coexist; search all depot paths and prefer the one with the symbol.
+    _BUNDLED=""
+    for _depot in "${_DEPOT_PATHS[@]}"; do
+        for _fc in $(find "$_depot/artifacts" -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null); do
+            if nm -D "$_fc" 2>/dev/null | grep -q FcConfigSetDefaultSubstitute; then
+                _BUNDLED="$_fc"
+                break 2
+            fi
+        done
+    done
+    [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
+    
     if [[ ${#_PRELOADS[@]} -gt 0 ]]; then
         export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
     fi
-    unset _PRELOADS _BUNDLED
+    unset _PRELOADS _BUNDLED _DEPOT_PATHS _depot _fc
 fi
 echo "LD_PRELOAD was: $LD_PRELOAD"
 
