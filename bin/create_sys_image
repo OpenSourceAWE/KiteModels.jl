@@ -63,6 +63,9 @@ if ! command -v julia &> /dev/null; then
     juliaup default 1.11
 fi
 
+# Instantiate packages first so artifacts are available for LD_PRELOAD setup
+$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
+
 # Initialize LD_PRELOAD to avoid unbound variable error
 export LD_PRELOAD=""
 
@@ -186,7 +189,6 @@ else
     echo "Using Manifest-v1.12.toml.default ..."
 fi
 
-$JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 # Seed sub-project manifests from main manifest and resolve
 rm -f examples/Manifest*.toml examples_3d/Manifest*.toml test/Manifest*.toml
 cp "Manifest-v${julia_major}.toml" "examples/Manifest-v${julia_major}.toml"
