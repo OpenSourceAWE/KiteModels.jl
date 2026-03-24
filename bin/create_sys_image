@@ -66,17 +66,21 @@ fi
 # Instantiate packages first so artifacts are available for LD_PRELOAD setup
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 
-# Initialize LD_PRELOAD to avoid unbound variable error
+# Initialize LD_PRELOAD and LD_LIBRARY_PATH to avoid unbound variable errors
 export LD_PRELOAD=""
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
 if [[ "$(uname -s)" == "Linux" ]]; then
     export FONTCONFIG_FILE=/etc/fonts/fonts.conf
-    # Preload Julia-bundled libraries to avoid version conflicts with older system libs.
-    # On Ubuntu 22.04: OpenSSL 3.0.2 (artifacts need 3.3+), fontconfig 2.13 (missing
-    # FcConfigSetDefaultSubstitute added in 2.15). The dynamic linker reuses already-loaded
-    # system libs instead of the bundled ones, so we force the bundled versions in first.
+    # On Ubuntu 22.04 the system has: OpenSSL 3.0.2 (too old), fontconfig 2.13 (missing
+    # FcConfigSetDefaultSubstitute). The dynamic linker reuses already-loaded system libs
+    # instead of the bundled ones, so we force the bundled versions in with LD_PRELOAD.
+    # libiconv/libintl are absent on the system (glibc-internal on Ubuntu), so we add
+    # their artifact dirs to LD_LIBRARY_PATH so dependency resolution finds them without
+    # hitting circular-preload ordering problems.
     _PRELOADS=()
-    
+    _LIBDIRS=()
+
     # Get all Julia depot paths (used during different build stages)
     _DEPOT_PATHS=()
     if [[ -n "${JULIA_DEPOT_PATH:-}" ]]; then
@@ -84,17 +88,32 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     else
         _DEPOT_PATHS=("$HOME/.julia")
     fi
-    
-    # Search for libcrypto in all depot paths
+
+    # libcrypto: override stale system version via LD_PRELOAD
     _BUNDLED=""
     for _depot in "${_DEPOT_PATHS[@]}"; do
         _BUNDLED=$(find "$_depot/artifacts" -maxdepth 3 -name "libcrypto.so.3" -path "*/lib/*" 2>/dev/null | head -1)
         [[ -n "$_BUNDLED" ]] && break
     done
     [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-    
-    # Pick the fontconfig that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
-    # Multiple artifact versions may coexist; search all depot paths and prefer the one with the symbol.
+
+    # libiconv + libintl: absent on Ubuntu 22.04, add dirs to LD_LIBRARY_PATH so
+    # circular dep between them resolves naturally without preload ordering issues.
+    for _libname in libiconv.so.2 libintl.so.8; do
+        _BUNDLED=""
+        for _depot in "${_DEPOT_PATHS[@]}"; do
+            _BUNDLED=$(find "$_depot/artifacts" -maxdepth 3 -name "$_libname" -path "*/lib/*" 2>/dev/null | head -1)
+            [[ -n "$_BUNDLED" ]] && break
+        done
+        if [[ -n "$_BUNDLED" ]]; then
+            _dir=$(dirname "$_BUNDLED")
+            [[ ":${_LIBDIRS[*]}:" != *":$_dir:"* ]] && _LIBDIRS+=("$_dir")
+        fi
+    done
+
+    # libfontconfig: override stale system version via LD_PRELOAD; also add its dir to
+    # LD_LIBRARY_PATH so its deps (libiconv etc.) are found during preload resolution.
+    # Pick the version that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
     _BUNDLED=""
     for _depot in "${_DEPOT_PATHS[@]}"; do
         for _fc in $(find "$_depot/artifacts" -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null); do
@@ -104,14 +123,47 @@ if [[ "$(uname -s)" == "Linux" ]]; then
             fi
         done
     done
-    [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-    
-    if [[ ${#_PRELOADS[@]} -gt 0 ]]; then
-        export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
+    if [[ -n "$_BUNDLED" ]]; then
+        _dir=$(dirname "$_BUNDLED")
+        [[ ":${_LIBDIRS[*]}:" != *":$_dir:"* ]] && _LIBDIRS+=("$_dir")
+        _PRELOADS+=("$_BUNDLED")
     fi
-    unset _PRELOADS _BUNDLED _DEPOT_PATHS _depot _fc
+
+    [[ ${#_PRELOADS[@]} -gt 0 ]] && export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
+    if [[ ${#_LIBDIRS[@]} -gt 0 ]]; then
+        _extra=$(IFS=:; echo "${_LIBDIRS[*]}")
+        export LD_LIBRARY_PATH="${_extra}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+    unset _PRELOADS _LIBDIRS _BUNDLED _DEPOT_PATHS _depot _fc _dir _extra _libname
 fi
 echo "LD_PRELOAD was: $LD_PRELOAD"
+echo "LD_LIBRARY_PATH was: $LD_LIBRARY_PATH"
+
+# On Linux, wrap julia to also preload the bundled libglib for Julia processes only.
+# The system libglib is often too old for GLMakie/Glib_jll (missing g_string_copy).
+# Scoping this to Julia calls prevents breaking system commands which would fail
+# if artifact libglib's transitive deps (libintl) are not satisfied.
+if [[ "$(uname -s)" == "Linux" ]]; then
+    _JULIA_GLIB_PRELOADS=""
+    for _depot in $(echo "${JULIA_DEPOT_PATH:-$HOME/.julia}" | tr ':' ' '); do
+        _f=$(find "$_depot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null | head -1)
+        if [[ -n "$_f" ]]; then
+            _glib_dir=$(dirname "$_f")
+            _intl=""
+            [[ -f "$_glib_dir/libintl.so.8" ]] && _intl="$_glib_dir/libintl.so.8:"
+            _JULIA_GLIB_PRELOADS="${_intl}$_f"
+            break
+        fi
+    done
+    unset _depot _f _glib_dir _intl
+    if [[ -n "$_JULIA_GLIB_PRELOADS" ]]; then
+        # Wrap julia so glib preloads apply to Julia processes only (not system commands).
+        # $JULIA_CMD may be "julia" or "julia +version" — both go through this function.
+        julia() {
+            LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD:}$_JULIA_GLIB_PRELOADS" command julia "$@"
+        }
+    fi
+fi
 
 PYTHON_PATH=$(which python3)
 if [ -x "$PYTHON_PATH" ]; then
