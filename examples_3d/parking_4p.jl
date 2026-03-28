@@ -12,7 +12,8 @@ using Pkg
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(@__DIR__)
 end
-using Timers; tic()
+using Timers;
+tic()
 using KiteModels, KitePodModels, Rotations, StaticArrays
 using KiteViewers
 using ControlPlots: plot, plot2d, plotx
@@ -26,12 +27,12 @@ set.solver="DFBDF"              # IDA or DFBDF
 set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
 STEPS = 352
 PRINT = false
-STATISTIC  = false
+STATISTIC = false
 const PLOT = false
-UPWIND_DIR2       = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
+UPWIND_DIR2 = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
 ZOOM = true
 FRONT_VIEW = true
-SHOW_KITE  = true
+SHOW_KITE = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -43,9 +44,9 @@ v_speed = zeros(STEPS)
 v_force = zeros(STEPS)
 heading = zeros(STEPS)
 
-function simulate(integrator, steps, plot=PLOT)
+function simulate(integrator, steps, plot = PLOT)
     iter = 0
-    for i in 1:steps
+    for i = 1:steps
         acc = 0.0
         v_time[i] = kps4.t_0
         v_speed[i] = kps4.v_reel_out
@@ -54,7 +55,7 @@ function simulate(integrator, steps, plot=PLOT)
         set_speed = kps4.sync_speed+acc*dt
         if PRINT
             lift, drag = KiteModels.lift_drag(kps4)
-            @printf "%.2f: " round(integrator.t, digits=2)
+            @printf "%.2f: " round(integrator.t, digits = 2)
             println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
         end
         steering = 0
@@ -63,15 +64,21 @@ function simulate(integrator, steps, plot=PLOT)
         end
         set_depower_steering(kps4.kcu, kps4.depower, steering)
 
-        next_step!(kps4, integrator; set_speed, dt, upwind_dir=UPWIND_DIR2)
+        next_step!(kps4, integrator; set_speed, dt, upwind_dir = UPWIND_DIR2)
         iter += kps4.iter
         reltime = i*dt-dt
         if mod(i, 5) == 1
             if plot
-                plot2d(kps4.pos, reltime; zoom=true, front=FRONT_VIEW, 
-                    segments=set.segments, fig="front_view") 
+                plot2d(
+                    kps4.pos,
+                    reltime;
+                    zoom = true,
+                    front = FRONT_VIEW,
+                    segments = set.segments,
+                    fig = "front_view",
+                )
             end
-            sleep(0.05)           
+            sleep(0.05)
         end
         sys_state = SysState(kps4)
         # q = QuatRotation(sys_state.orient)
@@ -79,7 +86,7 @@ function simulate(integrator, steps, plot=PLOT)
         # println("Yaw: ", rad2deg(yaw), ", Pitch: ", rad2deg(pitch), ", Roll: ", rad2deg(roll))
 
         # sys_state.orient = quat2viewer(q)
-        KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
+        KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale = 3)
         if i == 1
             bring_viewer_to_front()
         end
@@ -88,13 +95,19 @@ function simulate(integrator, steps, plot=PLOT)
 end
 toc()
 
-integrator = KiteModels.init!(kps4, delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 toc()
 
 println("\nStarting simulation...")
 simulate(integrator, STEPS)
 if PLOT
-    p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
+    p = plotx(
+        v_time[1:(STEPS-100)],
+        v_speed[1:(STEPS-100)],
+        v_force[1:(STEPS-100)];
+        ylabels = ["v_reelout  [m/s]", "tether_force [N]"],
+        fig = "winch",
+    )
     display(p)
 end
 # lift, drag = KiteModels.lift_drag(kps4)
@@ -109,7 +122,7 @@ end
 
 # print heading
 println("heading: $(round(heading[STEPS], digits=2))°")
-p=plot(v_time, heading; xlabel="time [s]", ylabel="heading [°]", fig="heading")
+p=plot(v_time, heading; xlabel = "time [s]", ylabel = "heading [°]", fig = "heading")
 display(p)
 if Sys.isapple()
     KiteModels.reactivate_host_app()

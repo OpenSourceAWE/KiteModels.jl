@@ -6,7 +6,8 @@ using Pkg
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(joinpath(@__DIR__))
 end
-using Timers; tic()
+using Timers;
+tic()
 
 using KiteViewers
 using ControlPlots, KiteModels, Rotations
@@ -19,7 +20,7 @@ set.v_wind = 10 # v_min1 6-25; v_min2 5.3-30
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
-pcs = pcm.ParkingControllerSettings(dt=0.05)
+pcs = pcm.ParkingControllerSettings(dt = 0.05)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
@@ -35,7 +36,7 @@ MIN_DEPOWER, DISTURBANCE = if KiteUtils.PROJECT == "system.yaml"
     pcs.c1 = 0.149
     pcs.c2 = 0 # has no big effect, can also be set to zero c1 = 0.149 c2 = 5.428
     0.22, 0.1
-else 
+else
     # result of tuning
     println("not system.yaml")
     pcs.kp_tr = 0.05
@@ -50,28 +51,30 @@ end
 pc = pcm.ParkingController(pcs)
 
 # the following values can be changed to match your interest
-MAX_TIME::Float64 =  60 # was 60
-TIME_LAPSE_RATIO  =  6
-SHOW_KITE         = true
+MAX_TIME::Float64 = 60 # was 60
+TIME_LAPSE_RATIO = 6
+SHOW_KITE = true
 # end of user parameter section #
 
 viewer::Viewer3D = Viewer3D(SHOW_KITE, "WinchON")
 
 T::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
-AZIMUTH::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
-HEADING::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
-SET_STEERING::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
-STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
-AoA::Vector{Float64}           = zeros(Int64(MAX_TIME/dt))
-PSI_DOT::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
-PSI_DOT_SET::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
-NDI_GAIN::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
-V_APP::Vector{Float64}         = zeros(Int64(MAX_TIME/dt))
+AZIMUTH::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+HEADING::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+SET_STEERING::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+STEERING::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+AoA::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+PSI_DOT::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+PSI_DOT_SET::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+NDI_GAIN::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+V_APP::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
 
 function simulate(integrator, sys_state)
     start_time_ns = time_ns()
     clear_viewer(viewer)
-    i=1; j=0; k=0
+    i = 1
+    j = 0
+    k = 0
     GC.gc()
     max_time = 0
     t_gc_tot = 0
@@ -82,8 +85,13 @@ function simulate(integrator, sys_state)
                 pc.last_heading = sys_state.heading
             end
             chi_set = pcm.navigate(pc, sys_state.azimuth, sys_state.elevation)
-            steering, ndi_gain, psi_dot, psi_dot_set = pcm.calc_steering(pc, sys_state.heading, chi_set; 
-                                                                         sys_state.elevation, v_app = sys_state.v_app)
+            steering, ndi_gain, psi_dot, psi_dot_set = pcm.calc_steering(
+                pc,
+                sys_state.heading,
+                chi_set;
+                sys_state.elevation,
+                v_app = sys_state.v_app,
+            )
             PSI_DOT[i] = psi_dot
             PSI_DOT_SET[i] = psi_dot_set
             NDI_GAIN[i] = ndi_gain
@@ -92,7 +100,7 @@ function simulate(integrator, sys_state)
             # disturbance
             if time > 20 && time < 21
                 steering = DISTURBANCE
-            end            
+            end
             set_depower_steering(kps4.kcu, MIN_DEPOWER, steering)
         end
         SET_STEERING[i] = steering
@@ -100,7 +108,7 @@ function simulate(integrator, sys_state)
         AoA[i] = kps4.alpha_2
         # execute winch controller
         v_ro = 0.0
-        t_sim = @elapsed KiteModels.next_step!(kps4, integrator; set_speed=v_ro, dt=dt)
+        t_sim = @elapsed KiteModels.next_step!(kps4, integrator; set_speed = v_ro, dt = dt)
         if t_sim < 0.3*dt
             t_gc_tot += @elapsed GC.gc(false)
         end
@@ -110,41 +118,52 @@ function simulate(integrator, sys_state)
         HEADING[i] = wrap2pi(sys_state.heading)
         if mod(i, TIME_LAPSE_RATIO) == 0
             if KiteUtils.PROJECT == "system.yaml"
-                KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
+                KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale = 3)
             else
-                KiteViewers.update_system(viewer, sys_state; scale = 0.08*0.5, kite_scale=3)
+                KiteViewers.update_system(
+                    viewer,
+                    sys_state;
+                    scale = 0.08*0.5,
+                    kite_scale = 3,
+                )
             end
             if i == TIME_LAPSE_RATIO
                 bring_viewer_to_front()
             end
-            wait_until(start_time_ns + 1e9*dt, always_sleep=true) 
+            wait_until(start_time_ns + 1e9*dt, always_sleep = true)
             mtime = 0
-            if i > 10/dt 
+            if i > 10/dt
                 # if we missed the deadline by more than 5 ms
                 mtime = time_ns() - start_time_ns
                 if mtime > dt*1e9 + 5e6
                     print(".")
                     j += 1
                 end
-                k +=1
+                k += 1
             end
             if mtime > max_time
                 max_time = mtime
-            end            
+            end
             start_time_ns = time_ns()
             t_gc_tot = 0
         end
-        if ! isopen(viewer.fig.scene) break end
-        if i*dt >= MAX_TIME break end
+        if ! isopen(viewer.fig.scene)
+            break
+        end
+        if i*dt >= MAX_TIME
+            break
+        end
         i += 1
     end
     misses = j/k * 100
-    println("\nMissed the deadline for $(round(misses, digits=2)) %. Max time: $(round((max_time*1e-6), digits=1)) ms")
+    println(
+        "\nMissed the deadline for $(round(misses, digits=2)) %. Max time: $(round((max_time*1e-6), digits=1)) ms",
+    )
     return div(i, TIME_LAPSE_RATIO)
 end
 
 function play()
-    integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
+    integrator = KiteModels.init!(kps4; delta = 0.001, stiffness_factor = 0.1)
     sys_state = SysState(kps4)
     toc()
     simulate(integrator, sys_state)
@@ -158,16 +177,40 @@ function play1()
     end
 end
 
-on(viewer.btn_PLAY.clicks) do _; play1(); end
+on(viewer.btn_PLAY.clicks) do _
+    ;
+    play1();
+end
 
 play()
 stop(viewer)
-p = plotx(T, rad2deg.(AZIMUTH), rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)],
-             [rad2deg.(PSI_DOT), rad2deg.(PSI_DOT_SET)], NDI_GAIN, V_APP; 
-          xlabel="Time [s]", 
-          ylabels=["Azimuth [°]", "Heading [°]", "steering [%]", "psi_dot [°/s]", "NDI_GAIN", "v_app [m/s]"],   
-          labels=["azimuth", "heading", ["set_steering", "steering"], ["psi_dot", "psi_dot_set"], "NDI_GAIN", "v_app"],  
-          fig="Azimuth, heading, steering and more")
+p = plotx(
+    T,
+    rad2deg.(AZIMUTH),
+    rad2deg.(HEADING),
+    [100*(SET_STEERING), 100*(STEERING)],
+    [rad2deg.(PSI_DOT), rad2deg.(PSI_DOT_SET)],
+    NDI_GAIN,
+    V_APP;
+    xlabel = "Time [s]",
+    ylabels = [
+        "Azimuth [°]",
+        "Heading [°]",
+        "steering [%]",
+        "psi_dot [°/s]",
+        "NDI_GAIN",
+        "v_app [m/s]",
+    ],
+    labels = [
+        "azimuth",
+        "heading",
+        ["set_steering", "steering"],
+        ["psi_dot", "psi_dot_set"],
+        "NDI_GAIN",
+        "v_app",
+    ],
+    fig = "Azimuth, heading, steering and more",
+)
 display(p)
 if Sys.isapple()
     KiteModels.reactivate_host_app()

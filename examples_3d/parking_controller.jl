@@ -8,14 +8,15 @@ module ParkingControllers
 using DiscretePIDs, Parameters, Test
 import KiteUtils: wrap2pi
 
-@with_kw mutable struct ParkingControllerSettings @deftype Float64
-    dt
+@with_kw mutable struct ParkingControllerSettings
+    @deftype Float64
+    dt::Float64
     # turn rate controller settings
-    kp_tr=0.06
-    ki_tr=0.0012
+    kp_tr = 0.06
+    ki_tr = 0.0012
     # outer controller (heading/ course) settings
-    kp=15
-    ki=0.5
+    kp = 15
+    ki = 0.5
     # NDI block settings
     va_min = 5.0   # minimum apparent wind speed
     va_max = 100.0 # maximum apparent wind speed
@@ -26,8 +27,8 @@ end
 
 mutable struct ParkingController
     pcs::ParkingControllerSettings
-    pid_tr::DiscretePID
-    pid_outer::DiscretePID
+    pid_tr::DiscretePID{Float64}
+    pid_outer::DiscretePID{Float64}
     last_heading::Float64
     chi_set::Float64
     last_ndi_gain::Float64
@@ -35,8 +36,8 @@ end
 
 function ParkingController(pcs::ParkingControllerSettings; last_heading = 0.0)
     Ts = pcs.dt
-    pid_tr    = DiscretePID(;K=pcs.kp_tr, Ti=pcs.kp_tr/ pcs.ki_tr, Ts)
-    pid_outer = DiscretePID(;K=pcs.kp,    Ti=pcs.kp/ pcs.ki,       Ts)
+    pid_tr = DiscretePID(; K = pcs.kp_tr, Ti = pcs.kp_tr / pcs.ki_tr, Ts)
+    pid_outer = DiscretePID(; K = pcs.kp, Ti = pcs.kp / pcs.ki, Ts)
     return ParkingController(pcs, pid_tr, pid_outer, last_heading, 0, 0)
 end
 
@@ -52,12 +53,14 @@ Parameters:
 - v_app: apparent wind speed in m/s
 - ud_prime: depower setting in the range of 0 to 1, 0 means fully powered, 1 means fully depowered
 """
-function linearize(pc::ParkingController, psi_dot, psi, elevation, v_app; ud_prime=0)
+function linearize(pc::ParkingController, psi_dot, psi, elevation, v_app; ud_prime = 0)
     pcs = pc.pcs
     # Eq. 6.13: calculate va_hat
     va_hat = clamp(v_app, pcs.va_min, pcs.va_max)
     # Eq. 6.12: calculate the steering from the desired turn rate
-    u_s = (1.0 + pcs.k_ds * ud_prime) / (pcs.c1 * va_hat) * (psi_dot - pcs.c2 / va_hat * sin(psi) * cos(elevation))
+    u_s =
+        (1.0 + pcs.k_ds * ud_prime) / (pcs.c1 * va_hat) *
+        (psi_dot - pcs.c2 / va_hat * sin(psi) * cos(elevation))
     if abs(psi_dot) < 1e-6
         ndi_gain = pc.last_ndi_gain
     else
@@ -73,8 +76,8 @@ end
 Calculate the desired flight direction chi_set using great circle navigation.
 Limit delta_beta to the value of the parameter limit (in degrees).
 """
-function navigate(pc::ParkingController, azimuth, elevation; limit=50.0)
-    phi_set  = 0.0         # azimuth
+function navigate(pc::ParkingController, azimuth, elevation; limit = 50.0)
+    phi_set = 0.0         # azimuth
     beta_set = deg2rad(77) # zenith
     beta = elevation
     phi = azimuth
@@ -103,7 +106,14 @@ Parameters:
 - ud_prime: depower setting in the range of 0 to 1, 0 means fully powered, 1 means fully depowered
 
 """
-function calc_steering(pc::ParkingController, heading, chi_set; elevation=0.0, v_app=10.0, ud_prime=0.0)
+function calc_steering(
+    pc::ParkingController,
+    heading,
+    chi_set;
+    elevation = 0.0,
+    v_app = 10.0,
+    ud_prime = 0.0,
+)
     # calculate the desired turn rate
     heading = wrap2pi(heading) # a different wrap2pi function is needed that avoids any jumps
     psi_dot_set = pc.pid_outer(wrap2pi(chi_set), heading)
@@ -118,9 +128,9 @@ end
 function test_linearize()
     @testset "test_linearize" begin
         # set the parameters of the parking controller
-        pcs = ParkingControllerSettings(dt=0.05)
-        pcs.kp_tr=1.05
-        pcs.ki_tr=0.012
+        pcs = ParkingControllerSettings(dt = 0.05)
+        pcs.kp_tr = 1.05
+        pcs.ki_tr = 0.012
         # create the parking controller
         pc = ParkingController(pcs)
         # set the desired turn rate
@@ -144,9 +154,9 @@ end
 function test_calc_steering()
     @testset "test_calc_steering" begin
         # set the parameters of the parking controller
-        pcs = ParkingControllerSettings(dt=0.05)
-        pcs.kp_tr=1.05
-        pcs.ki_tr=0.012
+        pcs = ParkingControllerSettings(dt = 0.05)
+        pcs.kp_tr = 1.05
+        pcs.ki_tr = 0.012
         # create the parking controller
         pc = ParkingController(pcs)
         # set the heading
@@ -165,9 +175,9 @@ end
 function test_navigate()
     @testset "test_navigate" begin
         # set the parameters of the parking controller
-        pcs = ParkingControllerSettings(dt=0.05)
-        pcs.kp=1.05
-        pcs.ki=0.012
+        pcs = ParkingControllerSettings(dt = 0.05)
+        pcs.kp = 1.05
+        pcs.ki = 0.012
         # create the parking controller
         pc = ParkingController(pcs)
         # set the azimuth

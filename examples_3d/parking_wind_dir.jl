@@ -3,7 +3,7 @@
 
 # park the kind while the wind direction changes
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(@__DIR__)
 end
 using Timers; tic()
