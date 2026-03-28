@@ -26,8 +26,8 @@ end
 
 mutable struct ParkingController
     pcs::ParkingControllerSettings
-    pid_tr::DiscretePID
-    pid_outer::DiscretePID
+    pid_tr::DiscretePID{Float64}
+    pid_outer::DiscretePID{Float64}
     last_heading::Float64
     chi_set::Float64
     last_ndi_gain::Float64
