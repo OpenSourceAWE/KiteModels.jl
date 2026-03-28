@@ -75,6 +75,21 @@ if (( _available_kb < _required_kb )); then
 fi
 unset _required_kb _available_kb _available_gb
 
+# On Ubuntu/Debian or Fedora, install python3-matplotlib if not already installed
+if [[ $_yes_to_all == false ]] && [[ "$(uname -s)" == "Linux" ]]; then
+    if grep -qiE "ubuntu|debian" /etc/os-release 2>/dev/null; then
+        if ! dpkg -s python3-matplotlib &>/dev/null 2>&1; then
+            echo "Detected Ubuntu/Debian. Installing python3-matplotlib..."
+            sudo apt install -y python3-matplotlib
+        fi
+    elif grep -qi "fedora" /etc/os-release 2>/dev/null; then
+        if ! rpm -q python3-matplotlib &>/dev/null 2>&1; then
+            echo "Detected Fedora. Installing python3-matplotlib..."
+            sudo dnf install -y python3-matplotlib
+        fi
+    fi
+fi
+
 # Ask which Julia version to use
 # Default to 1.12 if it is already installed and is the current default, otherwise 1.11
 if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
