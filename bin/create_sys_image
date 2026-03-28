@@ -61,6 +61,11 @@ if ! command -v julia &> /dev/null; then
     juliaup default 1.11
 fi
 
+# On Linux, suppress known-harmless Julia extension loading warnings (e.g. DistributionsTestExt)
+if [[ "$(uname -s)" == "Linux" ]]; then
+    exec 2> >(grep -v "Error during loading of extension DistributionsTestExt" >&2)
+fi
+
 # Instantiate packages first so artifacts are available for LD_PRELOAD setup
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 
@@ -141,25 +146,47 @@ echo "LD_LIBRARY_PATH was: $LD_LIBRARY_PATH"
 # The system libglib is often too old for GLMakie/Glib_jll (missing g_string_copy).
 # Scoping this to Julia calls prevents breaking system commands which would fail
 # if artifact libglib's transitive deps (libintl) are not satisfied.
+#
+# The search is done INSIDE the function body (lazily) so that:
+#  (a) Artifacts are found regardless of download order.
+#  (b) The version with g_string_copy is selected, not just the first artifact found.
+#  (c) Glib preloads are placed FIRST in LD_PRELOAD so the dynamic linker registers
+#      the correct libglib SONAME before libfontconfig (already in LD_PRELOAD) can
+#      pull in an older artifact/system libglib that lacks g_string_copy.
+#
+# $JULIA_CMD may be "julia" or "julia +version" — redefine both julia() and
+# the versioned wrapper so $JULIA_CMD invocations also get the preloads.
 if [[ "$(uname -s)" == "Linux" ]]; then
-    _JULIA_GLIB_PRELOADS=""
-    for _depot in $(echo "${JULIA_DEPOT_PATH:-$HOME/.julia}" | tr ':' ' '); do
-        _f=$(find "$_depot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null | head -1)
-        if [[ -n "$_f" ]]; then
-            _glib_dir=$(dirname "$_f")
-            _intl=""
-            [[ -f "$_glib_dir/libintl.so.8" ]] && _intl="$_glib_dir/libintl.so.8:"
-            _JULIA_GLIB_PRELOADS="${_intl}$_f"
-            break
+    _find_glib_preloads() {
+        local _jglib="" _jglib_dir="" _jdepot _jf
+        for _jdepot in $(echo "${JULIA_DEPOT_PATH:-$HOME/.julia}" | tr ':' ' '); do
+            for _jf in $(find "$_jdepot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null); do
+                if nm -D "$_jf" 2>/dev/null | grep -q g_string_copy; then
+                    _jglib="$_jf"
+                    _jglib_dir=$(dirname "$_jf")
+                    break 2
+                fi
+            done
+        done
+        if [[ -n "$_jglib" ]]; then
+            local _jintl=""
+            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jintl="$_jglib_dir/libintl.so.8:"
+            # Place glib preloads FIRST so they win the SONAME race against libfontconfig.
+            LD_PRELOAD="${_jintl}${_jglib}${LD_PRELOAD:+:$LD_PRELOAD}" \
+            LD_LIBRARY_PATH="${_jglib_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+            command julia "$@"
+        else
+            command julia "$@"
         fi
-    done
-    unset _depot _f _glib_dir _intl
-    if [[ -n "$_JULIA_GLIB_PRELOADS" ]]; then
-        # Wrap julia so glib preloads apply to Julia processes only (not system commands).
-        # $JULIA_CMD may be "julia" or "julia +version" — both go through this function.
-        julia() {
-            LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD:}$_JULIA_GLIB_PRELOADS" command julia "$@"
-        }
+    }
+    julia() { _find_glib_preloads "$@"; }
+    # Also wrap versioned invocations used by $JULIA_CMD (e.g. "julia +1.11 ...")
+    # by replacing $JULIA_CMD with a function alias when it includes a channel spec.
+    if [[ "$JULIA_CMD" == "julia +"* ]]; then
+        _julia_channel="${JULIA_CMD#julia +}"
+        _julia_channel_fn="_julia_channel_$(echo "$_julia_channel" | tr '.' '_')"
+        eval "${_julia_channel_fn}() { _find_glib_preloads +${_julia_channel} \"\$@\"; }"
+        JULIA_CMD="${_julia_channel_fn}"
     fi
 fi
 
