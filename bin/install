@@ -75,11 +75,17 @@ if (( _available_kb < _required_kb )); then
 fi
 unset _required_kb _available_kb _available_gb
 
-# On Ubuntu, install python3-matplotlib if not already installed
-if [[ "$(uname -s)" == "Linux" ]] && grep -qi "ubuntu" /etc/os-release 2>/dev/null; then
+# On Ubuntu/Debian, install python3-matplotlib if not already installed
+if [[ "$(uname -s)" == "Linux" ]] && grep -qiE "ubuntu|debian" /etc/os-release 2>/dev/null; then
     if ! dpkg -s python3-matplotlib &>/dev/null 2>&1; then
-        echo "Detected Ubuntu. Installing python3-matplotlib..."
+        echo "Detected Ubuntu/Debian. Installing python3-matplotlib..."
         sudo apt install -y python3-matplotlib
+    fi
+# On Fedora, install python3-matplotlib if not already installed
+elif [[ "$(uname -s)" == "Linux" ]] && grep -qi "fedora" /etc/os-release 2>/dev/null; then
+    if ! rpm -q python3-matplotlib &>/dev/null 2>&1; then
+        echo "Detected Fedora. Installing python3-matplotlib..."
+        sudo dnf install -y python3-matplotlib
     fi
 fi
 
