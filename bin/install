@@ -75,6 +75,14 @@ if (( _available_kb < _required_kb )); then
 fi
 unset _required_kb _available_kb _available_gb
 
+# On Ubuntu, install python3-matplotlib if not already installed
+if [[ "$(uname -s)" == "Linux" ]] && grep -qi "ubuntu" /etc/os-release 2>/dev/null; then
+    if ! dpkg -s python3-matplotlib &>/dev/null 2>&1; then
+        echo "Detected Ubuntu. Installing python3-matplotlib..."
+        sudo apt install -y python3-matplotlib
+    fi
+fi
+
 # Ask which Julia version to use
 # Default to 1.12 if it is already installed and is the current default, otherwise 1.11
 if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
