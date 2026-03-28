@@ -10,7 +10,7 @@ import KiteUtils: wrap2pi
 
 @with_kw mutable struct ParkingControllerSettings
     @deftype Float64
-    dt::Any
+    dt::Float64
     # turn rate controller settings
     kp_tr = 0.06
     ki_tr = 0.0012
