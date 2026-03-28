@@ -61,11 +61,6 @@ if ! command -v julia &> /dev/null; then
     juliaup default 1.11
 fi
 
-# On Linux, suppress known-harmless Julia extension loading warnings (e.g. DistributionsTestExt)
-if [[ "$(uname -s)" == "Linux" ]]; then
-    exec 2> >(grep -v "Error during loading of extension DistributionsTestExt" >&2)
-fi
-
 # Instantiate packages first so artifacts are available for LD_PRELOAD setup
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 
@@ -330,6 +325,11 @@ if [[ $branch != "" ]]; then
     $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using Pkg; Pkg.activate(\"test\"); using ControlPlots, KiteModels"
 else
     $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using ControlPlots, KiteModels"
+fi
+# On Linux, suppress known-harmless Julia extension loading warnings (e.g. DistributionsTestExt).
+# The error spans multiple lines (┌ Error: ... │ ... └ @ Base), so use sed range deletion.
+if [[ "$(uname -s)" == "Linux" ]]; then
+    exec 2> >(sed '/Error during loading of extension DistributionsTestExt/,/^└/d' >&2)
 fi
 julia --project=docs -J bin/kps-image-${julia_major}-${branch}.so -e "using LiveServer, Documenter, Pkg; Pkg.instantiate()"
 
