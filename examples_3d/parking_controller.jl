@@ -129,8 +129,8 @@ function test_linearize()
     @testset "test_linearize" begin
         # set the parameters of the parking controller
         pcs = ParkingControllerSettings(dt = 0.05)
-        pcs.kp_tr=1.05
-        pcs.ki_tr=0.012
+        pcs.kp_tr = 1.05
+        pcs.ki_tr = 0.012
         # create the parking controller
         pc = ParkingController(pcs)
         # set the desired turn rate
