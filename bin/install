@@ -91,15 +91,21 @@ if [[ $_yes_to_all == false ]] && [[ "$(uname -s)" == "Linux" ]]; then
 fi
 
 # Ask which Julia version to use
-# Default to 1.12 if it is already installed and is the current default, otherwise 1.11
-if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
-    _default_choice=3
+# Default to the currently active Julia version (1.10–1.13), otherwise 1.11
+if juliaup status 2>/dev/null | grep '^\.\s*\*' | grep -q '1\.13'; then
+    _default_choice=4
     _default_julia="1.13"
-elif juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
-    _default_choice=2
+elif juliaup status 2>/dev/null | grep '^\.\s*\*' | grep -q '1\.12'; then
+    _default_choice=3
     _default_julia="1.12"
-else
+elif juliaup status 2>/dev/null | grep '^\.\s*\*' | grep -q '1\.11'; then
+    _default_choice=2
+    _default_julia="1.11"
+elif juliaup status 2>/dev/null | grep '^\.\s*\*' | grep -q '1\.10'; then
     _default_choice=1
+    _default_julia="1.10"
+else
+    _default_choice=2
     _default_julia="1.11"
 fi
 
@@ -108,27 +114,31 @@ if [[ $_yes_to_all == true ]]; then
     echo "Using Julia version: ${_default_julia}"
 else
     echo "Which Julia version do you want to use?"
-    echo "  1) Julia 1.11"
-    echo "  2) Julia 1.12"
-    echo "  3) Julia 1.13"
-    read -rp "Enter 1, 2, or 3 [default: ${_default_choice}]: " _julia_choice
+    echo "  1) Julia 1.10"
+    echo "  2) Julia 1.11"
+    echo "  3) Julia 1.12"
+    echo "  4) Julia 1.13"
+    read -rp "Enter 1, 2, 3, or 4 [default: ${_default_choice}]: " _julia_choice
 fi
 
 case "${_julia_choice}" in
     1)
-        _desired_julia="1.11"
+        _desired_julia="1.10"
         ;;
     2)
-        _desired_julia="1.12"
+        _desired_julia="1.11"
         ;;
     3)
+        _desired_julia="1.12"
+        ;;
+    4)
         _desired_julia="1.13"
         ;;
     "")
         _desired_julia="${_default_julia}"
         ;;
     *)
-        echo "Invalid choice: '${_julia_choice}'. Please enter 1, 2, or 3."
+        echo "Invalid choice: '${_julia_choice}'. Please enter 1, 2, 3, or 4."
         exit 1
         ;;
 esac
@@ -285,9 +295,9 @@ if test -f "$SOFILE"; then
     rm -f "$SOFILE"
 fi
 
-# Only accept Julia 1.11, 1.12, and 1.13
-if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]] && [[ $julia_major != "1.13" ]]; then
-    echo "Error: Julia $julia_major is not supported. Only Julia 1.11, 1.12, and 1.13 are supported."
+# Only accept Julia 1.10, 1.11, 1.12, and 1.13
+if [[ $julia_major != "1.10" ]] && [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]] && [[ $julia_major != "1.13" ]]; then
+    echo "Error: Julia $julia_major is not supported. Only Julia 1.10, 1.11, 1.12, and 1.13 are supported."
     echo "You can install Julia 1.11 with the following commands:"
     echo "juliaup add 1.11"
     echo "juliaup default 1.11"
@@ -296,7 +306,14 @@ fi
 
 if [[ $update == false ]]; then
     # Copy the appropriate default manifest
-    if [[ $julia_major == "1.11" ]]; then
+    if [[ $julia_major == "1.10" ]]; then
+        if [ -f "Manifest-v1.10.toml.default" ]; then
+            cp Manifest-v1.10.toml.default Manifest-v1.10.toml
+            echo "Copied Manifest-v1.10.toml.default to Manifest-v1.10.toml"
+        else
+            echo "Warning: Manifest-v1.10.toml.default not found, starting with no manifest"
+        fi
+    elif [[ $julia_major == "1.11" ]]; then
         if [ -f "Manifest-v1.11.toml.default" ]; then
             cp Manifest-v1.11.toml.default Manifest-v1.11.toml
             echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
@@ -428,14 +445,14 @@ echo "Precompiling main project..."
 run_precompile "--project"
 
 # Instantiate all sub-projects: examples, test, examples_3d, docs
-if [[ $julia_major == "1.11" ]]; then
+if [[ $julia_major == "1.10" ]] || [[ $julia_major == "1.11" ]]; then
     echo "Instantiating examples and test project for Julia $julia_major..."
     # Resolve sub-projects independently to avoid version conflicts when the main
     # manifest contains versions newer than the local registry snapshot.
     rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-    cp Manifest-v1.11.toml examples/Manifest-v1.11.toml
-    cp Manifest-v1.11.toml test/Manifest-v1.11.toml
-    cp Manifest-v1.11.toml examples_3d/Manifest-v1.11.toml
+    cp Manifest-v${julia_major}.toml examples/Manifest-v${julia_major}.toml
+    cp Manifest-v${julia_major}.toml test/Manifest-v${julia_major}.toml
+    cp Manifest-v${julia_major}.toml examples_3d/Manifest-v${julia_major}.toml
     _ec=0; julia --project=examples -e '
 using Pkg
 try
@@ -454,8 +471,8 @@ catch e
     exit(2)
 end
 ' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.11)"); fi
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (${julia_major})")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (${julia_major})"); fi
     echo "Precompiling examples project..."
     run_precompile "--project=examples"
     _ec=0; julia --project=test -e '
@@ -476,8 +493,8 @@ catch e
     exit(2)
 end
 ' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.11)"); fi
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (${julia_major})")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (${julia_major})"); fi
     echo "Precompiling test project..."
     run_precompile "--project=test"
     _ec=0; julia --project=examples_3d -e '
@@ -498,8 +515,8 @@ catch e
     exit(2)
 end
 ' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.11)"); fi
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (${julia_major})")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (${julia_major})"); fi
     echo "Precompiling examples_3d project..."
     run_precompile "--project=examples_3d"
 
@@ -536,8 +553,8 @@ catch e
     exit(2)
 end
 ' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.11)"); fi
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (${julia_major})")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (${julia_major})"); fi
     echo "Precompiling docs project..."
     run_precompile "--project=docs"
     if [ -f "docs/Manifest.toml" ]; then
