@@ -180,9 +180,10 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     done
     [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
 
-    # libiconv + libintl: absent on Ubuntu 22.04, add dirs to LD_LIBRARY_PATH so
-    # circular dep between them resolves naturally without preload ordering issues.
-    for _libname in libiconv.so.2 libintl.so.8; do
+    # libiconv + libintl + libffi: absent or wrong version on Ubuntu 22.04+, add dirs
+    # to LD_LIBRARY_PATH so dependency resolution finds them without preload ordering issues.
+    # libffi.so.6 is needed by Glib_jll's libgio-2.0.so (modern distros only ship libffi.so.8).
+    for _libname in libiconv.so.2 libintl.so.8 libffi.so.6; do
         _BUNDLED=""
         for _depot in "${_DEPOT_PATHS[@]}"; do
             _BUNDLED=$(find "$_depot/artifacts" -maxdepth 3 -name "$_libname" -path "*/lib/*" 2>/dev/null | head -1)
@@ -226,24 +227,36 @@ echo "LD_LIBRARY_PATH was: $LD_LIBRARY_PATH"
 # The system libglib is often too old for GLMakie/Glib_jll (missing g_string_copy).
 # Scoping this to Julia calls prevents breaking system commands (uname, git, sed)
 # which would fail if artifact libglib's transitive deps (libintl) are not satisfied.
+#
+# The search is done INSIDE the function body (lazily) so that:
+#  (a) Fresh installs work: artifacts are found after Pkg.instantiate() downloads them.
+#  (b) The version with g_string_copy is selected, not just the first artifact found.
+#  (c) Glib preloads are placed FIRST in LD_PRELOAD so the dynamic linker registers
+#      the correct libglib SONAME before libfontconfig (already in LD_PRELOAD) can
+#      pull in an older artifact/system libglib that lacks g_string_copy.
 if [[ "$(uname -s)" == "Linux" ]]; then
-    _JULIA_GLIB_PRELOADS=""
-    for _depot in $(echo "${JULIA_DEPOT_PATH:-$HOME/.julia}" | tr ':' ' '); do
-        _f=$(find "$_depot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null | head -1)
-        if [[ -n "$_f" ]]; then
-            _glib_dir=$(dirname "$_f")
-            _intl=""
-            [[ -f "$_glib_dir/libintl.so.8" ]] && _intl="$_glib_dir/libintl.so.8:"
-            _JULIA_GLIB_PRELOADS="${_intl}$_f"
-            break
+    julia() {
+        local _jglib="" _jglib_dir="" _jdepot _jf
+        for _jdepot in $(echo "${JULIA_DEPOT_PATH:-$HOME/.julia}" | tr ':' ' '); do
+            for _jf in $(find "$_jdepot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null); do
+                if nm -D "$_jf" 2>/dev/null | grep -q g_string_copy; then
+                    _jglib="$_jf"
+                    _jglib_dir=$(dirname "$_jf")
+                    break 2
+                fi
+            done
+        done
+        if [[ -n "$_jglib" ]]; then
+            local _jintl=""
+            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jintl="$_jglib_dir/libintl.so.8:"
+            # Place glib preloads FIRST so they win the SONAME race against libfontconfig.
+            LD_PRELOAD="${_jintl}${_jglib}${LD_PRELOAD:+:$LD_PRELOAD}" \
+            LD_LIBRARY_PATH="${_jglib_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+            command julia "$@"
+        else
+            command julia "$@"
         fi
-    done
-    unset _depot _f _glib_dir _intl
-    if [[ -n "$_JULIA_GLIB_PRELOADS" ]]; then
-        julia() {
-            LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD:}$_JULIA_GLIB_PRELOADS" command julia "$@"
-        }
-    fi
+    }
 fi
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -388,8 +401,31 @@ if [ -f "Manifest.toml" ]; then
     mv Manifest.toml "Manifest-v${julia_major}.toml"
     echo "Renamed Manifest.toml to Manifest-v${julia_major}.toml"
 fi
+# Run Pkg.precompile() for a project and abort if any package fails.
+# Pkg.precompile() exits 0 even when individual packages fail, so we also grep
+# the merged stdout+stderr for failure markers (after stripping ANSI color codes).
+# Usage: run_precompile "--project" or run_precompile "--project=examples"
+run_precompile() {
+    local _proj="$1"
+    local _plog
+    _plog=$(mktemp)
+    set +e
+    julia ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
+    # Save PIPESTATUS[0] without 'local' to avoid resetting PIPESTATUS
+    _precompile_rc=${PIPESTATUS[0]}
+    set -e
+    # Strip ANSI escape codes, then check for failure markers
+    if [[ $_precompile_rc -ne 0 ]] || \
+       sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$_plog" | grep -qE "Failed to precompile|dependencies? errored"; then
+        rm -f "$_plog"
+        echo "ERROR: Precompilation failed for ${_proj}. Aborting install."
+        exit 1
+    fi
+    rm -f "$_plog"
+}
+
 echo "Precompiling main project..."
-julia --project -e 'using Pkg; Pkg.precompile()'
+run_precompile "--project"
 
 # Instantiate all sub-projects: examples, test, examples_3d, docs
 if [[ $julia_major == "1.11" ]]; then
@@ -421,7 +457,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.11)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.11)"); fi
     echo "Precompiling examples project..."
-    julia --project=examples -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=examples"
     _ec=0; julia --project=test -e '
 using Pkg
 try
@@ -443,7 +479,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.11)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.11)"); fi
     echo "Precompiling test project..."
-    julia --project=test -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=test"
     _ec=0; julia --project=examples_3d -e '
 using Pkg
 try
@@ -465,7 +501,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.11)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.11)"); fi
     echo "Precompiling examples_3d project..."
-    julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=examples_3d"
 
     # Rename the manifest file to version-specific name
     if [ -f "examples/Manifest.toml" ]; then
@@ -503,7 +539,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.11)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.11)"); fi
     echo "Precompiling docs project..."
-    julia --project=docs -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=docs"
     if [ -f "docs/Manifest.toml" ]; then
         mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
         echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
@@ -534,7 +570,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.12)"); fi
     echo "Precompiling examples project..."
-    julia --project=examples -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=examples"
     _ec=0; julia --project=test -e '
 using Pkg
 try
@@ -556,7 +592,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.12)"); fi
     echo "Precompiling test project and running the tests..."
-    julia --project=test -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=test"
     julia --project -e 'using Pkg; Pkg.test()'
     echo "Precompiling examples_3d project..."
     _ec=0; julia --project=examples_3d -e '
@@ -579,7 +615,7 @@ end
 ' || _ec=$?
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.12)"); fi
-    julia --project=examples_3d -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=examples_3d"
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
     _ec=0; julia --project=docs -e '
@@ -603,7 +639,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.12)"); fi
     echo "Precompiling docs project..."
-    julia --project=docs -e 'using Pkg; Pkg.precompile()'
+    run_precompile "--project=docs"
     if [ -f "examples/Manifest.toml" ]; then
         mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
         echo "Renamed examples/Manifest.toml to examples/Manifest-v${julia_major}.toml"
@@ -724,7 +760,8 @@ else
     fi
 fi
 
-julia --project="examples" -e 'using Pkg; Pkg.precompile(); using ControlPlots'
+run_precompile "--project=examples"
+julia --project="examples" -e 'using ControlPlots'
 
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0
