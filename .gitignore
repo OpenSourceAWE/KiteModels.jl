@@ -88,3 +88,4 @@ examples_3d/Manifest.toml
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/vcs.xml
 /mwes/mwe_27.jl
+Manifest-v1.13.toml
