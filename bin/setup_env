@@ -6,6 +6,10 @@
 # libraries for better compatibility, especially on Linux
 # where system libraries may be outdated or incompatible.
 
+# Avoid unbound variable issues in scripts that run with `set -u`.
+export LD_PRELOAD="${LD_PRELOAD:-}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+
 if [[ "$(uname -s)" == "Linux" ]]; then
     export FONTCONFIG_FILE=/etc/fonts/fonts.conf
 
@@ -24,6 +28,9 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     #    libffi.so.6:        absent/wrong version on Ubuntu 22.04+; added to LD_LIBRARY_PATH
     #  - libfontconfig.so.1: override version missing FcConfigSetDefaultSubstitute via LD_PRELOAD
     #  - libglib-2.0.so.0:   override version missing g_string_copy via LD_PRELOAD (placed first)
+    #
+    # All Julia invocations are handled by forwarding every argument to `command julia`,
+    # so both `julia +1.11 ...` and `$JULIA_CMD` with `JULIA_CMD="julia +1.11"` work.
     julia() {
         local _jpreloads=() _jlibdirs=()
         local _jdepots=()
