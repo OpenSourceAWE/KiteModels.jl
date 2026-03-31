@@ -1,78 +1,110 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# This file is intended to be sourced by bin/install to set up the environment for Julia and its dependencies.
-
-# Initialize LD_PRELOAD and LD_LIBRARY_PATH to avoid unbound variable errors
-export LD_PRELOAD=""
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+# This script sets up environment variables and functions to ensure that Julia processes launched from 
+# this shell session use the bundled JLL libraries for better compatibility, especially on Linux 
+# where system libraries may be outdated or incompatible.
 
 if [[ "$(uname -s)" == "Linux" ]]; then
     export FONTCONFIG_FILE=/etc/fonts/fonts.conf
+fi
 
-    # Find the first artifact matching $1 (lib name), optionally exporting symbol $2.
-    _find_artifact() {
-        local _name="$1" _sym="${2:-}" _depot _f
-        local -a _depots
-        IFS=':' read -ra _depots <<< "${JULIA_DEPOT_PATH:-$HOME/.julia}"
-        for _depot in "${_depots[@]}"; do
-            while IFS= read -r _f; do
-                if [[ -z "$_sym" ]] || nm -D "$_f" 2>/dev/null | grep -q "$_sym"; then
-                    echo "$_f"; return 0
-                fi
-            done < <(find "$_depot/artifacts" -maxdepth 3 -name "$_name" -path "*/lib/*" 2>/dev/null)
-        done
-    }
-
-    _PRELOADS=()
-    _LIBDIRS=()
-    _add_libdir() { local _d; _d=$(dirname "$1"); [[ ":${_LIBDIRS[*]}:" != *":$_d:"* ]] && _LIBDIRS+=("$_d"); }
-
-    # libcrypto: override stale system version via LD_PRELOAD
-    _f=$(_find_artifact libcrypto.so.3)
-    [[ -n "$_f" ]] && _PRELOADS+=("$_f")
-
-    # libiconv + libintl + libffi: absent or wrong version on Ubuntu 22.04+, add dirs to
-    # LD_LIBRARY_PATH. libffi.so.6 needed by libgio-2.0.so (modern distros only ship .8).
-    for _libname in libiconv.so.2 libintl.so.8 libffi.so.6; do
-        _f=$(_find_artifact "$_libname") && [[ -n "$_f" ]] && _add_libdir "$_f"
-    done
-
-    # libfontconfig: override stale system version via LD_PRELOAD (must export
-    # FcConfigSetDefaultSubstitute, needed by Pango ≥ 1.57); also add its dir to
-    # LD_LIBRARY_PATH so its deps (libiconv etc.) are found during preload resolution.
-    _f=$(_find_artifact libfontconfig.so.1 FcConfigSetDefaultSubstitute)
-    if [[ -n "$_f" ]]; then
-        _add_libdir "$_f"
-        _PRELOADS+=("$_f")
-    fi
-
-    [[ ${#_PRELOADS[@]} -gt 0 ]] && export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
-    if [[ ${#_LIBDIRS[@]} -gt 0 ]]; then
-        _extra=$(IFS=:; echo "${_LIBDIRS[*]}")
-        export LD_LIBRARY_PATH="${_extra}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    fi
-    unset _PRELOADS _LIBDIRS _f _dir _libname _extra
-    unset -f _add_libdir
-
-    echo "LD_PRELOAD was: $LD_PRELOAD"
-    echo "LD_LIBRARY_PATH was: $LD_LIBRARY_PATH"
-
-    # Wrap julia to also preload bundled libglib for Julia processes only.
-    # The system libglib is often too old for GLMakie/Glib_jll (missing g_string_copy).
-    # Scoping this to Julia calls prevents breaking system commands (uname, git, sed).
-    # The search is done lazily inside the function so fresh installs work after
-    # Pkg.instantiate() downloads artifacts, and glib preloads are placed FIRST in
-    # LD_PRELOAD so they win the SONAME race against libfontconfig.
+# On Linux, wrap julia to inject bundled JLL libraries for Julia processes only.
+# All artifact searches are done LAZILY inside the function body so that:
+#  (a) Fresh installs and non-standard depot paths work: artifacts are found after
+#      Pkg.instantiate() downloads them into the depot, even if they were absent
+#      when the script started.
+#  (b) System commands (uname, git, sed) are not affected by the overrides.
+#  (c) libglib preloads are placed FIRST so they win the SONAME race.
+#
+# Libraries handled:
+#  - libcrypto.so.3:     override stale system OpenSSL via LD_PRELOAD
+#  - libiconv.so.2,
+#    libintl.so.8,
+#    libffi.so.6:        absent/wrong version on Ubuntu 22.04+; added to LD_LIBRARY_PATH
+#  - libfontconfig.so.1: override version missing FcConfigSetDefaultSubstitute via LD_PRELOAD
+#  - libglib-2.0.so.0:  override version missing g_string_copy via LD_PRELOAD (placed first)
+if [[ "$(uname -s)" == "Linux" ]]; then
     julia() {
-        local _jglib _jglib_dir _jintl=""
-        _jglib=$(_find_artifact libglib-2.0.so.0 g_string_copy)
+        local _jpreloads=() _jlibdirs=()
+        local _jbundled="" _jdir="" _jdepot _jf _jlibname
+
+        # Collect all depot paths
+        local _jdepots=()
+        IFS=':' read -ra _jdepots <<< "${JULIA_DEPOT_PATH:-$HOME/.julia}"
+
+        # libcrypto: override stale system version via LD_PRELOAD
+        _jbundled=""
+        for _jdepot in "${_jdepots[@]}"; do
+            _jbundled=$(find "$_jdepot/artifacts" -maxdepth 3 -name "libcrypto.so.3" -path "*/lib/*" 2>/dev/null | head -1)
+            [[ -n "$_jbundled" ]] && break
+        done
+        [[ -n "$_jbundled" ]] && _jpreloads+=("$_jbundled")
+
+        # libiconv + libintl + libffi: add dirs to LD_LIBRARY_PATH
+        # libffi.so.6 is needed by Glib_jll's libgio-2.0.so (modern distros only ship libffi.so.8).
+        for _jlibname in libiconv.so.2 libintl.so.8 libffi.so.6; do
+            _jbundled=""
+            for _jdepot in "${_jdepots[@]}"; do
+                _jbundled=$(find "$_jdepot/artifacts" -maxdepth 3 -name "$_jlibname" -path "*/lib/*" 2>/dev/null | head -1)
+                [[ -n "$_jbundled" ]] && break
+            done
+            if [[ -n "$_jbundled" ]]; then
+                _jdir=$(dirname "$_jbundled")
+                [[ ":${_jlibdirs[*]}:" != *":$_jdir:"* ]] && _jlibdirs+=("$_jdir")
+            fi
+        done
+
+        # libfontconfig: override stale system version via LD_PRELOAD; add its dir to
+        # LD_LIBRARY_PATH so its deps (libiconv etc.) are found during preload resolution.
+        # Pick the version that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
+        _jbundled=""
+        for _jdepot in "${_jdepots[@]}"; do
+            for _jf in $(find "$_jdepot/artifacts" -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null); do
+                if nm -D "$_jf" 2>/dev/null | grep -q FcConfigSetDefaultSubstitute; then
+                    _jbundled="$_jf"
+                    break 2
+                fi
+            done
+        done
+        if [[ -n "$_jbundled" ]]; then
+            _jdir=$(dirname "$_jbundled")
+            [[ ":${_jlibdirs[*]}:" != *":$_jdir:"* ]] && _jlibdirs+=("$_jdir")
+            _jpreloads+=("$_jbundled")
+        fi
+
+        # libglib: override version missing g_string_copy; placed FIRST in LD_PRELOAD
+        # so the dynamic linker registers the correct libglib SONAME before libfontconfig
+        # (already in _jpreloads) can pull in an older artifact/system libglib.
+        local _jglib="" _jglib_dir=""
+        for _jdepot in "${_jdepots[@]}"; do
+            for _jf in $(find "$_jdepot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null); do
+                if nm -D "$_jf" 2>/dev/null | grep -q g_string_copy; then
+                    _jglib="$_jf"
+                    _jglib_dir=$(dirname "$_jf")
+                    break 2
+                fi
+            done
+        done
         if [[ -n "$_jglib" ]]; then
-            _jglib_dir=$(dirname "$_jglib")
-            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jintl="$_jglib_dir/libintl.so.8:"
-            LD_PRELOAD="${_jintl}${_jglib}${LD_PRELOAD:+:$LD_PRELOAD}" \
-            LD_LIBRARY_PATH="${_jglib_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
-            command julia "$@"
+            # libintl co-located with libglib takes precedence (needed by libglib itself)
+            local _jglib_intl=""
+            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jglib_intl="$_jglib_dir/libintl.so.8"
+            # Build final LD_PRELOAD: glib-side preloads first, then the rest
+            local _jfinal_preload=""
+            [[ -n "$_jglib_intl" ]] && _jfinal_preload="$_jglib_intl:"
+            _jfinal_preload+="$_jglib"
+            [[ ${#_jpreloads[@]} -gt 0 ]] && _jfinal_preload+=":$(IFS=:; echo "${_jpreloads[*]}")"
+            [[ -n "${LD_PRELOAD:-}" ]] && _jfinal_preload+=":$LD_PRELOAD"
+            # Add glib dir to LD_LIBRARY_PATH
+            [[ ":${_jlibdirs[*]}:" != *":$_jglib_dir:"* ]] && _jlibdirs=("$_jglib_dir" "${_jlibdirs[@]}")
+            local _jfinal_libpath="$(IFS=:; echo "${_jlibdirs[*]}")${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            LD_PRELOAD="$_jfinal_preload" LD_LIBRARY_PATH="$_jfinal_libpath" command julia "$@"
+        elif [[ ${#_jpreloads[@]} -gt 0 ]] || [[ ${#_jlibdirs[@]} -gt 0 ]]; then
+            local _jfinal_preload="" _jfinal_libpath=""
+            [[ ${#_jpreloads[@]} -gt 0 ]] && _jfinal_preload="$(IFS=:; echo "${_jpreloads[*]}")${LD_PRELOAD:+:$LD_PRELOAD}"
+            [[ ${#_jlibdirs[@]} -gt 0 ]] && _jfinal_libpath="$(IFS=:; echo "${_jlibdirs[*]}")${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            LD_PRELOAD="${_jfinal_preload:-${LD_PRELOAD:-}}" LD_LIBRARY_PATH="${_jfinal_libpath:-${LD_LIBRARY_PATH:-}}" command julia "$@"
         else
             command julia "$@"
         fi
