@@ -66,6 +66,25 @@ $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 
 . ./bin/setup_env
 
+# Run Pkg.precompile() and fail if either Julia exits non-zero or the output
+# contains package-level precompile failure markers.
+run_precompile() {
+    local _proj="$1"
+    local _plog
+    _plog=$(mktemp)
+    set +e
+    $JULIA_CMD --startup-file=no ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
+    _precompile_rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $_precompile_rc -ne 0 ]] || \
+       sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$_plog" | grep -qE "Failed to precompile|dependencies? errored"; then
+        echo "ERROR: Precompilation failed for ${_proj}. See log above."
+        rm -f "$_plog"
+        exit 1
+    fi
+    rm -f "$_plog"
+}
+
 PYTHON_PATH=$(which python3)
 if [ -x "$PYTHON_PATH" ]; then
     echo "Python is found at $PYTHON_PATH"
@@ -195,7 +214,7 @@ if test -f $SOFILE; then
     mv $SOFILE $SOFILE.bak
 fi
 mv kps-image_tmp.so $SOFILE
-$JULIA_CMD --startup-file=no  --project -e "using Pkg; Pkg.precompile()"
+run_precompile "--project"
 
 # enable pre-compilation
 rm LocalPreferences.toml

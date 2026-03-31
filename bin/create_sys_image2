@@ -54,9 +54,28 @@ echo ". ./bin/setup_env"
 # Load shared Julia environment setup (LD_PRELOAD, LD_LIBRARY_PATH, julia wrapper).
 . ./bin/setup_env
 
+# Run Pkg.precompile() and fail if either Julia exits non-zero or the output
+# contains package-level precompile failure markers.
+run_precompile() {
+    local _proj="$1"
+    local _plog
+    _plog=$(mktemp)
+    set +e
+    julia --startup-file=no ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
+    _precompile_rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $_precompile_rc -ne 0 ]] || \
+       sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$_plog" | grep -qE "Failed to precompile|dependencies? errored"; then
+        echo "ERROR: Precompilation failed for ${_proj}. See log above."
+        rm -f "$_plog"
+        exit 1
+    fi
+    rm -f "$_plog"
+}
+
 echo "Precompiling packages.."
-julia --project -e "using Pkg; Pkg.precompile()"
+run_precompile "--project"
 echo "Creating system image..."
 julia --project -e "include(\"./test/create_sys_image.jl\");"
 mv kps-image_tmp.so bin/kps-image-${julia_major}.so
-julia --project -e "using Pkg; Pkg.precompile()"
+run_precompile "--project"
