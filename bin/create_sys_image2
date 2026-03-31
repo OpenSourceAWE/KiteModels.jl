@@ -89,6 +89,32 @@ print_memory_snapshot() {
     fi
 }
 
+# Check memory and limit threads if needed
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows: use wmic or PowerShell
+    echo "Checking system memory on Windows..."
+    totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
+    if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
+        echo "Warning: Less than 27GB of memory detected on Windows. Using only one thread for sysimage compilation."
+        export JULIA_IMAGE_THREADS=1
+    fi
+elif [[ "$OSTYPE" == darwin* ]]; then
+    # macOS: use sysctl
+    echo "Checking system memory on macOS..."
+    totalmem=$(sysctl -n hw.memsize 2>/dev/null | awk '{printf "%i", $1 / 1000000}')
+    if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
+        echo "Warning: Less than 27GB of memory detected on macOS. Using only one thread for sysimage compilation."
+        export JULIA_IMAGE_THREADS=1
+    fi
+else
+    # Linux: use /proc/meminfo
+    totalmem=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
+    if [[ $totalmem -lt 26674 ]]; then
+        echo "Warning: Less than 27GB of memory detected. Using only one thread for sysimage compilation."
+        export JULIA_IMAGE_THREADS=1
+    fi
+fi
+
 echo "Precompiling packages.."
 run_precompile "--project"
 echo "Creating system image..."
