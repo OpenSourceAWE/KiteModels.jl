@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+# This file is intended to be sourced by bin/install to set up the environment for Julia and its dependencies.
+
+# Initialize LD_PRELOAD and LD_LIBRARY_PATH to avoid unbound variable errors
+export LD_PRELOAD=""
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+
+if [[ "$(uname -s)" == "Linux" ]]; then
+    export FONTCONFIG_FILE=/etc/fonts/fonts.conf
+
+    # Find the first artifact matching $1 (lib name), optionally exporting symbol $2.
+    _find_artifact() {
+        local _name="$1" _sym="${2:-}" _depot _f
+        local -a _depots
+        IFS=':' read -ra _depots <<< "${JULIA_DEPOT_PATH:-$HOME/.julia}"
+        for _depot in "${_depots[@]}"; do
+            while IFS= read -r _f; do
+                if [[ -z "$_sym" ]] || nm -D "$_f" 2>/dev/null | grep -q "$_sym"; then
+                    echo "$_f"; return 0
+                fi
+            done < <(find "$_depot/artifacts" -maxdepth 3 -name "$_name" -path "*/lib/*" 2>/dev/null)
+        done
+    }
+
+    _PRELOADS=()
+    _LIBDIRS=()
+    _add_libdir() { local _d; _d=$(dirname "$1"); [[ ":${_LIBDIRS[*]}:" != *":$_d:"* ]] && _LIBDIRS+=("$_d"); }
+
+    # libcrypto: override stale system version via LD_PRELOAD
+    _f=$(_find_artifact libcrypto.so.3)
+    [[ -n "$_f" ]] && _PRELOADS+=("$_f")
+
+    # libiconv + libintl + libffi: absent or wrong version on Ubuntu 22.04+, add dirs to
+    # LD_LIBRARY_PATH. libffi.so.6 needed by libgio-2.0.so (modern distros only ship .8).
+    for _libname in libiconv.so.2 libintl.so.8 libffi.so.6; do
+        _f=$(_find_artifact "$_libname") && [[ -n "$_f" ]] && _add_libdir "$_f"
+    done
+
+    # libfontconfig: override stale system version via LD_PRELOAD (must export
+    # FcConfigSetDefaultSubstitute, needed by Pango ≥ 1.57); also add its dir to
+    # LD_LIBRARY_PATH so its deps (libiconv etc.) are found during preload resolution.
+    _f=$(_find_artifact libfontconfig.so.1 FcConfigSetDefaultSubstitute)
+    if [[ -n "$_f" ]]; then
+        _add_libdir "$_f"
+        _PRELOADS+=("$_f")
+    fi
+
+    [[ ${#_PRELOADS[@]} -gt 0 ]] && export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
+    if [[ ${#_LIBDIRS[@]} -gt 0 ]]; then
+        _extra=$(IFS=:; echo "${_LIBDIRS[*]}")
+        export LD_LIBRARY_PATH="${_extra}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+    unset _PRELOADS _LIBDIRS _f _dir _libname _extra
+    unset -f _add_libdir
+
+    echo "LD_PRELOAD was: $LD_PRELOAD"
+    echo "LD_LIBRARY_PATH was: $LD_LIBRARY_PATH"
+
+    # Wrap julia to also preload bundled libglib for Julia processes only.
+    # The system libglib is often too old for GLMakie/Glib_jll (missing g_string_copy).
+    # Scoping this to Julia calls prevents breaking system commands (uname, git, sed).
+    # The search is done lazily inside the function so fresh installs work after
+    # Pkg.instantiate() downloads artifacts, and glib preloads are placed FIRST in
+    # LD_PRELOAD so they win the SONAME race against libfontconfig.
+    julia() {
+        local _jglib _jglib_dir _jintl=""
+        _jglib=$(_find_artifact libglib-2.0.so.0 g_string_copy)
+        if [[ -n "$_jglib" ]]; then
+            _jglib_dir=$(dirname "$_jglib")
+            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jintl="$_jglib_dir/libintl.so.8:"
+            LD_PRELOAD="${_jintl}${_jglib}${LD_PRELOAD:+:$LD_PRELOAD}" \
+            LD_LIBRARY_PATH="${_jglib_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+            command julia "$@"
+        else
+            command julia "$@"
+        fi
+    }
+fi
