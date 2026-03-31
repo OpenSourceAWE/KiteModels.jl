@@ -46,14 +46,17 @@ if [[ $update == true ]]; then
 else
     echo "Using existing manifest file!"
 fi
-
+echo "Instantiating packages..."
 # Instantiate packages first so artifacts are available for LD_PRELOAD setup
 julia --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 
+echo ". ./bin/setup_env"
 # Load shared Julia environment setup (LD_PRELOAD, LD_LIBRARY_PATH, julia wrapper).
-source ./bin/setup_env
+. ./bin/setup_env
 
+echo "Precompiling packages.."
 julia --project -e "using Pkg; Pkg.precompile()"
+echo "Creating system image..."
 julia --project -e "include(\"./test/create_sys_image.jl\");"
 mv kps-image_tmp.so bin/kps-image-${julia_major}.so
 julia --project -e "using Pkg; Pkg.precompile()"
