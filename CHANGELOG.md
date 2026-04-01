@@ -5,7 +5,7 @@ SPDX-License-Identifier: MIT
 ### Unreleased
 #### Changes
 - fix the first line of the Bash test scripts in the tests folder
-- use install before create_sys_image in the test scripts
+- use `install` before `create_sys_image` in the test scripts
 - refactoring: added the script `setup_env` that is sourced by the other scripts in the bin folder
 
 #### Fixed
