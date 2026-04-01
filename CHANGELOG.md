@@ -8,6 +8,9 @@ SPDX-License-Identifier: MIT
 - use install before create_sys_image in the test scripts
 - refactoring: added the script `setup_env` that is sourced by the other scripts in the bin folder
 
+#### Fixed
+- added memory check to `create_sys_image2` and use only one thread on systems with 26GB or less RAM
+
 ### KiteModels v0.11.6 2026-03-21
 #### Added
 - the functions `copy_examples_3d()` and `install_examples_3d()`
