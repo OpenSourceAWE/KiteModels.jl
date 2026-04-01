@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### Unreleased
+### KiteModels v0.11.7 2026-04-01
 #### Changes
 - fix the first line of the Bash test scripts in the tests folder
 - use `install` before `create_sys_image` in the test scripts
