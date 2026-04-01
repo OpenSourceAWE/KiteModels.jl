@@ -14,5 +14,5 @@ cd KiteModels.jl/bin
 ./install --update
 ./create_sys_image
 
-# execution time on Desktop with Julia 1.12: 15min22s
-# dito on Windows with Julia 1.12: 26min52s
+# execution time on Desktop with Julia 1.12: 25min34s
+# dito on Windows with Julia 1.12:
