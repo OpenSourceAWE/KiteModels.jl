@@ -554,7 +554,7 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, _) where S
     if s.wm isa AsyncMachine
         res[end] = v_reel_outd - calc_acceleration(s.wm::AsyncMachine, s.sync_speed, v_reel_out, norm(s.forces[1]), true)
     elseif !isnothing(s.wm)
-        res[end] = v_reel_outd - calc_acceleration(s.wm, v_reel_out, norm(s.forces[1]; set_speed=s.sync_speed,
+        res[end] = v_reel_outd - calc_acceleration(s.wm, v_reel_out, norm(s.forces[1]); set_speed=s.sync_speed,
             set_torque=s.set_torque, use_brake)
     else
         res[end] = v_reel_outd
