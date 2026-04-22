@@ -9,6 +9,8 @@
 #                       Fastest option; shares the system Python install.
 #   2) Conda          – installs matplotlib into Julia's own Conda environment.
 #                       Self-contained; does not require root / sudo.
+#
+# Both options configure the Qt (qtagg) backend for interactive plot windows.
 
 print_usage() {
     echo "Usage:"
@@ -110,7 +112,7 @@ println("PyCall rebuilt successfully.")
 }
 
 _install_matplotlib_conda() {
-    echo "Installing matplotlib into Julia'\''s Conda environment..."
+    echo "Installing matplotlib and pyqt into Julia's Conda environment..."
     env -u LD_PRELOAD -u LD_LIBRARY_PATH \
         PYTHON="" \
         julia --project=examples -e '
@@ -121,7 +123,8 @@ if Base.find_package("Conda") === nothing
 end
 using Conda
 Conda.add("matplotlib")
-println("matplotlib installed in Conda environment.")
+Conda.add("pyqt")
+println("matplotlib and pyqt installed in Conda environment.")
 '
 }
 
@@ -142,24 +145,46 @@ println("ControlPlots loaded successfully.")
     fi
 }
 
+# ── Helper: write MPLBACKEND=qtagg to LocalPreferences.toml ──────────────────
+
+_set_mplbackend_qtagg() {
+    local _prefs_file="examples/LocalPreferences.toml"
+    # Remove any existing [ENV] section managed by this script.
+    if [[ -f "$_prefs_file" ]]; then
+        _tmp=$(mktemp)
+        awk '
+            /^\[ENV\]/ { in_env=1; next }
+            in_env && /^\[/ { in_env=0 }
+            !in_env { print }
+        ' "$_prefs_file" > "$_tmp"
+        mv "$_tmp" "$_prefs_file"
+    fi
+    {
+        echo ""
+        echo "[ENV]"
+        echo "MPLBACKEND = \"qtagg\""
+    } >> "$_prefs_file"
+    echo "Set MPLBACKEND=qtagg in $_prefs_file."
+}
+
 # ── System Python backend ─────────────────────────────────────────────────────
 
 if [[ "$_backend" == "system" ]]; then
     # Detect package manager and install python3-matplotlib if missing.
     if [[ "$(uname -s)" == "Linux" ]]; then
         if grep -qiE "ubuntu|debian" /etc/os-release 2>/dev/null; then
-            if ! dpkg -s python3-matplotlib &>/dev/null 2>&1; then
-                echo "Installing python3-matplotlib via apt..."
-                sudo apt install -y python3-matplotlib
+            if ! dpkg -s python3-matplotlib &>/dev/null 2>&1 || ! dpkg -s python3-pyqt5 &>/dev/null 2>&1; then
+                echo "Installing python3-matplotlib and python3-pyqt5 via apt..."
+                sudo apt install -y python3-matplotlib python3-pyqt5
             else
-                echo "python3-matplotlib is already installed."
+                echo "python3-matplotlib and python3-pyqt5 are already installed."
             fi
         elif grep -qi "fedora" /etc/os-release 2>/dev/null; then
-            if ! rpm -q python3-matplotlib &>/dev/null 2>&1; then
-                echo "Installing python3-matplotlib via dnf..."
-                sudo dnf install -y python3-matplotlib
+            if ! rpm -q python3-matplotlib &>/dev/null 2>&1 || ! rpm -q python3-pyqt5 &>/dev/null 2>&1; then
+                echo "Installing python3-matplotlib and python3-qt5 via dnf..."
+                sudo dnf install -y python3-matplotlib python3-pyqt5
             else
-                echo "python3-matplotlib is already installed."
+                echo "python3-matplotlib and python3-pyqt5 are already installed."
             fi
         else
             echo "Warning: Could not detect Ubuntu/Debian or Fedora."
@@ -228,12 +253,11 @@ println("PyCall rebuilt to use system Python: " * ENV["PYTHON"])
     } >> "$_prefs_file"
     echo "Written to $_prefs_file."
 
+    _set_mplbackend_qtagg
     _verify_controlplots
 
     echo ""
-    echo "Done. ControlPlots will use the system Python matplotlib."
-    echo "If plots do not appear, ensure python3-tk or python3-pyqt5 is installed:"
-    echo "  sudo apt install python3-tk"
+    echo "Done. ControlPlots will use the system Python matplotlib with the Qt (qtagg) backend."
 
 # ── Conda backend ─────────────────────────────────────────────────────────────
 
@@ -268,8 +292,9 @@ println("PyCall rebuilt to use Conda-managed Python.")
 
     _install_matplotlib_conda
 
+    _set_mplbackend_qtagg
     _verify_controlplots
 
     echo ""
-    echo "Done. ControlPlots will use the Conda-managed matplotlib."
+    echo "Done. ControlPlots will use the Conda-managed matplotlib with the Qt (qtagg) backend."
 fi
