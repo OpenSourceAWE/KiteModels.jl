@@ -703,7 +703,7 @@ Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 """
 function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2)
-    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir=-pi/2)
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
 
@@ -744,12 +744,26 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     jac! = make_jac(test_initial_condition!, length(X00))
     results = nlsolve(test_initial_condition!, jac!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
     if prn println("\nresult: $results") end
+    xsol = results.zero
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+        # Keep a finite fallback candidate for final initialization.
+        if any(!isfinite, xsol)
+            xsol = X00
+        end
     end
-    y00, yd00 = init(s, results.zero; upwind_dir)
+    y00, yd00 = try
+        init(s, xsol; upwind_dir)
+    catch
+        init(s, X00; upwind_dir)
+    end
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    residual!(res, yd00, y00, s, 0.0)
+    try
+        residual!(res, yd00, y00, s, 0.0)
+    catch
+        y00, yd00 = init(s, X00; upwind_dir)
+        residual!(res, yd00, y00, s, 0.0)
+    end
     y00, yd00
 end
 
