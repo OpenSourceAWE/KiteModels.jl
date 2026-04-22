@@ -430,6 +430,25 @@ end
         mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
         echo "Renamed examples_3d/Manifest.toml to examples_3d/Manifest-v${julia_major}.toml"
     fi
+    # On Linux, verify that ControlPlots loads correctly before building docs.
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        echo "Checking if ControlPlots is working in the examples project..."
+        if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+                julia --project=examples -e 'using ControlPlots' &>/dev/null 2>&1; then
+            echo "ControlPlots is working."
+        else
+            echo "ControlPlots is not working. Running install_controlplots..."
+            if [[ -x "bin/install_controlplots" ]]; then
+                if [[ $_yes_to_all == true ]]; then
+                    bash bin/install_controlplots --yes
+                else
+                    bash bin/install_controlplots
+                fi
+            else
+                echo "Warning: bin/install_controlplots not found. Please run it manually."
+            fi
+        fi
+    fi
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
     _ec=0; julia --project=docs -e '
@@ -530,6 +549,25 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.12)"); fi
     run_precompile "--project=examples_3d"
+    # On Linux, verify that ControlPlots loads correctly before building docs.
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        echo "Checking if ControlPlots is working in the examples project..."
+        if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+                julia --project=examples -e 'using ControlPlots' &>/dev/null 2>&1; then
+            echo "ControlPlots is working."
+        else
+            echo "ControlPlots is not working. Running install_controlplots..."
+            if [[ -x "bin/install_controlplots" ]]; then
+                if [[ $_yes_to_all == true ]]; then
+                    bash bin/install_controlplots --yes
+                else
+                    bash bin/install_controlplots
+                fi
+            else
+                echo "Warning: bin/install_controlplots not found. Please run it manually."
+            fi
+        fi
+    fi
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
     _ec=0; julia --project=docs -e '
@@ -675,27 +713,6 @@ else
 fi
 
 run_precompile "--project=examples"
-
-# On Linux, verify that ControlPlots loads correctly in the examples project.
-# If it fails (matplotlib not available), run install_controlplots automatically.
-if [[ "$(uname -s)" == "Linux" ]]; then
-    echo "Checking if ControlPlots is working in the examples project..."
-    if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
-            julia --project=examples -e 'using ControlPlots' &>/dev/null 2>&1; then
-        echo "ControlPlots is working."
-    else
-        echo "ControlPlots is not working. Running install_controlplots..."
-        if [[ -x "bin/install_controlplots" ]]; then
-            if [[ $_yes_to_all == true ]]; then
-                bash bin/install_controlplots --yes
-            else
-                bash bin/install_controlplots
-            fi
-        else
-            echo "Warning: bin/install_controlplots not found. Please run it manually."
-        fi
-    fi
-fi
 
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0
