@@ -675,29 +675,6 @@ else
 fi
 
 run_precompile "--project=examples"
-julia --project="examples" -e 'using ControlPlots'
-
-# Ensure matplotlib is installed in the Julia-managed Python/Conda environment
-# This is needed for PyPlot to work properly
-echo "Ensuring matplotlib is available in Julia's Python environment..."
-julia -e '
-try
-    using Conda, PyCall
-    # Check if matplotlib is already installed
-    try
-        py"import matplotlib"
-        println("matplotlib already installed in Conda environment")
-    catch
-        println("Installing matplotlib via Conda.jl...")
-        Conda.add("matplotlib"; yes=true)
-        println("matplotlib installed successfully")
-    end
-catch e
-    println("Warning: Could not ensure matplotlib is installed. You may need to manually run:")
-    println("  julia -e \"using Conda; Conda.add(\\\"matplotlib\\\"; yes=true)\"")
-    println("Error was: $e")
-end
-' || true
 
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0
