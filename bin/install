@@ -676,6 +676,27 @@ fi
 
 run_precompile "--project=examples"
 
+# On Linux, verify that ControlPlots loads correctly in the examples project.
+# If it fails (matplotlib not available), run install_controlplots automatically.
+if [[ "$(uname -s)" == "Linux" ]]; then
+    echo "Checking if ControlPlots is working in the examples project..."
+    if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+            julia --project=examples -e 'using ControlPlots' &>/dev/null 2>&1; then
+        echo "ControlPlots is working."
+    else
+        echo "ControlPlots is not working. Running install_controlplots..."
+        if [[ -x "bin/install_controlplots" ]]; then
+            if [[ $_yes_to_all == true ]]; then
+                bash bin/install_controlplots --yes
+            else
+                bash bin/install_controlplots
+            fi
+        else
+            echo "Warning: bin/install_controlplots not found. Please run it manually."
+        fi
+    fi
+fi
+
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0
 if [ ! -f ".JETLSConfig.toml" ]; then
