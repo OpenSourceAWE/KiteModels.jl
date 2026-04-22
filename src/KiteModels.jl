@@ -221,9 +221,15 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
         height = 6.0
     end
     wind_dir = -upwind_dir - pi/2
-    s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
-    s.v_wind_tether .= s.v_wind_gnd * calc_wind_factor(s.am, height / 2.0)
+    if s.set.use_turbulence != 0.0
+        pos = pos_kite(s)
+        s.v_wind .= get_wind(s.am, pos[1], pos[2], height, s.t_0)
+        s.v_wind_tether .= get_wind(s.am, 0.5 * pos[1], 0.5 * pos[2], 0.5 * height, s.t_0)
+    else
+        s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
+        s.v_wind_tether .= s.v_wind_gnd * calc_wind_factor(s.am, height / 2.0)
+    end
     s.rho = calc_rho(s.am, height)
     nothing
 end
