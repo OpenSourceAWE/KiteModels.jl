@@ -23,6 +23,7 @@ function init_392(kps4, l)
     kps4.set.v_wind = 9.1
     kps4.set.mass = 6.2
     kps4.set.c_s = 0.6
+    kps4.set.max_iter = 500
     KiteModels.clear!(kps4)
 end
 
