@@ -573,21 +573,27 @@ Parameters:
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     clear!(s)
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
     s.stiffness_factor = stiffness_factor
-    
-    y0, yd0 =try
-        KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
-    catch e
-        if e isa AssertionError
-            println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
-                    "Try to increase the delta parameter or to decrease the initial_stiffness of the init! function.")
-            return nothing
-        else
-            rethrow(e)
+
+    y0, yd0 = if steady_state
+        try
+            KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
+        catch e
+            if e isa AssertionError
+                println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
+                        "Try to increase the delta parameter or to decrease the initial_stiffness of the init! function.")
+                return nothing
+            else
+                rethrow(e)
+            end
         end
+    else
+        set_v_wind_ground!(s, calc_height(s),
+            s.set.v_wind; upwind_dir)
+        KiteModels.init(s; delta, upwind_dir)
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
