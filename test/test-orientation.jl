@@ -317,6 +317,33 @@ end
     @test isapprox(azimuth_north,   0,      atol=1e-4, rtol=1e-4)
 
 end
+
+@testset "set_v_wind_ground! with turbulence" begin
+    set_ = deepcopy(se())
+    set_.use_turbulence = 0.1        # enable turbulence branch
+    kcu_ = KCU(set_)
+    s = KPS4(kcu_)
+    # place the kite at a realistic position (height 100 m, 50 m downwind)
+    s.pos[end-2] .= [50.0, 0.0, 100.0]
+    height = 100.0
+
+    KiteModels.set_v_wind_ground!(s, height)
+
+    # all three wind vectors must contain only finite values
+    @test all(isfinite, s.v_wind)
+    @test all(isfinite, s.v_wind_tether)
+    @test all(isfinite, s.v_wind_gnd)
+    # wind must be non-zero
+    @test norm(s.v_wind) > 0.0
+    @test norm(s.v_wind_tether) > 0.0
+
+    # determinism: same (position, t_0) must produce identical vectors
+    v_wind_1        = copy(s.v_wind)
+    v_wind_tether_1 = copy(s.v_wind_tether)
+    KiteModels.set_v_wind_ground!(s, height)
+    @test s.v_wind        ≈ v_wind_1
+    @test s.v_wind_tether ≈ v_wind_tether_1
+end
 end
 nothing
     
