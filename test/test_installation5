@@ -1,8 +1,8 @@
+#!/bin/bash -eu
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 # This script tests the installation of KiteModels.jl by running the install script
 
-#!/bin/bash -eu
 rm -rf /tmp/testdepot
 mkdir /tmp/testdepot
 rm -rf /tmp/test

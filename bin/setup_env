@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+# This script sets up environment variables and functions to ensure that 
+# Julia processes launched from this shell session use the bundled JLL 
+# libraries for better compatibility, especially on Linux
+# where system libraries may be outdated or incompatible.
+
+# Avoid unbound variable issues in scripts that run with `set -u`.
+export LD_PRELOAD="${LD_PRELOAD:-}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+
+if [[ "$(uname -s)" == "Linux" ]]; then
+    export FONTCONFIG_FILE=/etc/fonts/fonts.conf
+
+    # Wrap julia to inject bundled JLL libraries for Julia processes only.
+    # All artifact searches are done LAZILY inside the function body so that:
+    #  (a) Fresh installs and non-standard depot paths work: artifacts are found after
+    #      Pkg.instantiate() downloads them into the depot, even if they were absent
+    #      when the script started.
+    #  (b) System commands (uname, git, sed) are not affected by the overrides.
+    #  (c) libglib preloads are placed FIRST so they win the SONAME race.
+    #
+    # Libraries handled:
+    #  - libcrypto.so.3:     override stale system OpenSSL via LD_PRELOAD
+    #  - libiconv.so.2,
+    #    libintl.so.8,
+    #    libffi.so.6:        absent/wrong version on Ubuntu 22.04+; added to LD_LIBRARY_PATH
+    #  - libfontconfig.so.1: override version missing FcConfigSetDefaultSubstitute via LD_PRELOAD
+    #  - libglib-2.0.so.0:   override version missing g_string_copy via LD_PRELOAD (placed first)
+    #
+    # All Julia invocations are handled by forwarding every argument to `command julia`,
+    # so both `julia +1.11 ...` and `$JULIA_CMD` with `JULIA_CMD="julia +1.11"` work.
+    julia() {
+        local _jpreloads=() _jlibdirs=()
+        local _jdepots=()
+        IFS=':' read -ra _jdepots <<< "${JULIA_DEPOT_PATH:-$HOME/.julia}"
+
+        # Find the first artifact matching NAME (optionally requiring SYMBOL via nm -D).
+        _jfind_artifact() {
+            local name="$1" sym="${2:-}" _d _f
+            for _d in "${_jdepots[@]}"; do
+                while IFS= read -r _f; do
+                    if [[ -z "$sym" ]] || nm -D "$_f" 2>/dev/null | grep -q "$sym"; then
+                        echo "$_f"; return 0
+                    fi
+                done < <(find "$_d/artifacts" -maxdepth 3 -name "$name" -path "*/lib/*" 2>/dev/null)
+            done
+            return 1
+        }
+
+        # Add dirname of a path to _jlibdirs (deduped).
+        _jadd_libdir() {
+            local _d; _d=$(dirname "$1")
+            [[ ":${_jlibdirs[*]}:" != *":$_d:"* ]] && _jlibdirs+=("$_d")
+        }
+
+        local _jf
+
+        # libcrypto: prefer Julia's own bundled libcrypto (guaranteed compatible with its
+        # own libssl). Julia 1.12+ ships libcrypto in lib/julia/; older versions don't,
+        # so fall back to the artifact for those.
+        # Use type -P to bypass the julia shell function and find the real binary in PATH.
+        # (command -v julia returns the function name when julia is a shell function.)
+        _julia_real=$(type -P julia 2>/dev/null || command -v julia)
+        [[ -L "$_julia_real" ]] && _julia_real=$(readlink -f "$_julia_real")
+        # juliaup installs a launcher shim (julialauncher) rather than a real julia
+        # binary, so dirname-relative paths are wrong.  Find the actual julia install
+        # directory by querying `juliaup status` for the active version.
+        if [[ "$(basename "$_julia_real")" == "julialauncher" ]] && command -v juliaup &>/dev/null; then
+            _jver=$(juliaup status 2>/dev/null | awk '$1 == "*" {print $3}' | head -1)
+            if [[ -n "$_jver" ]]; then
+                _jdepot=$(printf '%s' "${JULIA_DEPOT_PATH:-$HOME/.julia}" | cut -d: -f1)
+                _julia_real="$_jdepot/juliaup/julia-${_jver}/bin/julia"
+            fi
+        fi
+        _julia_bundled_crypto="$(dirname "$_julia_real")/../lib/julia/libcrypto.so.3"
+        if [[ -f "$_julia_bundled_crypto" ]]; then
+            _jpreloads+=("$(realpath "$_julia_bundled_crypto")")
+        else
+            _jf=$(_jfind_artifact libcrypto.so.3)   && _jpreloads+=("$_jf")
+        fi
+
+        # libiconv + libintl + libffi: add dirs to LD_LIBRARY_PATH
+        # (libffi.so.6 is needed by Glib_jll on modern distros that only ship libffi.so.8)
+        for _jlib in libiconv.so.2 libintl.so.8 libffi.so.6; do
+            _jf=$(_jfind_artifact "$_jlib")         && _jadd_libdir "$_jf"
+        done
+
+        # libfontconfig: needs FcConfigSetDefaultSubstitute; goes in both lists
+        _jf=$(_jfind_artifact libfontconfig.so.1 FcConfigSetDefaultSubstitute) && {
+            _jadd_libdir "$_jf"; _jpreloads+=("$_jf")
+        }
+
+        # libglib: needs g_string_copy; placed FIRST in LD_PRELOAD to win the SONAME race
+        local _jglib _jglib_dir _jfinal_preload="" _jfinal_libpath=""
+        _jglib=$(_jfind_artifact libglib-2.0.so.0 g_string_copy)
+        if [[ -n "$_jglib" ]]; then
+            _jglib_dir=$(dirname "$_jglib")
+            # libintl co-located with libglib takes precedence (needed by libglib itself)
+            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jfinal_preload="$_jglib_dir/libintl.so.8:"
+            _jfinal_preload+="$_jglib"
+            [[ ${#_jpreloads[@]} -gt 0 ]] && _jfinal_preload+=":$(IFS=:; echo "${_jpreloads[*]}")"
+            [[ -n "${LD_PRELOAD:-}" ]] && _jfinal_preload+=":$LD_PRELOAD"
+            # Add glib dir first in LD_LIBRARY_PATH
+            [[ ":${_jlibdirs[*]}:" != *":$_jglib_dir:"* ]] && _jlibdirs=("$_jglib_dir" "${_jlibdirs[@]}")
+        elif [[ ${#_jpreloads[@]} -gt 0 ]]; then
+            _jfinal_preload="$(IFS=:; echo "${_jpreloads[*]}")${LD_PRELOAD:+:$LD_PRELOAD}"
+        fi
+
+        [[ ${#_jlibdirs[@]} -gt 0 ]] && \
+            _jfinal_libpath="$(IFS=:; echo "${_jlibdirs[*]}")${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+        LD_PRELOAD="${_jfinal_preload:-${LD_PRELOAD:-}}" \
+        LD_LIBRARY_PATH="${_jfinal_libpath:-${LD_LIBRARY_PATH:-}}" \
+        command julia "$@"
+    }
+fi

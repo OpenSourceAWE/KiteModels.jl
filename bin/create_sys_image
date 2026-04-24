@@ -64,126 +64,42 @@ fi
 # Instantiate packages first so artifacts are available for LD_PRELOAD setup
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
 
-# Initialize LD_PRELOAD and LD_LIBRARY_PATH to avoid unbound variable errors
-export LD_PRELOAD=""
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+. ./bin/setup_env
 
-if [[ "$(uname -s)" == "Linux" ]]; then
-    export FONTCONFIG_FILE=/etc/fonts/fonts.conf
-    # On Ubuntu 22.04 the system has: OpenSSL 3.0.2 (too old), fontconfig 2.13 (missing
-    # FcConfigSetDefaultSubstitute). The dynamic linker reuses already-loaded system libs
-    # instead of the bundled ones, so we force the bundled versions in with LD_PRELOAD.
-    # libiconv/libintl are absent on the system (glibc-internal on Ubuntu), so we add
-    # their artifact dirs to LD_LIBRARY_PATH so dependency resolution finds them without
-    # hitting circular-preload ordering problems.
-    _PRELOADS=()
-    _LIBDIRS=()
+# Run Pkg.precompile() and fail if either Julia exits non-zero or the output
+# contains package-level precompile failure markers.
+run_precompile() {
+    local _proj="$1"
+    local _plog
+    _plog=$(mktemp)
+    set +e
+    $JULIA_CMD --startup-file=no ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
+    _precompile_rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $_precompile_rc -ne 0 ]] || \
+       sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$_plog" | grep -qE "Failed to precompile|dependencies? errored"; then
+        echo "ERROR: Precompilation failed for ${_proj}. See log above."
+        rm -f "$_plog"
+        exit 1
+    fi
+    rm -f "$_plog"
+}
 
-    # Get all Julia depot paths (used during different build stages)
-    _DEPOT_PATHS=()
-    if [[ -n "${JULIA_DEPOT_PATH:-}" ]]; then
-        IFS=':' read -ra _DEPOT_PATHS <<< "$JULIA_DEPOT_PATH"
+print_memory_snapshot() {
+    echo "Memory snapshot:"
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        awk '/MemTotal|MemAvailable|SwapTotal|SwapFree/ {printf "  %s %s %s\n", $1, $2, $3}' /proc/meminfo
+        if [[ -r /sys/fs/cgroup/memory.max ]]; then
+            local _cmax _ccur
+            _cmax=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || true)
+            _ccur=$(cat /sys/fs/cgroup/memory.current 2>/dev/null || true)
+            echo "  cgroup memory.max: ${_cmax:-unknown}"
+            echo "  cgroup memory.current: ${_ccur:-unknown}"
+        fi
     else
-        _DEPOT_PATHS=("$HOME/.julia")
+        echo "  Memory diagnostics are only implemented for Linux in this script."
     fi
-
-    # libcrypto: override stale system version via LD_PRELOAD
-    _BUNDLED=""
-    for _depot in "${_DEPOT_PATHS[@]}"; do
-        _BUNDLED=$(find "$_depot/artifacts" -maxdepth 3 -name "libcrypto.so.3" -path "*/lib/*" 2>/dev/null | head -1)
-        [[ -n "$_BUNDLED" ]] && break
-    done
-    [[ -n "$_BUNDLED" ]] && _PRELOADS+=("$_BUNDLED")
-
-    # libiconv + libintl: absent on Ubuntu 22.04, add dirs to LD_LIBRARY_PATH so
-    # circular dep between them resolves naturally without preload ordering issues.
-    for _libname in libiconv.so.2 libintl.so.8; do
-        _BUNDLED=""
-        for _depot in "${_DEPOT_PATHS[@]}"; do
-            _BUNDLED=$(find "$_depot/artifacts" -maxdepth 3 -name "$_libname" -path "*/lib/*" 2>/dev/null | head -1)
-            [[ -n "$_BUNDLED" ]] && break
-        done
-        if [[ -n "$_BUNDLED" ]]; then
-            _dir=$(dirname "$_BUNDLED")
-            [[ ":${_LIBDIRS[*]}:" != *":$_dir:"* ]] && _LIBDIRS+=("$_dir")
-        fi
-    done
-
-    # libfontconfig: override stale system version via LD_PRELOAD; also add its dir to
-    # LD_LIBRARY_PATH so its deps (libiconv etc.) are found during preload resolution.
-    # Pick the version that exports FcConfigSetDefaultSubstitute (needed by Pango ≥ 1.57).
-    _BUNDLED=""
-    for _depot in "${_DEPOT_PATHS[@]}"; do
-        for _fc in $(find "$_depot/artifacts" -maxdepth 3 -name "libfontconfig.so.1" -path "*/lib/*" 2>/dev/null); do
-            if nm -D "$_fc" 2>/dev/null | grep -q FcConfigSetDefaultSubstitute; then
-                _BUNDLED="$_fc"
-                break 2
-            fi
-        done
-    done
-    if [[ -n "$_BUNDLED" ]]; then
-        _dir=$(dirname "$_BUNDLED")
-        [[ ":${_LIBDIRS[*]}:" != *":$_dir:"* ]] && _LIBDIRS+=("$_dir")
-        _PRELOADS+=("$_BUNDLED")
-    fi
-
-    [[ ${#_PRELOADS[@]} -gt 0 ]] && export LD_PRELOAD=$(IFS=:; echo "${_PRELOADS[*]}")
-    if [[ ${#_LIBDIRS[@]} -gt 0 ]]; then
-        _extra=$(IFS=:; echo "${_LIBDIRS[*]}")
-        export LD_LIBRARY_PATH="${_extra}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    fi
-    unset _PRELOADS _LIBDIRS _BUNDLED _DEPOT_PATHS _depot _fc _dir _extra _libname
-fi
-echo "LD_PRELOAD was: $LD_PRELOAD"
-echo "LD_LIBRARY_PATH was: $LD_LIBRARY_PATH"
-
-# On Linux, wrap julia to also preload the bundled libglib for Julia processes only.
-# The system libglib is often too old for GLMakie/Glib_jll (missing g_string_copy).
-# Scoping this to Julia calls prevents breaking system commands which would fail
-# if artifact libglib's transitive deps (libintl) are not satisfied.
-#
-# The search is done INSIDE the function body (lazily) so that:
-#  (a) Artifacts are found regardless of download order.
-#  (b) The version with g_string_copy is selected, not just the first artifact found.
-#  (c) Glib preloads are placed FIRST in LD_PRELOAD so the dynamic linker registers
-#      the correct libglib SONAME before libfontconfig (already in LD_PRELOAD) can
-#      pull in an older artifact/system libglib that lacks g_string_copy.
-#
-# $JULIA_CMD may be "julia" or "julia +version" — redefine both julia() and
-# the versioned wrapper so $JULIA_CMD invocations also get the preloads.
-if [[ "$(uname -s)" == "Linux" ]]; then
-    _find_glib_preloads() {
-        local _jglib="" _jglib_dir="" _jdepot _jf
-        for _jdepot in $(echo "${JULIA_DEPOT_PATH:-$HOME/.julia}" | tr ':' ' '); do
-            for _jf in $(find "$_jdepot/artifacts" -maxdepth 3 -name "libglib-2.0.so.0" -path "*/lib/*" 2>/dev/null); do
-                if nm -D "$_jf" 2>/dev/null | grep -q g_string_copy; then
-                    _jglib="$_jf"
-                    _jglib_dir=$(dirname "$_jf")
-                    break 2
-                fi
-            done
-        done
-        if [[ -n "$_jglib" ]]; then
-            local _jintl=""
-            [[ -f "$_jglib_dir/libintl.so.8" ]] && _jintl="$_jglib_dir/libintl.so.8:"
-            # Place glib preloads FIRST so they win the SONAME race against libfontconfig.
-            LD_PRELOAD="${_jintl}${_jglib}${LD_PRELOAD:+:$LD_PRELOAD}" \
-            LD_LIBRARY_PATH="${_jglib_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
-            command julia "$@"
-        else
-            command julia "$@"
-        fi
-    }
-    julia() { _find_glib_preloads "$@"; }
-    # Also wrap versioned invocations used by $JULIA_CMD (e.g. "julia +1.11 ...")
-    # by replacing $JULIA_CMD with a function alias when it includes a channel spec.
-    if [[ "$JULIA_CMD" == "julia +"* ]]; then
-        _julia_channel="${JULIA_CMD#julia +}"
-        _julia_channel_fn="_julia_channel_$(echo "$_julia_channel" | tr '.' '_')"
-        eval "${_julia_channel_fn}() { _find_glib_preloads +${_julia_channel} \"\$@\"; }"
-        JULIA_CMD="${_julia_channel_fn}"
-    fi
-fi
+}
 
 PYTHON_PATH=$(which python3)
 if [ -x "$PYTHON_PATH" ]; then
@@ -303,7 +219,22 @@ $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.activate(\"docs\"); Pk
 if [ -f "docs/Manifest.toml" ]; then
     mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
 fi
+echo "Creating system image..."
+print_memory_snapshot
+set +e
 $JULIA_CMD --startup-file=no --heap-size-hint=8000M --project -e "using Pkg; Pkg.activate(\"test\"); include(\"./test/create_sys_image.jl\");"
+_sysimg_rc=$?
+set -e
+if [[ $_sysimg_rc -ne 0 ]]; then
+    echo "ERROR: System image creation failed with exit code $_sysimg_rc"
+    print_memory_snapshot
+    if [[ $_sysimg_rc -eq 137 ]]; then
+        echo "Hint: exit code 137 often indicates the process was killed by the OOM killer."
+    else
+        echo "Hint: enable detailed logs with: JULIA_DEBUG=PackageCompiler ./bin/create_sys_image"
+    fi
+    exit $_sysimg_rc
+fi
 
 if [[ $branch != "" ]]; then
     SOFILE="bin/kps-image-${julia_major}-${branch}.so"
@@ -314,7 +245,7 @@ if test -f $SOFILE; then
     mv $SOFILE $SOFILE.bak
 fi
 mv kps-image_tmp.so $SOFILE
-$JULIA_CMD --startup-file=no  --project -e "using Pkg; Pkg.precompile()"
+run_precompile "--project"
 
 # enable pre-compilation
 rm LocalPreferences.toml
