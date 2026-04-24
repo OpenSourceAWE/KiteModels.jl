@@ -228,7 +228,7 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
         s.v_wind_tether .= get_wind(s.am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), s.t_0) .* [cos(wind_dir), sin(wind_dir), 0] * s.set.use_turbulence + (1-s.set.use_turbulence) * v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
     else
         s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
-        s.v_wind_tether .= s.v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+        s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
     end
     s.rho = calc_rho(s.am, height)
     nothing
