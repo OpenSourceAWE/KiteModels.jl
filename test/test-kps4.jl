@@ -582,7 +582,6 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         local se_::Settings = deepcopy(load_settings("system.yaml"))
         local kps4 = KPS4(KCU(se_))
         kps4.set.kcu_diameter = 0.0
-        kps4.set.max_iter = 500
         init_392(kps4)
         clear!(kps4)
         KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
@@ -639,7 +638,6 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
     @testset "Raptures" begin
         kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
         kps4_.set.kcu_diameter = 0.0
-        kps4_.set.max_iter = 500
         integrator = KiteModels.init!(kps4_; stiffness_factor = 0.07, prn = false)
         kps4_.set.version = 2
         kps4_.stiffness_factor = 3

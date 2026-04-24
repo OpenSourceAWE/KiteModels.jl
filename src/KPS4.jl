@@ -747,23 +747,15 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     xsol = results.zero
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
-        # Keep a finite fallback candidate for final initialization.
+        # Check if the solution is at least finite and usable
         if any(!isfinite, xsol)
-            xsol = X00
+            error("find_steady_state!: solver produced non-finite values and did not converge")
         end
+        # Continue with best available solution even if not fully converged
     end
-    y00, yd00 = try
-        init(s, xsol; upwind_dir)
-    catch
-        init(s, X00; upwind_dir)
-    end
+    y00, yd00 = init(s, xsol; upwind_dir)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    try
-        residual!(res, yd00, y00, s, 0.0)
-    catch
-        y00, yd00 = init(s, X00; upwind_dir)
-        residual!(res, yd00, y00, s, 0.0)
-    end
+    residual!(res, yd00, y00, s, 0.0)
     y00, yd00
 end
 
