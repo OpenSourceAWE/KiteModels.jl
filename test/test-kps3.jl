@@ -362,9 +362,9 @@ const SEGMENTS = load_settings("system.yaml").segments
             @test lift_over_drag(kps) ≈ 4.706870146326417 rtol=2e-3     # initial lift-over-drag
             @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
         catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!")
+            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
                 @warn "Steady state solver failed to converge. Skipping test."
-                @test_broken false  # Mark as known issue
+                @test_broken false  # Mark as known issue (CI flake only)
             else
                 rethrow(e)
             end

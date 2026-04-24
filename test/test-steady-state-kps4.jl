@@ -47,9 +47,9 @@ end
             @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
             println()
         catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!")
+            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
                 @warn "Steady state solver failed to converge for l=$l. Skipping test."
-                @test_broken false  # Mark as known issue
+                @test_broken false  # Mark as known issue (CI flake only)
             else
                 rethrow(e)
             end

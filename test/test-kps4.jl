@@ -600,9 +600,9 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
             @test isapprox(tether_length(kps4), 395.52, rtol = 1e-2) # real, stretched tether length
             #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
         catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!")
+            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
                 @warn "Steady state solver failed to converge. Skipping test."
-                @test_broken false  # Mark as known issue
+                @test_broken false  # Mark as known issue (CI flake only)
             else
                 rethrow(e)
             end
