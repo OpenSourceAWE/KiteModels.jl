@@ -443,7 +443,7 @@ end
 # length(x) == 2*SEGMENTS
 # Returns:
 # res, a single vector consisting of the elements of y0 and yd0
-function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
+function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=-pi/2)
     pos = zeros(SVector{s.set.segments+1, KVec3})
     vel = zeros(SVector{s.set.segments+1, KVec3})
     acc = zeros(SVector{s.set.segments+1, KVec3})
@@ -478,7 +478,7 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
         state_y0[s.set.segments+i-1] .= vel[i]  # Initial state vector
         yd0[s.set.segments+i-1]      .= acc[i]  # Initial state vector derivative
     end
-    set_v_wind_ground!(s, pos[s.set.segments+1][3])
+    set_v_wind_ground!(s, pos[s.set.segments+1][3]; upwind_dir)
     s.l_tether = s.set.l_tether
     s.sync_speed = s.set.v_reel_out
     s.t_0 = 0.0
@@ -487,7 +487,7 @@ end
 
 # same as above, but returns a tuple of two one dimensional arrays
 function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=nothing)
-    res1_, res2_ = init_inner(s, X; delta = delta)
+    res1_, res2_ = init_inner(s, X; delta, upwind_dir=something(upwind_dir, -pi/2))
     res1 = vcat(reduce(vcat, res1_), [s.l_tether, 0])
     res2 = vcat(reduce(vcat, res2_), [0, 0])
     if !isnothing(upwind_dir)
