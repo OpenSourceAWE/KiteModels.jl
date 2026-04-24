@@ -45,21 +45,26 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: Use default manifest
-        run: |
-          if [ -f Manifest.toml.default ]; then cp Manifest.toml.default Manifest.toml; fi
-        shell: bash
-
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ inputs.version }}
           arch: ${{ inputs.arch }}
       - name: Use Julia cache
         uses: julia-actions/cache@v3
+      - name: Prepare version-specific manifest
+        shell: bash
+        run: |
+          JULIA_VERSION=$(julia --version | awk '{print $3}' | cut -d'.' -f1,2)
+          DEFAULT="Manifest-v${JULIA_VERSION}.toml.default"
+          TARGET="Manifest-v${JULIA_VERSION}.toml"
+          if [ -f "$DEFAULT" ] && [ ! -f "$TARGET" ]; then
+            cp "$DEFAULT" "$TARGET"
+            echo "Copied $DEFAULT to $TARGET"
+          fi        
       - uses: julia-actions/julia-buildpkg@v1
 
       - name: Build PyCall
-        run: julia --project -e 'ENV["PYTHON"]=""; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
+        run: julia --project -e 'ENV["PYTHON"]="python3"; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
         shell: bash
 
       - uses: julia-actions/julia-runtest@v1
