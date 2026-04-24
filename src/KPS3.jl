@@ -486,9 +486,14 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
 end
 
 # same as above, but returns a tuple of two one dimensional arrays
-function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0)
+function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=nothing)
     res1_, res2_ = init_inner(s, X; delta = delta)
-    res1, res2  = vcat(reduce(vcat, res1_), [s.l_tether, 0]), vcat(reduce(vcat, res2_),[0,0])
+    res1 = vcat(reduce(vcat, res1_), [s.l_tether, 0])
+    res2 = vcat(reduce(vcat, res2_), [0, 0])
+    if !isnothing(upwind_dir)
+        res1 = turn(res1, upwind_dir)
+        res2 = turn(res2, upwind_dir)
+    end
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
 
@@ -538,9 +543,6 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
-
-The parameter upwind_dir is not used in the current implementation, but will be used in future versions 
-to set the initial direction of the wind.
 """
 function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
     zero = zeros(SimFloat, 2*s.set.segments)
@@ -548,5 +550,5 @@ function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=
     zero = find_steady_state_inner(s, zero, prn; delta)
     s.stiffness_factor=1.0
     zero = find_steady_state_inner(s, zero, prn; delta)
-    init(s, zero; delta=delta)
+    init(s, zero; delta=delta, upwind_dir)
 end
