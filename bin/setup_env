@@ -57,8 +57,29 @@ if [[ "$(uname -s)" == "Linux" ]]; then
 
         local _jf
 
-        # libcrypto: override stale system version via LD_PRELOAD
-        _jf=$(_jfind_artifact libcrypto.so.3)       && _jpreloads+=("$_jf")
+        # libcrypto: prefer Julia's own bundled libcrypto (guaranteed compatible with its
+        # own libssl). Julia 1.12+ ships libcrypto in lib/julia/; older versions don't,
+        # so fall back to the artifact for those.
+        # Use type -P to bypass the julia shell function and find the real binary in PATH.
+        # (command -v julia returns the function name when julia is a shell function.)
+        _julia_real=$(type -P julia 2>/dev/null || command -v julia)
+        [[ -L "$_julia_real" ]] && _julia_real=$(readlink -f "$_julia_real")
+        # juliaup installs a launcher shim (julialauncher) rather than a real julia
+        # binary, so dirname-relative paths are wrong.  Find the actual julia install
+        # directory by querying `juliaup status` for the active version.
+        if [[ "$(basename "$_julia_real")" == "julialauncher" ]] && command -v juliaup &>/dev/null; then
+            _jver=$(juliaup status 2>/dev/null | awk '$1 == "*" {print $3}' | head -1)
+            if [[ -n "$_jver" ]]; then
+                _jdepot=$(printf '%s' "${JULIA_DEPOT_PATH:-$HOME/.julia}" | cut -d: -f1)
+                _julia_real="$_jdepot/juliaup/julia-${_jver}/bin/julia"
+            fi
+        fi
+        _julia_bundled_crypto="$(dirname "$_julia_real")/../lib/julia/libcrypto.so.3"
+        if [[ -f "$_julia_bundled_crypto" ]]; then
+            _jpreloads+=("$(realpath "$_julia_bundled_crypto")")
+        else
+            _jf=$(_jfind_artifact libcrypto.so.3)   && _jpreloads+=("$_jf")
+        fi
 
         # libiconv + libintl + libffi: add dirs to LD_LIBRARY_PATH
         # (libffi.so.6 is needed by Glib_jll on modern distros that only ship libffi.so.8)
