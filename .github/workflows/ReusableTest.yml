@@ -64,7 +64,7 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
 
       - name: Build PyCall
-        run: julia --project -e 'ENV["PYTHON"]=""; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
+        run: julia --project -e 'ENV["PYTHON"]="python3"; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
         shell: bash
 
       - uses: julia-actions/julia-runtest@v1
