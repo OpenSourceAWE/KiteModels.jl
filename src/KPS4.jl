@@ -742,9 +742,20 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     if prn println("\nStarted function test_nlsolve...") end
     X00 = zeros(SimFloat, 2*(s.set.segments+KITE_PARTICLES-1)+2)
     jac! = make_jac(test_initial_condition!, length(X00))
+    
+    # Two-phase solve: first with reduced stiffness, then with target stiffness
+    # This helps convergence from zero initial guess
+    s.stiffness_factor = stiffness_factor * 0.5
     results = nlsolve(test_initial_condition!, jac!, X00, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
-    if prn println("\nresult: $results") end
+    if prn println("\nPhase 1 result: $results") end
     xsol = results.zero
+    
+    # Phase 2: use result from phase 1 as initial guess with target stiffness
+    s.stiffness_factor = stiffness_factor
+    results = nlsolve(test_initial_condition!, jac!, xsol, autoscale=true, xtol=4e-7, ftol=4e-7, iterations=s.set.max_iter)
+    if prn println("\nPhase 2 result: $results") end
+    xsol = results.zero
+    
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
         # Check if the solution is at least finite and usable
