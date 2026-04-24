@@ -594,7 +594,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
         try
             KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
         catch e
-            if e isa AssertionError || e isa ErrorException
+            if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
                 println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
                         "Try to increase the delta parameter or to decrease the stiffness_factor of the init! function.")
                 return nothing
