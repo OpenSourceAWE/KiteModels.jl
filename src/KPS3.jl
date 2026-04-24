@@ -525,6 +525,10 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     if prn println("\nresult: $results") end
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+        # Check if the solution contains finite values
+        if !all(isfinite, results.zero)
+            error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
+        end
     end
     results.zero
  end
