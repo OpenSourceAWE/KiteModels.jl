@@ -566,7 +566,7 @@ end
 
 """
     init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+                      prn=false, steady_state=true) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -575,6 +575,12 @@ Parameters:
 - stiffness_factor: factor applied to the tether stiffness during initialization
 - delta: initial stretch of the tether during the steady state calculation
 - prn: if set to true, print the detailed solver results
+- steady_state: if `true` (default), call `find_steady_state!` to solve for an equilibrium
+  before constructing the integrator. If `false`, skip the steady-state solver and initialise
+  directly from the current model parameters via `KiteModels.init`; this is faster but
+  produces a non-equilibrium starting point, which is useful when the caller has already
+  set up a consistent state or when the steady-state solver is known to struggle (e.g.
+  unusual wind conditions). Returns `nothing` if steady-state solving fails.
 
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
