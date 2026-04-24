@@ -703,7 +703,7 @@ Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 """
 function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2)
-    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir=-pi/2)
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
 
@@ -746,11 +746,23 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     if prn println("\nresult: $results") end
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+        # Check if the solution contains finite values
+        if !all(isfinite, results.zero)
+            error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
+        end
     end
-    y00, yd00 = init(s, results.zero; upwind_dir)
-    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    residual!(res, yd00, y00, s, 0.0)
-    y00, yd00
+    try
+        y00, yd00 = init(s, results.zero; upwind_dir)
+        set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+        residual!(res, yd00, y00, s, 0.0)
+        return y00, yd00
+    catch e
+        if e isa AssertionError
+            error("find_steady_state!: computation resulted in non-finite values. The solver did not find a valid steady state.")
+        else
+            rethrow(e)
+        end
+    end
 end
 
 const KITE_ANGLE = 3.83 # angle between the kite and the last tether segment due to the mass of the control pod
