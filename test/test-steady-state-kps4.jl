@@ -44,6 +44,8 @@ end
             @test isapprox(tether_length(kps4_local), 1.008954l, rtol=2e-2) # real, stretched tether length
             @info "elevation: $(rad2deg(calc_elevation(kps4_local)))°"
             @info "aoa: $(kps4_local.alpha_2)°"
+            @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
+            println()
         catch e
             if e isa ErrorException && contains(e.msg, "find_steady_state!")
                 @warn "Steady state solver failed to converge for l=$l in CI environment. Skipping test."
@@ -52,8 +54,6 @@ end
                 rethrow(e)
             end
         end
-        @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
-        println()
     end
 end
 nothing
