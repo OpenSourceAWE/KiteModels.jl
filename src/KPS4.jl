@@ -752,7 +752,7 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
         end
     end
     try
-        y00, yd00 = init(s, results.zero; upwind_dir)
+        y00, yd00 = init(s, results.zero; delta, upwind_dir)
         set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
         residual!(res, yd00, y00, s, 0.0)
         return y00, yd00
