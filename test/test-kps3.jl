@@ -363,7 +363,7 @@ const SEGMENTS = load_settings("system.yaml").segments
             @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
         catch e
             if e isa ErrorException && contains(e.msg, "find_steady_state!")
-                @warn "Steady state solver failed to converge in CI environment. Skipping test."
+                @warn "Steady state solver failed to converge. Skipping test."
                 @test_broken false  # Mark as known issue
             else
                 rethrow(e)

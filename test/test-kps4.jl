@@ -601,7 +601,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
             #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
         catch e
             if e isa ErrorException && contains(e.msg, "find_steady_state!")
-                @warn "Steady state solver failed to converge in CI environment. Skipping test."
+                @warn "Steady state solver failed to converge. Skipping test."
                 @test_broken false  # Mark as known issue
             else
                 rethrow(e)

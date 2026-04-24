@@ -48,7 +48,7 @@ end
             println()
         catch e
             if e isa ErrorException && contains(e.msg, "find_steady_state!")
-                @warn "Steady state solver failed to converge for l=$l in CI environment. Skipping test."
+                @warn "Steady state solver failed to converge for l=$l. Skipping test."
                 @test_broken false  # Mark as known issue
             else
                 rethrow(e)
