@@ -491,8 +491,9 @@ function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=no
     res1 = vcat(reduce(vcat, res1_), [s.l_tether, 0])
     res2 = vcat(reduce(vcat, res2_), [0, 0])
     if !isnothing(upwind_dir)
-        res1 = turn(res1, upwind_dir)
-        res2 = turn(res2, upwind_dir)
+        n = 6 * s.set.segments  # only rotate the 3D vector part; the last 2 scalars (l_tether, 0) must not be touched
+        res1 = vcat(turn(res1[1:n], upwind_dir), res1[n+1:end])
+        res2 = vcat(turn(res2[1:n], upwind_dir), res2[n+1:end])
     end
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
