@@ -510,12 +510,12 @@ function spring_forces(s::KPS3)
     forces
 end
 
-function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
+function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0, upwind_dir=nothing)
     res = zeros(MVector{6*s.set.segments+2, SimFloat})
 
     # helper function for the steady state finder
     function test_initial_condition!(F, x::Vector)
-        y0, yd0 = init(s, x, delta=delta)
+        y0, yd0 = init(s, x; delta, upwind_dir)
         residual!(res, yd0, y0, s)
         for i in 1:s.set.segments
             F[i]                = res[1 + 3*(i-1) + 3*s.set.segments]
@@ -545,10 +545,11 @@ Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 """
 function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
     zero = zeros(SimFloat, 2*s.set.segments)
     s.stiffness_factor=stiffness_factor
-    zero = find_steady_state_inner(s, zero, prn; delta)
+    zero = find_steady_state_inner(s, zero, prn; delta, upwind_dir)
     s.stiffness_factor=1.0
-    zero = find_steady_state_inner(s, zero, prn; delta)
+    zero = find_steady_state_inner(s, zero, prn; delta, upwind_dir)
     init(s, zero; delta=delta, upwind_dir)
 end
