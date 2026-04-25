@@ -33,16 +33,20 @@ p = plotx(time, v_wind_start, v_wind_end;
           labels=["pos_start", "pos_end"])
 display(p)
 
+wind_dir_vec = [cos(-upwind_dir - pi/2), sin(-upwind_dir - pi/2), 0.0]
 v_wind_turb = map([0.0, 0.5, 1.0]) do turb
-    am.set.use_turbulence = turb
-    v = [norm(calc_turbulent_wind(am, pos_start, upwind_dir, t)[1]) for t in time]
-    mean_v = mean(v)
-    std_v  = std(v)
-    ti     = std_v / mean_v * 100
+    set_turb = deepcopy(set)
+    set_turb.use_turbulence = turb
+    am_turb = AtmosphericModel(set_turb)
+    v_vecs  = [calc_turbulent_wind(am_turb, pos_start, upwind_dir, t)[1] for t in time]
+    v_mags  = norm.(v_vecs)
+    mean_v  = mean(v_mags)
+    # TI = std of longitudinal (along-wind) component / mean speed
+    u_comp  = [dot(v, wind_dir_vec) for v in v_vecs]
+    ti      = std(u_comp) / mean_v * 100
     println("use_turbulence=$(turb): mean wind = $(round(mean_v, digits=3)) m/s, turbulence intensity = $(round(ti, digits=2)) %")
-    v
+    v_mags
 end
-am.set.use_turbulence = set.use_turbulence  # restore original value
 
 p3 = plotx(time, v_wind_turb[1], v_wind_turb[2], v_wind_turb[3];
            fig="v_wind_kite vs time (pos_start, varying turbulence)",

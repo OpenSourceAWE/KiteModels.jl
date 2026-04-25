@@ -248,9 +248,9 @@ function calc_turbulent_wind(am, pos, upwind_dir, t)
         return mean_wind, mean_wind_tether
     end
     wx, wy, wz = get_wind(am, pos[1], pos[2], height, t)
-    v_wind = use_turbulence .* rotate_wind(wx, wy, wz) + (1 - use_turbulence) .* mean_wind
+    v_wind = rotate_wind(wx, wy, wz)
     wx, wy, wz = get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t)
-    v_wind_tether = use_turbulence .* rotate_wind(wx, wy, wz) + (1 - use_turbulence) .* mean_wind_tether
+    v_wind_tether = rotate_wind(wx, wy, wz)
     return v_wind, v_wind_tether
 end
 
