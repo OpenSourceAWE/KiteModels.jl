@@ -9,7 +9,7 @@ end
 using Timers; tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations
+using ControlPlots, KiteModels, Rotations, LinearAlgebra
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
@@ -19,6 +19,7 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
+set.use_turbulence = 0.2
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -69,6 +70,7 @@ AZIMUTH::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 AZIMUTH_EAST::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 UPWIND_DIR_::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 AV_UPWIND_DIR::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+V_WIND_KITE::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 HEADING::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 SET_STEERING::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
@@ -114,6 +116,7 @@ function sim_parking(integrator)
         end
         t_sim = @elapsed KiteModels.next_step!(kps4, integrator; set_speed=v_ro, dt, upwind_dir=av_upwind_dir)
         AV_UPWIND_DIR[i] = av_upwind_dir
+        V_WIND_KITE[i] = norm(v_wind_kite(kps4))
         if t_sim < 0.3*dt
             t_gc_tot += @elapsed GC.gc(false)
         end
@@ -177,9 +180,9 @@ end
 play_parking()
 stop(viewer)
 p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad2deg.(AV_UPWIND_DIR)],
-         rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)]; 
+         rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)], V_WIND_KITE; 
          xlabel="Time [s]", 
-         ylabels=["Azimuth [°]", "azimuth_east [°]", "upwind_dir [°]", "Heading [°]", "Steering [%]"],
-         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"]])
+         ylabels=["Azimuth [°]", "azimuth_east [°]", "upwind_dir [°]", "Heading [°]", "Steering [%]", "v_wind_kite [m/s]"],
+         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"])
 display(p)
 KiteModels.reactivate_host_app()
