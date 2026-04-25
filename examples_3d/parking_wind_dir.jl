@@ -75,7 +75,6 @@ STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
 
 function sim_parking(integrator)
     upwind_dir=UPWIND_DIR
-    av_upwind_dir = upwind_dir
     start_time_ns = time_ns()
     clear_viewer(viewer)
     i=1; j=0; k=0
