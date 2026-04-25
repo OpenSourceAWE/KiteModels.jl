@@ -19,7 +19,7 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
-set.use_turbulence = 0.3
+set.use_turbulence = 1.0
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -164,7 +164,10 @@ function sim_parking(integrator)
 end
 
 function play_parking()
+    saved_turbulence = kps4.set.use_turbulence
+    kps4.set.use_turbulence = 0.0
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
+    kps4.set.use_turbulence = saved_turbulence
     toc()
     try
         sim_parking(integrator)
