@@ -212,8 +212,11 @@ function v_wind_kite(s::AKM) s.v_wind end
 """
     calc_turbulent_wind(am, pos, upwind_dir, t)
 
-Calculate the wind velocity vectors at the kite and at the mid-tether point, blending
-turbulent and mean wind according to `am.set.use_turbulence`.
+Calculate the wind velocity vectors at the kite and at the mid-tether point.
+
+When `am.set.use_turbulence == 0.0`, returns the mean wind based on a log/power-law
+height profile. When `use_turbulence != 0.0`, returns the fully turbulent wind vectors
+looked up from the pre-computed wind field via `get_wind`.
 
 Parameters:
 - `am`:         atmospheric model (settings are read from `am.set`)
