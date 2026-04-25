@@ -210,22 +210,23 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
-    calc_turbulent_wind(am, pos, wind_dir, t)
+    calc_turbulent_wind(am, pos, upwind_dir, t)
 
 Calculate the wind velocity vectors at the kite and at the mid-tether point, blending
 turbulent and mean wind according to `am.set.use_turbulence`.
 
 Parameters:
-- `am`:       atmospheric model (settings are read from `am.set`)
-- `pos`:      3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
-- `wind_dir`: wind direction angle [rad]
-- `t`:        current simulation time [s]
+- `am`:         atmospheric model (settings are read from `am.set`)
+- `pos`:        3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
+- `upwind_dir`: upwind direction in radians; zero is north, clockwise positive
+- `t`:          current simulation time [s]
 
 Returns a tuple `(v_wind, v_wind_tether)` where:
 - `v_wind`:        wind velocity vector at kite height [m/s]
 - `v_wind_tether`: wind velocity vector at half the kite height [m/s]
 """
-function calc_turbulent_wind(am, pos, wind_dir, t)
+function calc_turbulent_wind(am, pos, upwind_dir, t)
+    wind_dir = -upwind_dir - pi/2
     set = am.set
     use_turbulence = set.use_turbulence
     height = max(pos[3], 6.0)
@@ -268,7 +269,7 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
     if s.set.use_turbulence != 0.0
         pos = pos_kite(s)
-        s.v_wind, s.v_wind_tether = calc_turbulent_wind(s.am, pos, wind_dir, s.t_0)
+        s.v_wind, s.v_wind_tether = calc_turbulent_wind(s.am, pos, upwind_dir, s.t_0)
     else
         s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
         s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]

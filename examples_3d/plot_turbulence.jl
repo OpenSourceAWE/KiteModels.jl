@@ -21,10 +21,10 @@ time = 0:0.1:240
 
 # calculate v_wind_kite for pos_start and pos_end as function of time
 am = AtmosphericModel(set)
-wind_dir = -deg2rad(set.upwind_dir) - pi/2+deg2rad(90)
+upwind_dir = deg2rad(set.upwind_dir)
 
-v_wind_start = [norm(calc_turbulent_wind(am, pos_start, wind_dir, t)[1]) for t in time]
-v_wind_end   = [norm(calc_turbulent_wind(am, pos_end,   wind_dir, t)[1]) for t in time]
+v_wind_start = [norm(calc_turbulent_wind(am, pos_start, upwind_dir, t)[1]) for t in time]
+v_wind_end   = [norm(calc_turbulent_wind(am, pos_end,   upwind_dir, t)[1]) for t in time]
 
 p = plotx(time, v_wind_start, v_wind_end;
           fig="v_wind_kite vs time",
@@ -35,7 +35,7 @@ display(p)
 
 v_wind_turb = map([0.0, 0.5, 1.0]) do turb
     am.set.use_turbulence = turb
-    v = [norm(calc_turbulent_wind(am, pos_start, wind_dir, t)[1]) for t in time]
+    v = [norm(calc_turbulent_wind(am, pos_start, upwind_dir, t)[1]) for t in time]
     mean_v = mean(v)
     std_v  = std(v)
     ti     = std_v / mean_v * 100
