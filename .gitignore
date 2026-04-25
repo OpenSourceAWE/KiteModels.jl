@@ -89,10 +89,4 @@ examples_3d/Manifest.toml
 /.idea/vcs.xml
 /mwes/mwe_27.jl
 Manifest-v1.13.toml
-data/windfield_100_4050_500_70_0.0_3.5.npz
-data/windfield_100_4050_500_70_0.0_5.3.npz
-data/windfield_100_4050_500_70_0.0_8.2.npz
-data/windfield_100_4050_500_70_0.5_8.2.npz
-data/windfield_100_4050_500_70_0.1_8.2.npz
-data/windfield_100_4050_500_70_0.2_8.2.npz
-data/windfield_100_4050_500_70_0.3_8.2.npz
+data/windfield_*.npz
