@@ -227,6 +227,7 @@ Returns a tuple `(v_wind, v_wind_tether)` where:
 """
 function calc_turbulent_wind(am, pos, wind_dir, t)
     set = am.set
+    use_turbulence = set.use_turbulence
     height = max(pos[3], 6.0)
     v_wind_gnd = set.v_wind
     # get_wind returns (v_x, v_y, v_z) in wind frame (x = along-wind, y = cross-wind)
@@ -242,10 +243,13 @@ function calc_turbulent_wind(am, pos, wind_dir, t)
     mean_wind_tether = SVec3(v_wind_gnd * calc_wind_factor(am, height / 2.0) * cos(wind_dir),
                              v_wind_gnd * calc_wind_factor(am, height / 2.0) * sin(wind_dir),
                              0.0)
+    if use_turbulence == 0.0
+        return mean_wind, mean_wind_tether
+    end
     wx, wy, wz = get_wind(am, pos[1], pos[2], height, t)
-    v_wind = set.use_turbulence .* rotate_wind(wx, wy, wz) + (1 - set.use_turbulence) .* mean_wind
+    v_wind = use_turbulence .* rotate_wind(wx, wy, wz) + (1 - use_turbulence) .* mean_wind
     wx, wy, wz = get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t)
-    v_wind_tether = set.use_turbulence .* rotate_wind(wx, wy, wz) + (1 - set.use_turbulence) .* mean_wind_tether
+    v_wind_tether = use_turbulence .* rotate_wind(wx, wy, wz) + (1 - use_turbulence) .* mean_wind_tether
     return v_wind, v_wind_tether
 end
 
