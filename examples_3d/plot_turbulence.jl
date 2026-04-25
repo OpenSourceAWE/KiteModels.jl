@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(@__DIR__)
