@@ -229,8 +229,23 @@ function calc_turbulent_wind(am, pos, wind_dir, t)
     set = am.set
     height = max(pos[3], 6.0)
     v_wind_gnd = set.v_wind
-    v_wind = set.use_turbulence .* (get_wind(am, pos[1], pos[2], height, t) .* [cos(wind_dir), sin(wind_dir), 0]) + (1-set.use_turbulence) * v_wind_gnd * calc_wind_factor(am, height) .* [cos(wind_dir), sin(wind_dir), 0]
-    v_wind_tether = set.use_turbulence .* (get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t) .* [cos(wind_dir), sin(wind_dir), 0]) + (1-set.use_turbulence) * v_wind_gnd * calc_wind_factor(am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+    # get_wind returns (v_x, v_y, v_z) in wind frame (x = along-wind, y = cross-wind)
+    # rotate into simulation frame
+    function rotate_wind(wx, wy, wz)
+        SVec3(wx * cos(wind_dir) - wy * sin(wind_dir),
+              wx * sin(wind_dir) + wy * cos(wind_dir),
+              wz)
+    end
+    mean_wind = SVec3(v_wind_gnd * calc_wind_factor(am, height) * cos(wind_dir),
+                      v_wind_gnd * calc_wind_factor(am, height) * sin(wind_dir),
+                      0.0)
+    mean_wind_tether = SVec3(v_wind_gnd * calc_wind_factor(am, height / 2.0) * cos(wind_dir),
+                             v_wind_gnd * calc_wind_factor(am, height / 2.0) * sin(wind_dir),
+                             0.0)
+    wx, wy, wz = get_wind(am, pos[1], pos[2], height, t)
+    v_wind = set.use_turbulence .* rotate_wind(wx, wy, wz) + (1 - set.use_turbulence) .* mean_wind
+    wx, wy, wz = get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t)
+    v_wind_tether = set.use_turbulence .* rotate_wind(wx, wy, wz) + (1 - set.use_turbulence) .* mean_wind_tether
     return v_wind, v_wind_tether
 end
 
