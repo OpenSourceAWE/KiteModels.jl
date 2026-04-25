@@ -9,7 +9,7 @@ end
 using Timers; tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations, LinearAlgebra
+using ControlPlots, KiteModels, Rotations, LinearAlgebra, Statistics
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
@@ -184,6 +184,10 @@ end
 
 play_parking()
 stop(viewer)
+let v = filter(!=(0.0), V_WIND_KITE)
+    ti = std(v) / mean(v) * 100
+    println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")
+end
 p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad2deg.(AV_UPWIND_DIR)],
          rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)], V_WIND_KITE; 
          xlabel="Time [s]", 
