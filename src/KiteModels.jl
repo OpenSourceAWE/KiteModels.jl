@@ -29,7 +29,7 @@ import Base.zero
 import OrdinaryDiffEqCore.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
-export calc_set_cl_cd!, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
+export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
 export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
 export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
@@ -210,6 +210,31 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
+    calc_turbulent_wind(am, pos, wind_dir, t)
+
+Calculate the wind velocity vectors at the kite and at the mid-tether point, blending
+turbulent and mean wind according to `am.set.use_turbulence`.
+
+Parameters:
+- `am`:       atmospheric model (settings are read from `am.set`)
+- `pos`:      3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
+- `wind_dir`: wind direction angle [rad]
+- `t`:        current simulation time [s]
+
+Returns a tuple `(v_wind, v_wind_tether)` where:
+- `v_wind`:        wind velocity vector at kite height [m/s]
+- `v_wind_tether`: wind velocity vector at half the kite height [m/s]
+"""
+function calc_turbulent_wind(am, pos, wind_dir, t)
+    set = am.set
+    height = max(pos[3], 6.0)
+    v_wind_gnd = set.v_wind
+    v_wind = set.use_turbulence .* (get_wind(am, pos[1], pos[2], height, t) .* [cos(wind_dir), sin(wind_dir), 0]) + (1-set.use_turbulence) * v_wind_gnd * calc_wind_factor(am, height) .* [cos(wind_dir), sin(wind_dir), 0]
+    v_wind_tether = set.use_turbulence .* (get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t) .* [cos(wind_dir), sin(wind_dir), 0]) + (1-set.use_turbulence) * v_wind_gnd * calc_wind_factor(am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+    return v_wind, v_wind_tether
+end
+
+"""
     set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
 
 Set the vector of the wind-velocity at the height of the kite. As parameter the height,
@@ -224,8 +249,7 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
     if s.set.use_turbulence != 0.0
         pos = pos_kite(s)
-        s.v_wind .= s.set.use_turbulence .* (get_wind(s.am, pos[1], pos[2], height, s.t_0) .* [cos(wind_dir), sin(wind_dir), 0]) + (1-s.set.use_turbulence) * v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
-        s.v_wind_tether .= s.set.use_turbulence .* (get_wind(s.am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), s.t_0) .* [cos(wind_dir), sin(wind_dir), 0]) + (1-s.set.use_turbulence) * v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+        s.v_wind, s.v_wind_tether = calc_turbulent_wind(s.am, pos, wind_dir, s.t_0)
     else
         s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
         s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
