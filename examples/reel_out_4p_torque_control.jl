@@ -63,8 +63,13 @@ function simulate(integrator, steps, plot=false)
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, xlim=(37, 78), 
-                                        segments=set.segments, fig="side_view")            
+                if FRONT_VIEW
+                    plot2d(kps4.pos, reltime; zoom=ZOOM, front=true,
+                                            segments=set.segments, fig="front_view")
+                else
+                    plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(37, 78),
+                                            segments=set.segments, fig="side_view")
+                end
             end
         end
     end
