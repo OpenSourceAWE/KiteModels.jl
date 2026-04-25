@@ -19,7 +19,7 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
-set.use_turbulence = 0.2
+set.use_turbulence = 0.3
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -84,6 +84,7 @@ function sim_parking(integrator)
     max_time = 0
     t_gc_tot = 0
     sys_state = SysState(kps4)
+    println("Kite position at start: ", round.(pos_kite(kps4), digits=2))
     while true
         time = i * dt 
         steering = 0.0
@@ -157,6 +158,7 @@ function sim_parking(integrator)
         i += 1
     end
     misses = j/k * 100
+    println("Kite position at end:   ", round.(pos_kite(kps4), digits=2))
     println("\nMissed the deadline for $(round(misses, digits=2)) %. Max time: $(round((max_time*1e-6), digits=1)) ms")
     return div(i, TIME_LAPSE_RATIO)
 end
