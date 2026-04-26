@@ -75,21 +75,6 @@ if (( _available_kb < _required_kb )); then
 fi
 unset _required_kb _available_kb _available_gb
 
-# On Ubuntu/Debian or Fedora, install python3-matplotlib if not already installed
-if [[ $_yes_to_all == false ]] && [[ "$(uname -s)" == "Linux" ]]; then
-    if grep -qiE "ubuntu|debian" /etc/os-release 2>/dev/null; then
-        if ! dpkg -s python3-matplotlib &>/dev/null 2>&1; then
-            echo "Detected Ubuntu/Debian. Installing python3-matplotlib..."
-            sudo apt install -y python3-matplotlib
-        fi
-    elif grep -qi "fedora" /etc/os-release 2>/dev/null; then
-        if ! rpm -q python3-matplotlib &>/dev/null 2>&1; then
-            echo "Detected Fedora. Installing python3-matplotlib..."
-            sudo dnf install -y python3-matplotlib
-        fi
-    fi
-fi
-
 # Ask which Julia version to use
 # Default to 1.12 if it is already installed and is the current default, otherwise 1.11
 if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
@@ -295,6 +280,57 @@ run_precompile() {
     # Strip ANSI escape codes, then check for failure markers
     if [[ $_precompile_rc -ne 0 ]] || \
        sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$_plog" | grep -qE "Failed to precompile|dependencies? errored"; then
+        if [[ "$_proj" == "--project=docs" ]] && \
+           grep -q "XML_SetAllocTrackerActivationThreshold" "$_plog" && \
+           grep -q "pyexpat" "$_plog"; then
+            echo "Warning: Skipping docs precompile due to Conda Python/expat mismatch (pyexpat symbol error)."
+            echo "Installation will continue; docs can be precompiled later after repairing the Conda env."
+            rm -f "$_plog"
+            return 0
+        fi
+        rm -f "$_plog"
+        echo "ERROR: Precompilation failed for ${_proj}. Aborting install."
+        exit 1
+    fi
+    rm -f "$_plog"
+}
+
+# Run Pkg.precompile() for a project with a clean dynamic-loader environment.
+# This is used for docs to avoid Conda/PyCall symbol conflicts caused by
+# LD_PRELOAD/LD_LIBRARY_PATH overrides from setup_env.
+run_precompile_clean_env() {
+    local _proj="$1"
+    local _plog _precompile_rc _log_clean
+    local _clean_env="env -u LD_PRELOAD -u LD_LIBRARY_PATH -u PYTHON -u PYTHONHOME -u PYTHONPATH"
+    _plog=$(mktemp)
+    set +e
+    ${_clean_env} julia ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
+    _precompile_rc=${PIPESTATUS[0]}
+    set -e
+
+    # Pkg.precompile() exits 0 even when packages fail, so always check the log.
+    _log_clean() { sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$_plog"; }
+
+    # Detect the exact Python 3.13 + libexpat version mismatch.
+    _has_pyexpat_mismatch() {
+        grep -q "XML_SetAllocTrackerActivationThreshold" "$_plog" && \
+        grep -q "pyexpat" "$_plog"
+    }
+
+    # If there is a pyexpat/libexpat mismatch and this is --project=docs, skip with a warning.
+    # This is a Conda env corruption issue (Python 3.13 with libexpat < 2.7.0).
+    # The user should run: julia -e 'using Conda; Conda.update()'  to fix it permanently.
+    if _log_clean | grep -qE "Failed to precompile|dependencies? errored" || [[ $_precompile_rc -ne 0 ]]; then
+        if [[ "$_proj" == "--project=docs" ]] && _has_pyexpat_mismatch; then
+            rm -f "$_plog"
+            echo
+            echo "Warning: docs precompile skipped due to Conda libexpat/pyexpat symbol mismatch."
+            echo "  Python 3.13 requires libexpat >= 2.7.0 (symbol XML_SetAllocTrackerActivationThreshold)."
+            echo "  Fix with: julia -e 'using Conda; Conda.update()'"
+            echo "  Installation continues; docs work normally once the Conda env is repaired."
+            echo
+            return 0
+        fi
         rm -f "$_plog"
         echo "ERROR: Precompilation failed for ${_proj}. Aborting install."
         exit 1
@@ -394,6 +430,25 @@ end
         mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
         echo "Renamed examples_3d/Manifest.toml to examples_3d/Manifest-v${julia_major}.toml"
     fi
+    # On Linux, verify that ControlPlots loads correctly before building docs.
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        echo "Checking if ControlPlots is working in the examples project..."
+        if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+                julia --project=examples -e 'using ControlPlots' &>/dev/null 2>&1; then
+            echo "ControlPlots is working."
+        else
+            echo "ControlPlots is not working. Running install_controlplots..."
+            if [[ -x "bin/install_controlplots" ]]; then
+                if [[ $_yes_to_all == true ]]; then
+                    bash bin/install_controlplots --yes
+                else
+                    bash bin/install_controlplots
+                fi
+            else
+                echo "Warning: bin/install_controlplots not found. Please run it manually."
+            fi
+        fi
+    fi
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
     _ec=0; julia --project=docs -e '
@@ -417,7 +472,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.11)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.11)"); fi
     echo "Precompiling docs project..."
-    run_precompile "--project=docs"
+    run_precompile_clean_env "--project=docs"
     if [ -f "docs/Manifest.toml" ]; then
         mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
         echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
@@ -494,6 +549,25 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.12)"); fi
     run_precompile "--project=examples_3d"
+    # On Linux, verify that ControlPlots loads correctly before building docs.
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        echo "Checking if ControlPlots is working in the examples project..."
+        if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+                julia --project=examples -e 'using ControlPlots' &>/dev/null 2>&1; then
+            echo "ControlPlots is working."
+        else
+            echo "ControlPlots is not working. Running install_controlplots..."
+            if [[ -x "bin/install_controlplots" ]]; then
+                if [[ $_yes_to_all == true ]]; then
+                    bash bin/install_controlplots --yes
+                else
+                    bash bin/install_controlplots
+                fi
+            else
+                echo "Warning: bin/install_controlplots not found. Please run it manually."
+            fi
+        fi
+    fi
     # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
     rm -f docs/Manifest*.toml
     _ec=0; julia --project=docs -e '
@@ -517,7 +591,7 @@ end
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.12)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.12)"); fi
     echo "Precompiling docs project..."
-    run_precompile "--project=docs"
+    run_precompile_clean_env "--project=docs"
     if [ -f "examples/Manifest.toml" ]; then
         mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
         echo "Renamed examples/Manifest.toml to examples/Manifest-v${julia_major}.toml"
@@ -535,9 +609,9 @@ end
         echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
     fi
 fi
-julia --project=examples -e 'using ControlPlots, DSP'
-julia --project=examples_3d -e 'using ControlPlots'
-julia --project=examples_3d -e 'using KiteViewers'
+julia --project=examples -e 'using ControlPlots, DSP' || true
+julia --project=examples_3d -e 'using ControlPlots' || true
+julia --project=examples_3d -e 'using KiteViewers' || true
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
     if julia -e '
@@ -639,7 +713,6 @@ else
 fi
 
 run_precompile "--project=examples"
-julia --project="examples" -e 'using ControlPlots'
 
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0

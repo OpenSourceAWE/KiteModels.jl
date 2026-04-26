@@ -443,7 +443,7 @@ end
 # length(x) == 2*SEGMENTS
 # Returns:
 # res, a single vector consisting of the elements of y0 and yd0
-function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
+function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=-pi/2)
     pos = zeros(SVector{s.set.segments+1, KVec3})
     vel = zeros(SVector{s.set.segments+1, KVec3})
     acc = zeros(SVector{s.set.segments+1, KVec3})
@@ -478,7 +478,7 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
         state_y0[s.set.segments+i-1] .= vel[i]  # Initial state vector
         yd0[s.set.segments+i-1]      .= acc[i]  # Initial state vector derivative
     end
-    set_v_wind_ground!(s, pos[s.set.segments+1][3])
+    set_v_wind_ground!(s, pos[s.set.segments+1][3]; upwind_dir)
     s.l_tether = s.set.l_tether
     s.sync_speed = s.set.v_reel_out
     s.t_0 = 0.0
@@ -486,9 +486,21 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0)
 end
 
 # same as above, but returns a tuple of two one dimensional arrays
-function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0)
-    res1_, res2_ = init_inner(s, X; delta = delta)
-    res1, res2  = vcat(reduce(vcat, res1_), [s.l_tether, 0]), vcat(reduce(vcat, res2_),[0,0])
+function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=nothing)
+    res1_, res2_ = init_inner(s, X; delta, upwind_dir=something(upwind_dir, -pi/2))
+    res1 = vcat(reduce(vcat, res1_), [s.l_tether, 0])
+    res2 = vcat(reduce(vcat, res2_), [0, 0])
+    if !isnothing(upwind_dir)
+        n = 6 * s.set.segments  # only rotate the 3D vector part; the last 2 scalars (l_tether, 0) must not be touched
+        res1 = vcat(turn(res1[1:n], upwind_dir), res1[n+1:end])
+        res2 = vcat(turn(res2[1:n], upwind_dir), res2[n+1:end])
+        # Keep s.pos consistent with the rotated state vectors so callers that
+        # read s.pos immediately after init/init! see the correct positions.
+        for i in 2:s.set.segments+1
+            j = i - 1
+            s.pos[i] .= res1[3*(j-1)+1:3*j]
+        end
+    end
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
 
@@ -505,12 +517,12 @@ function spring_forces(s::KPS3)
     forces
 end
 
-function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
+function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0, upwind_dir=nothing)
     res = zeros(MVector{6*s.set.segments+2, SimFloat})
 
     # helper function for the steady state finder
     function test_initial_condition!(F, x::Vector)
-        y0, yd0 = init(s, x, delta=delta)
+        y0, yd0 = init(s, x; delta, upwind_dir)
         residual!(res, yd0, y0, s)
         for i in 1:s.set.segments
             F[i]                = res[1 + 3*(i-1) + 3*s.set.segments]
@@ -525,6 +537,10 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
     if prn println("\nresult: $results") end
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+        # Check if the solution contains finite values
+        if !all(isfinite, results.zero)
+            error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
+        end
     end
     results.zero
  end
@@ -534,15 +550,13 @@ function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
-
-The parameter upwind_dir is not used in the current implementation, but will be used in future versions 
-to set the initial direction of the wind.
 """
 function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
     zero = zeros(SimFloat, 2*s.set.segments)
     s.stiffness_factor=stiffness_factor
-    zero = find_steady_state_inner(s, zero, prn; delta)
+    zero = find_steady_state_inner(s, zero, prn; delta, upwind_dir)
     s.stiffness_factor=1.0
-    zero = find_steady_state_inner(s, zero, prn; delta)
-    init(s, zero; delta=delta)
+    zero = find_steady_state_inner(s, zero, prn; delta, upwind_dir)
+    init(s, zero; delta=delta, upwind_dir)
 end

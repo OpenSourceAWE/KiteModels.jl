@@ -89,3 +89,4 @@ examples_3d/Manifest.toml
 /.idea/vcs.xml
 /mwes/mwe_27.jl
 Manifest-v1.13.toml
+data/windfield_*.npz

@@ -746,11 +746,23 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     if prn println("\nresult: $results") end
     if !converged(results)
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
+        # Check if the solution contains finite values
+        if !all(isfinite, results.zero)
+            error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
+        end
     end
-    y00, yd00 = init(s, results.zero; upwind_dir)
-    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    residual!(res, yd00, y00, s, 0.0)
-    y00, yd00
+    try
+        y00, yd00 = init(s, results.zero; upwind_dir)
+        set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+        residual!(res, yd00, y00, s, 0.0)
+        return y00, yd00
+    catch e
+        if e isa AssertionError
+            error("find_steady_state!: computation resulted in non-finite values. The solver did not find a valid steady state.")
+        else
+            rethrow(e)
+        end
+    end
 end
 
 const KITE_ANGLE = 3.83 # angle between the kite and the last tether segment due to the mass of the control pod
@@ -883,16 +895,16 @@ function init(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES-1)+1); old=fal
     res2_ = vcat(vel[2:end], acc[2:end])
     res1__ = reduce(vcat, res1_)
     res2__ = reduce(vcat, res2_)
-    if !isnothing(upwind_dir)
-        res1__ = turn(res1__, upwind_dir)
-        res2__ = turn(res2__, upwind_dir)
-    end
     set_initial_velocity!(s)
     for i in 1:Int(length(res1__)/6)
         j = i + s.set.segments+KITE_PARTICLES
         # println("i, j:", i, ", ", j)
         res1__[3*(j-1)+1:3*j] .= s.vel[i+1]
         res2__[3*(i-1)+1:3*i] .= s.vel[i+1]
+    end
+    if !isnothing(upwind_dir)
+        res1__ = turn(res1__, upwind_dir)
+        res2__ = turn(res2__, upwind_dir)
     end
     res1, res2  = vcat(res1__, [s.l_tether, s.set.v_reel_out]),  vcat(res2__,[0,0])
     MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat}(res1), MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat}(res2)

@@ -8,9 +8,9 @@ fi
 
 export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    # Avoid Tk backend issues on macOS (e.g. non-responsive close button in PyPlot windows).
-    # Keep user override if MPLBACKEND is already set.
+# Use the Qt (qtagg) backend on macOS and Linux to avoid Tk backend issues
+# (e.g. non-responsive close button). Keep any user-set override.
+if [[ "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ]]; then
     if [[ -z "${MPLBACKEND:-}" ]]; then
         export MPLBACKEND=qtagg
     fi

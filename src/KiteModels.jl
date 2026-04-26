@@ -29,7 +29,7 @@ import Base.zero
 import OrdinaryDiffEqCore.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
-export calc_set_cl_cd!, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
+export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
 export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
 export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
@@ -210,6 +210,54 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
+    calc_turbulent_wind(am, pos, upwind_dir, t)
+
+Calculate the wind velocity vectors at the kite and at the mid-tether point.
+
+When `am.set.use_turbulence == 0.0`, returns the mean wind based on a log/power-law
+height profile. When `use_turbulence != 0.0`, returns the fully turbulent wind vectors
+looked up from the pre-computed wind field via `get_wind`.
+
+Parameters:
+- `am`:         atmospheric model (settings are read from `am.set`)
+- `pos`:        3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
+- `upwind_dir`: upwind direction in radians; zero is north, clockwise positive
+- `t`:          current simulation time [s]
+
+Returns a tuple `(v_wind, v_wind_tether)` where:
+- `v_wind`:        wind velocity vector at kite height [m/s]
+- `v_wind_tether`: wind velocity vector at half the kite height [m/s]
+"""
+function calc_turbulent_wind(am, pos, upwind_dir, t)
+    wind_dir = -upwind_dir - pi/2
+    set = am.set
+    use_turbulence = set.use_turbulence
+    height = max(pos[3], 6.0)
+    v_wind_gnd = set.v_wind
+    # get_wind returns (v_x, v_y, v_z) in wind frame (x = along-wind, y = cross-wind)
+    # rotate into simulation frame
+    function rotate_wind(wx, wy, wz)
+        SVec3(wx * cos(wind_dir) - wy * sin(wind_dir),
+              wx * sin(wind_dir) + wy * cos(wind_dir),
+              wz)
+    end
+    mean_wind = SVec3(v_wind_gnd * calc_wind_factor(am, height) * cos(wind_dir),
+                      v_wind_gnd * calc_wind_factor(am, height) * sin(wind_dir),
+                      0.0)
+    mean_wind_tether = SVec3(v_wind_gnd * calc_wind_factor(am, height / 2.0) * cos(wind_dir),
+                             v_wind_gnd * calc_wind_factor(am, height / 2.0) * sin(wind_dir),
+                             0.0)
+    if use_turbulence == 0.0
+        return mean_wind, mean_wind_tether
+    end
+    wx, wy, wz = get_wind(am, pos[1], pos[2], height, t)
+    v_wind = rotate_wind(wx, wy, wz)
+    wx, wy, wz = get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t)
+    v_wind_tether = rotate_wind(wx, wy, wz)
+    return v_wind, v_wind_tether
+end
+
+"""
     set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
 
 Set the vector of the wind-velocity at the height of the kite. As parameter the height,
@@ -221,9 +269,16 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
         height = 6.0
     end
     wind_dir = -upwind_dir - pi/2
-    s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
-    s.v_wind_tether .= s.v_wind_gnd * calc_wind_factor(s.am, height / 2.0)
+    if s.set.use_turbulence != 0.0
+        pos = pos_kite(s)
+        v_wind, v_wind_tether = calc_turbulent_wind(s.am, pos, upwind_dir, s.t_0)
+        s.v_wind .= v_wind
+        s.v_wind_tether .= v_wind_tether
+    else
+        s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
+        s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+    end
     s.rho = calc_rho(s.am, height)
     nothing
 end
@@ -560,7 +615,7 @@ end
 
 """
     init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+                      prn=false, steady_state=true) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -569,25 +624,37 @@ Parameters:
 - stiffness_factor: factor applied to the tether stiffness during initialization
 - delta: initial stretch of the tether during the steady state calculation
 - prn: if set to true, print the detailed solver results
+- steady_state: if `true` (default), call `find_steady_state!` to solve for an equilibrium
+  before constructing the integrator. If `false`, skip the steady-state solver and initialise
+  directly from the current model parameters via `KiteModels.init`; this is faster but
+  produces a non-equilibrium starting point, which is useful when the caller has already
+  set up a consistent state or when the steady-state solver is known to struggle (e.g.
+  unusual wind conditions). Returns `nothing` if steady-state solving fails.
 
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     clear!(s)
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
     s.stiffness_factor = stiffness_factor
-    
-    y0, yd0 =try
-        KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
-    catch e
-        if e isa AssertionError
-            println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
-                    "Try to increase the delta parameter or to decrease the initial_stiffness of the init! function.")
-            return nothing
-        else
-            rethrow(e)
+
+    y0, yd0 = if steady_state
+        try
+            KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
+        catch e
+            if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
+                println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
+                        "Try to increase the delta parameter or to decrease the stiffness_factor of the init! function.")
+                return nothing
+            else
+                rethrow(e)
+            end
         end
+    else
+        set_v_wind_ground!(s, calc_height(s),
+            s.set.v_wind; upwind_dir)
+        KiteModels.init(s; delta, upwind_dir)
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
@@ -779,6 +846,7 @@ function bridle_length(se)
     len += norm(bridle[3] - bridle[2])
     len += norm(bridle[3] - bridle[4])
     len += norm(bridle[3] - bridle[5])
+    return len
 end
 
 

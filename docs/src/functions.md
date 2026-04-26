@@ -29,6 +29,7 @@ parameters, in this context mostly the variable s.
 ```@docs
 set_depower_steering!
 set_v_wind_ground!
+calc_turbulent_wind
 ```
 
 ## Output functions
