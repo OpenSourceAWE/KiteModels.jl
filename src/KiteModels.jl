@@ -652,9 +652,10 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
             end
         end
     else
+        y0, yd0 = KiteModels.init(s; delta, upwind_dir)
         set_v_wind_ground!(s, calc_height(s),
             s.set.v_wind; upwind_dir)
-        KiteModels.init(s; delta, upwind_dir)
+        y0, yd0
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)

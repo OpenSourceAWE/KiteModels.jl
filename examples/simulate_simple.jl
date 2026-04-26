@@ -48,12 +48,12 @@ function simulate(integrator, steps, plot=false)
         end
 
         next_step!(kps4, integrator; set_speed=0, upwind_dir=UPWIND_DIR, dt=dt)
-        iter += kps4.iter    
+        iter += kps4.iter
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                plot2d(kps4.pos, reltime; zoom=ZOOM, xlim=(40,60), front=FRONT_VIEW, 
-                segments=set.segments, fig="upwind_dir = $(rad2deg(UPWIND_DIR)) °")                       
+                plot2d(kps4.pos, reltime; zoom=ZOOM, xlim=(40,60), front=FRONT_VIEW,
+                segments=set.segments, fig="upwind_dir = $(rad2deg(UPWIND_DIR)) °")
             end
         end
         sys_state = SysState(kps4)
@@ -64,14 +64,15 @@ function simulate(integrator, steps, plot=false)
     iter / steps
 end
 kps4.set.upwind_dir = rad2deg(UPWIND_DIR)
-integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC,
+                              steady_state=false)
 
 av_steps = if PLOT
     local av_steps_local = simulate(integrator, STEPS, true)
     local flight_log = KiteUtils.sys_log(logger)
-    local p = plotx(flight_log.syslog.time, flight_log.z, 
+    local p = plotx(flight_log.syslog.time, flight_log.z,
               rad2deg.(flight_log.syslog.var_01), rad2deg.(flight_log.syslog.var_02);
-              xlabel="time [s]", ylabels=["z [m]", "pitch [°]", "pitch_rate [°/s]"], 
+              xlabel="time [s]", ylabels=["z [m]", "pitch [°]", "pitch_rate [°/s]"],
               fig="plot_height_pitch")
     display(p)
     av_steps_local
