@@ -359,16 +359,16 @@ const SEGMENTS = load_settings("system.yaml").segments
             lift, drag = lift_drag(kps)
             @test lift ≈ 443.63277537186394 rtol=2e-2                # initial lift force of the kite [N]
             @test drag ≈ 94.25218065939362 rtol=2e-2               # initial drag force of the kite [N]
+            @test lift_over_drag(kps) ≈ 4.706870146326417 rtol=2e-3     # initial lift-over-drag
+            @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
         catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!")
-                @warn "Steady state solver failed to converge in CI environment. Skipping test."
-                @test_broken false  # Mark as known issue
+            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
+                @warn "Steady state solver failed to converge. Skipping test."
+                @test_broken false  # Mark as known issue (CI flake only)
             else
                 rethrow(e)
             end
         end
-        @test lift_over_drag(kps) ≈ 4.706870146326417 rtol=2e-3     # initial lift-over-drag
-        @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
     end
 
     function run_benchmarks()

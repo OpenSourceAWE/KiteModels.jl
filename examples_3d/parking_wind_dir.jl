@@ -9,7 +9,7 @@ end
 using Timers; tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations
+using ControlPlots, KiteModels, Rotations, LinearAlgebra, Statistics
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
@@ -19,6 +19,7 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
+set.use_turbulence = 1.0
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -69,13 +70,13 @@ AZIMUTH::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 AZIMUTH_EAST::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 UPWIND_DIR_::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 AV_UPWIND_DIR::Vector{Float64} = zeros(Int64(MAX_TIME/dt))
+V_WIND_KITE::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 HEADING::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 SET_STEERING::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
 
 function sim_parking(integrator)
     upwind_dir=UPWIND_DIR
-    av_upwind_dir = upwind_dir
     start_time_ns = time_ns()
     clear_viewer(viewer)
     i=1; j=0; k=0
@@ -83,6 +84,7 @@ function sim_parking(integrator)
     max_time = 0
     t_gc_tot = 0
     sys_state = SysState(kps4)
+    println("Kite position at start: ", round.(pos_kite(kps4), digits=2))
     while true
         time = i * dt 
         steering = 0.0
@@ -115,6 +117,7 @@ function sim_parking(integrator)
         end
         t_sim = @elapsed KiteModels.next_step!(kps4, integrator; set_speed=v_ro, dt, upwind_dir=av_upwind_dir)
         AV_UPWIND_DIR[i] = av_upwind_dir
+        V_WIND_KITE[i] = norm(v_wind_kite(kps4))
         if t_sim < 0.3*dt
             t_gc_tot += @elapsed GC.gc(false)
         end
@@ -155,12 +158,16 @@ function sim_parking(integrator)
         i += 1
     end
     misses = j/k * 100
+    println("Kite position at end:   ", round.(pos_kite(kps4), digits=2))
     println("\nMissed the deadline for $(round(misses, digits=2)) %. Max time: $(round((max_time*1e-6), digits=1)) ms")
     return div(i, TIME_LAPSE_RATIO)
 end
 
 function play_parking()
+    saved_turbulence = kps4.set.use_turbulence
+    kps4.set.use_turbulence = 0.0
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
+    kps4.set.use_turbulence = saved_turbulence
     toc()
     try
         sim_parking(integrator)
@@ -177,10 +184,14 @@ end
 
 play_parking()
 stop(viewer)
+let v = filter(!=(0.0), V_WIND_KITE)
+    ti = std(v) / mean(v) * 100
+    println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")
+end
 p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad2deg.(AV_UPWIND_DIR)],
-         rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)]; 
+         rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)], V_WIND_KITE; 
          xlabel="Time [s]", 
-         ylabels=["Azimuth [°]", "azimuth_east [°]", "upwind_dir [°]", "Heading [°]", "Steering [%]"],
-         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"]])
+         ylabels=["Azimuth [°]", "azimuth_east [°]", "upwind_dir [°]", "Heading [°]", "Steering [%]", "v_wind_kite [m/s]"],
+         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"])
 display(p)
 KiteModels.reactivate_host_app()

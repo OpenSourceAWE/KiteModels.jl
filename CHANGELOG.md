@@ -2,8 +2,19 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### Unreleased
+### KiteModels v0.11.8 2026-04-26
+### Added
+- the function `calc_turbulent_wind`
+- the example `plot_turbulence.jl`
+- the script `jetls_with_env` to run jetls with the correct environment
+
+### Changed
+- the function `set_v_wind_ground!` now calls `calc_turbulent_wind`
+- the example `parking_wind_dir.jl` now uses turbulence and prints the turbulence intensity
+
+#### Fixed
 - modify the script `setup_env` to fix issue with Julia 1.12.6
+- the front view of the examples `initial_reel_out_4p.jl` and `initial_reel_out_4p_torque_control.jl` is now working
 
 ### KiteModels v0.11.7 2026-04-01
 #### Changes

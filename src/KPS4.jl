@@ -895,16 +895,16 @@ function init(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES-1)+1); old=fal
     res2_ = vcat(vel[2:end], acc[2:end])
     res1__ = reduce(vcat, res1_)
     res2__ = reduce(vcat, res2_)
-    if !isnothing(upwind_dir)
-        res1__ = turn(res1__, upwind_dir)
-        res2__ = turn(res2__, upwind_dir)
-    end
     set_initial_velocity!(s)
     for i in 1:Int(length(res1__)/6)
         j = i + s.set.segments+KITE_PARTICLES
         # println("i, j:", i, ", ", j)
         res1__[3*(j-1)+1:3*j] .= s.vel[i+1]
         res2__[3*(i-1)+1:3*i] .= s.vel[i+1]
+    end
+    if !isnothing(upwind_dir)
+        res1__ = turn(res1__, upwind_dir)
+        res2__ = turn(res2__, upwind_dir)
     end
     res1, res2  = vcat(res1__, [s.l_tether, s.set.v_reel_out]),  vcat(res2__,[0,0])
     MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat}(res1), MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat}(res2)

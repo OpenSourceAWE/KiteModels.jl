@@ -37,7 +37,7 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
 for _ in 1:80
-    next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, dt)
+    next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, upwind_dir=deg2rad(UPWIND_DIR), dt)
 end
 lift, drag = lift_drag(kps4)
 sys_state::SysState = KiteModels.SysState(kps4)
@@ -76,10 +76,20 @@ println("v_wind_200m: ", ss.v_wind_200m)
 println("v_wind_kite: ", ss.v_wind_kite)
 
 # output on main branch
-# Lift: 1047.1795339611076, Drag: 281.39765463928745, elev: 72.77014, Iterations: 1552
-# roll: -0.0 pitch: 5.755691707832273 yaw: 90.00000250447816
-# x:[-0.9949585608372032, 0.0, 0.10028689952711267]
-# y:[0.0, 1.0, 0.0]
-# z:[-0.10028689952711267, -2.8981421002141166e-19, -0.9949585608372032]
-# alpha2, alpha3, alpha4: 7.546125780476343 10.000000853773646 10.000000853773646
+# Lift: 855.4784722062811, Drag: 192.0536202491188, elev: 69.45377, Iterations: 69
+# --> orient_quat:       roll: -0.001221503359884115 pitch: 7.507464596247422  yaw: -80.00459886809945
+# --> orient_euler:      roll: -0.001221503359884115 pitch: 7.507464596247422 yaw:  -80.00459886809945
+# --> orient_quat (viewer): roll: 82.4925322579098 pitch: 0.0012073499097366438   yaw: -99.9955599945749
+# x:[-0.9763796400403286, 0.1720812646439843, 0.13065541272074638]
+# y:[0.1735718785102554, 0.9848212033363726, 2.1201897232929594e-5]
+# z:[-0.1286685950297495, 0.02269867772223979, -0.9914278403811002]
+# azimuth: -0.0°
+# azimuth_north: -100.0°
+# alpha2, alpha3, alpha4: 10.315549445214474 10.006140602413751 10.007820124746754
+# heading: 359.99°
+# AoA: 10.315549°
+# CL2: 0.58924925 CD2: 0.2437712
+# v_wind_gnd: Float32[14.279713, -2.5178986, 0.0]
+# v_wind_200m: Float32[19.261637, -3.3963463, 0.0]
+# v_wind_kite: Float32[18.914501, -3.335137, 0.0]
 

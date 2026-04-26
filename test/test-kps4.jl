@@ -103,7 +103,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         @test particles[2] == [75.0, 0.0, 129.90381057]   # P_KCU
         @test particles[3] == [76.590521748547275, 0.0, 134.64355504845008]   # pos_A
         @test particles[4] == [78.565000000363611, 0.0, 136.07857169877312]   # pos_B (top)
-        @test particles[5] == [77.450000000249887, 2.4811, 134.14733504839947]   # pos_C (left  as seen from GS) 
+        @test particles[5] == [77.450000000249887, 2.4811, 134.14733504839947]   # pos_C (left  as seen from GS)
         @test particles[6] == [77.450000000249887, -2.4811, 134.14733504839947]   # pos_D (right as seen from GS)
     end
 
@@ -600,9 +600,9 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
             @test isapprox(tether_length(kps4), 395.52, rtol = 1e-2) # real, stretched tether length
             #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
         catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!")
-                @warn "Steady state solver failed to converge in CI environment. Skipping test."
-                @test_broken false  # Mark as known issue
+            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
+                @warn "Steady state solver failed to converge. Skipping test."
+                @test_broken false  # Mark as known issue (CI flake only)
             else
                 rethrow(e)
             end

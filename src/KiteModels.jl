@@ -6,13 +6,13 @@
 This model implements a 3D mass-spring system with reel-out. It uses six tether segments (the number can be
 configured in the file data/settings.yaml). Two kite models are provided, the one point and the four point
 kite model. The spring constant and the axial_damping decrease with the segment length. The aerodynamic kite forces are
-calculated, depending on reel-out speed, depower and steering settings. 
+calculated, depending on reel-out speed, depower and steering settings.
 
 Scientific background: http://arxiv.org/abs/1406.6218 =#
 
 module KiteModels
 
-using PrecompileTools: @compile_workload, @setup_workload 
+using PrecompileTools: @compile_workload, @setup_workload
 using Logging
 using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NLsolve, NonlinearSolve,
       OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve, Parameters,
@@ -29,7 +29,7 @@ import Base.zero
 import OrdinaryDiffEqCore.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
-export calc_set_cl_cd!, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
+export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
 export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
 export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
@@ -50,7 +50,7 @@ const BRIDLE_DRAG = 1.1         # should probably be removed
     const SimFloat = Float64
 
 This type is used for all real variables, used in the Simulation. Possible alternatives: Float32, Double64, Dual
-Other types than Float64 or Float32 do require support of Julia types by the solver. 
+Other types than Float64 or Float32 do require support of Julia types by the solver.
 """
 const SimFloat = Float64
 
@@ -67,12 +67,12 @@ const KVec4    = MVector{4, SimFloat}
 
 Basic 3-dimensional vector, stack allocated, immutable.
 """
-const SVec3    = SVector{3, SimFloat}  
+const SVec3    = SVector{3, SimFloat}
 
 """
     const AKM = AbstractKiteModel
 
-Short alias for the AbstractKiteModel. 
+Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
 
@@ -135,13 +135,13 @@ end
 """
     set_depower_steering!(s::AKM, depower, steering)
 
-Setter for the depower and steering model inputs. 
+Setter for the depower and steering model inputs.
 
 Parameters:
 - depower:   Relative depower,  must be between 0 .. 1.0
-- steering:  Relative steering, must be between -1.0 .. 1.0.  
+- steering:  Relative steering, must be between -1.0 .. 1.0.
 
-This function sets the variables s.depower, s.steering and s.alpha_depower. 
+This function sets the variables s.depower, s.steering and s.alpha_depower.
 
 It takes the depower offset c0 and the dependency of the steering sensitivity from
 the depower settings into account. The raw steering value is stored in s.kcu_steering.
@@ -166,9 +166,9 @@ function unstretched_length(s::AKM) s.l_tether end
 """
     lift_drag(s::AKM)
 
-Return a tuple of the scalar lift and drag forces. 
+Return a tuple of the scalar lift and drag forces.
 
-**Example:**  
+**Example:**
 
     lift, drag = lift_drag(s)
 """
@@ -210,6 +210,54 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
+    calc_turbulent_wind(am, pos, upwind_dir, t)
+
+Calculate the wind velocity vectors at the kite and at the mid-tether point.
+
+When `am.set.use_turbulence == 0.0`, returns the mean wind based on a log/power-law
+height profile. When `use_turbulence != 0.0`, returns the fully turbulent wind vectors
+looked up from the pre-computed wind field via `get_wind`.
+
+Parameters:
+- `am`:         atmospheric model (settings are read from `am.set`)
+- `pos`:        3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
+- `upwind_dir`: upwind direction in radians; zero is north, clockwise positive
+- `t`:          current simulation time [s]
+
+Returns a tuple `(v_wind, v_wind_tether)` where:
+- `v_wind`:        wind velocity vector at kite height [m/s]
+- `v_wind_tether`: wind velocity vector at half the kite height [m/s]
+"""
+function calc_turbulent_wind(am, pos, upwind_dir, t)
+    wind_dir = -upwind_dir - pi/2
+    set = am.set
+    use_turbulence = set.use_turbulence
+    height = max(pos[3], 6.0)
+    v_wind_gnd = set.v_wind
+    # get_wind returns (v_x, v_y, v_z) in wind frame (x = along-wind, y = cross-wind)
+    # rotate into simulation frame
+    function rotate_wind(wx, wy, wz)
+        SVec3(wx * cos(wind_dir) - wy * sin(wind_dir),
+              wx * sin(wind_dir) + wy * cos(wind_dir),
+              wz)
+    end
+    mean_wind = SVec3(v_wind_gnd * calc_wind_factor(am, height) * cos(wind_dir),
+                      v_wind_gnd * calc_wind_factor(am, height) * sin(wind_dir),
+                      0.0)
+    mean_wind_tether = SVec3(v_wind_gnd * calc_wind_factor(am, height / 2.0) * cos(wind_dir),
+                             v_wind_gnd * calc_wind_factor(am, height / 2.0) * sin(wind_dir),
+                             0.0)
+    if use_turbulence == 0.0
+        return mean_wind, mean_wind_tether
+    end
+    wx, wy, wz = get_wind(am, pos[1], pos[2], height, t)
+    v_wind = rotate_wind(wx, wy, wz)
+    wx, wy, wz = get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t)
+    v_wind_tether = rotate_wind(wx, wy, wz)
+    return v_wind, v_wind_tether
+end
+
+"""
     set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
 
 Set the vector of the wind-velocity at the height of the kite. As parameter the height,
@@ -221,9 +269,16 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
         height = 6.0
     end
     wind_dir = -upwind_dir - pi/2
-    s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
-    s.v_wind_tether .= s.v_wind_gnd * calc_wind_factor(s.am, height / 2.0)
+    if s.set.use_turbulence != 0.0
+        pos = pos_kite(s)
+        v_wind, v_wind_tether = calc_turbulent_wind(s.am, pos, upwind_dir, s.t_0)
+        s.v_wind .= v_wind
+        s.v_wind_tether .= v_wind_tether
+    else
+        s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
+        s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+    end
     s.rho = calc_rho(s.am, height)
     nothing
 end
@@ -269,14 +324,14 @@ function calc_orient_quat(s::AKM; viewer=false, one_point=false)
         x, _, z = kite_ref_frame(s)
         pos_kite_ = pos_kite(s)
         pos_before = pos_kite_ .+ z
-    
+
         rotation = rot(pos_kite_, pos_before, -x)
     else
         x, y, z = kite_ref_frame(s; one_point) # in ENU reference
         x = enu2ned(x)
         y = enu2ned(y)
         z = enu2ned(z)
-            
+
         # reference frame for the orientation: NED (north, east, down)
         ax = @SVector [1, 0, 0]
         ay = @SVector [0, 1, 0]
@@ -289,7 +344,7 @@ end
 
 function calc_orient_quat_old(s::AKM)
     x, y, z = kite_ref_frame(s) # in ENU reference
-        
+
     ax = [0, 1, 0] # in ENU reference frame this is pointing to the south
     ay = [1, 0, 0] # in ENU reference frame this is pointing to the west
     az = [0, 0, -1] # in ENU reference frame this is pointing down
@@ -347,7 +402,7 @@ function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_
     orientation = orient_euler(s; one_point)
     elevation = calc_elevation(s)
     # use azimuth in wind reference frame
-    if neg_azimuth 
+    if neg_azimuth
         azimuth = -calc_azimuth(s)
     else
         azimuth = calc_azimuth(s)
@@ -363,9 +418,9 @@ Undefined if the velocity of the kite is near zero.
 """
 function calc_course(s::AKM, neg_azimuth=false)
     elevation = calc_elevation(s)
-    if neg_azimuth 
+    if neg_azimuth
         azimuth = -calc_azimuth(s)
-    else    
+    else
         azimuth = calc_azimuth(s)
     end
     KiteUtils.calc_course(s.vel_kite, elevation, azimuth)
@@ -374,7 +429,7 @@ end
 """
     calculate_rotational_inertia!(s::AKM, include_kcu::Bool=true, around_kcu::Bool=false)
 
-Calculate the rotational inertia (Ixx, Ixy, Ixz, Iyy, Iyz, Izz) for a kite model from settings. 
+Calculate the rotational inertia (Ixx, Ixy, Ixz, Iyy, Iyz, Izz) for a kite model from settings.
 Modifies the kite model by initializing the masses.
 
 Parameters:
@@ -385,7 +440,7 @@ Parameters:
 - `include_kcu`: Include the kcu in the rotational inertia calculation?
 - `around_kcu`: Uses the kcu as the rotation point.
 
-Returns:  
+Returns:
 The tuple  Ixx, Ixy, Ixz, Iyy, Iyz, Izz where:
 - Ixx: rotational inertia around the x-axis.
 - Ixy: rotational inertia around the xy-plane.
@@ -397,7 +452,7 @@ The tuple  Ixx, Ixy, Ixz, Iyy, Iyz, Izz where:
 """
 function calculate_rotational_inertia!(s::AKM, include_kcu::Bool=true, around_kcu::Bool=false)
     points = KiteUtils.get_particles(s.set.height_k, s.set.h_bridle, s.set.width, s.set.m_k, [0, 0, 0], [0, 0, -1], [10, 0, 0])
-    
+
     pos_matrix = [points[begin+1] points[begin+2] points[begin+3] points[begin+4] points[begin+5]]
     X = pos_matrix[begin, :]
     Y = pos_matrix[begin+1, :]
@@ -465,7 +520,7 @@ end
 #     var_02::MyFloat
 #     ...
 #     var_16::MyFloat
-# end 
+# end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.time = s.t_0
@@ -560,7 +615,7 @@ end
 
 """
     init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+                      prn=false, steady_state=true) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -569,6 +624,12 @@ Parameters:
 - stiffness_factor: factor applied to the tether stiffness during initialization
 - delta: initial stretch of the tether during the steady state calculation
 - prn: if set to true, print the detailed solver results
+- steady_state: if `true` (default), call `find_steady_state!` to solve for an equilibrium
+  before constructing the integrator. If `false`, skip the steady-state solver and initialise
+  directly from the current model parameters via `KiteModels.init`; this is faster but
+  produces a non-equilibrium starting point, which is useful when the caller has already
+  set up a consistent state or when the steady-state solver is known to struggle (e.g.
+  unusual wind conditions). Returns `nothing` if steady-state solving fails.
 
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
@@ -582,9 +643,9 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
         try
             KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
         catch e
-            if e isa AssertionError
+            if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
                 println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
-                        "Try to increase the delta parameter or to decrease the initial_stiffness of the init! function.")
+                        "Try to increase the delta parameter or to decrease the stiffness_factor of the init! function.")
                 return nothing
             else
                 rethrow(e)
@@ -597,20 +658,20 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
-    
+
     if s.set.solver=="IDA"
         solver  = Sundials.IDA(linear_solver=Symbol(s.set.linear_solver), max_order = s.set.max_order)
     elseif s.set.solver=="DImplicitEuler"
         solver  = DImplicitEuler(autodiff=AutoFiniteDiff())
     elseif s.set.solver=="DFBDF"
-        solver  = DFBDF(autodiff=AutoFiniteDiff(), max_order=Val{s.set.max_order}())        
+        solver  = DFBDF(autodiff=AutoFiniteDiff(), max_order=Val{s.set.max_order}())
     else
         println("Error! Invalid solver in settings.yaml: $(s.set.solver)")
         return nothing
     end
 
     dt = 1/s.set.sample_freq
-    tspan   = (0.0, dt) 
+    tspan   = (0.0, dt)
     abstol  = s.set.abs_tol # max error in m/s and m
 
     differential_vars = ones(Bool, length(y0))
@@ -644,7 +705,7 @@ Parameters:
 - bearing:      set value of heading/ course in radian or nothing (only for logging, not used otherwise)
 - attractor:    the attractor coordinates [azimuth, elevation] in radian or nothing (only for logging)
 - `v_wind_gnd`: wind speed at reference height in m/s
-- `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north; 
+- `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north;
                 clockwise positive. Default: -pi/2, wind from west.
 - dt:           time step in seconds
 
@@ -692,7 +753,7 @@ Copy all example scripts to the folder "examples"
 """
 function copy_examples(; overwrite=true)
     PATH = "examples"
-    if ! isdir(PATH) 
+    if ! isdir(PATH)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
@@ -728,7 +789,7 @@ function install_examples(add_packages=true)
     copy_bin()
     copy_model_settings()
     if add_packages
-        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots", 
+        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots",
                  "LaTeXStrings", "StatsBase", "Timers", "Rotations"])
     end
 end
@@ -756,7 +817,7 @@ function install_examples_3d(add_packages=true, overwrite=false)
 end
 
 function copy_files(relpath, files; overwrite=true)
-    if ! isdir(relpath) 
+    if ! isdir(relpath)
         mkdir(relpath)
     end
     src_path = joinpath(@__DIR__, "..", relpath)
@@ -785,6 +846,7 @@ function bridle_length(se)
     len += norm(bridle[3] - bridle[2])
     len += norm(bridle[3] - bridle[4])
     len += norm(bridle[3] - bridle[5])
+    return len
 end
 
 
@@ -796,7 +858,7 @@ Copy the scripts create_sys_image, run_julia and setup_env to the folder "bin"
 """
 function copy_bin(; overwrite=true)
     PATH = "bin"
-    if ! isdir(PATH) 
+    if ! isdir(PATH)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
@@ -816,7 +878,7 @@ function copy_bin(; overwrite=true)
         chmod(dst, 0o664)
     end
     PATH = "test"
-    if ! isdir(PATH) 
+    if ! isdir(PATH)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
