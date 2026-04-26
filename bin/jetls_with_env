@@ -1,0 +1,15 @@
+#!/bin/bash -eu
+# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+. setup_env
+jetls "$@"
+
+# To use this script, you need to add the file ./vscode/settings.json with the following content to your repository:
+# (replace the path with your actual path to this script)
+# {
+#   "jetls-client.executable": {
+#       "path": "/home/ufechner/repos/KiteModels.jl/bin/jetls_with_env",
+#       "threads": "1,0"
+#   }
+# }
