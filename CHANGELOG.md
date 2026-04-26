@@ -6,6 +6,7 @@ SPDX-License-Identifier: MIT
 ### Added
 - the function `calc_turbulent_wind`
 - the example `plot_turbulence.jl`
+- the script `jetls_with_env` to run jetls with the correct environment
 
 ### Changed
 - the function `set_v_wind_ground!` now calls `calc_turbulent_wind`
