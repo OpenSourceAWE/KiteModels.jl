@@ -846,6 +846,7 @@ function bridle_length(se)
     len += norm(bridle[3] - bridle[2])
     len += norm(bridle[3] - bridle[4])
     len += norm(bridle[3] - bridle[5])
+    return len
 end
 
 
