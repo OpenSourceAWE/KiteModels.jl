@@ -6,13 +6,13 @@
 This model implements a 3D mass-spring system with reel-out. It uses six tether segments (the number can be
 configured in the file data/settings.yaml). Two kite models are provided, the one point and the four point
 kite model. The spring constant and the axial_damping decrease with the segment length. The aerodynamic kite forces are
-calculated, depending on reel-out speed, depower and steering settings. 
+calculated, depending on reel-out speed, depower and steering settings.
 
 Scientific background: http://arxiv.org/abs/1406.6218 =#
 
 module KiteModels
 
-using PrecompileTools: @compile_workload, @setup_workload 
+using PrecompileTools: @compile_workload, @setup_workload
 using Logging
 using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NLsolve, NonlinearSolve,
       OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve, Parameters,
@@ -50,7 +50,7 @@ const BRIDLE_DRAG = 1.1         # should probably be removed
     const SimFloat = Float64
 
 This type is used for all real variables, used in the Simulation. Possible alternatives: Float32, Double64, Dual
-Other types than Float64 or Float32 do require support of Julia types by the solver. 
+Other types than Float64 or Float32 do require support of Julia types by the solver.
 """
 const SimFloat = Float64
 
@@ -67,12 +67,12 @@ const KVec4    = MVector{4, SimFloat}
 
 Basic 3-dimensional vector, stack allocated, immutable.
 """
-const SVec3    = SVector{3, SimFloat}  
+const SVec3    = SVector{3, SimFloat}
 
 """
     const AKM = AbstractKiteModel
 
-Short alias for the AbstractKiteModel. 
+Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
 
@@ -135,13 +135,13 @@ end
 """
     set_depower_steering!(s::AKM, depower, steering)
 
-Setter for the depower and steering model inputs. 
+Setter for the depower and steering model inputs.
 
 Parameters:
 - depower:   Relative depower,  must be between 0 .. 1.0
-- steering:  Relative steering, must be between -1.0 .. 1.0.  
+- steering:  Relative steering, must be between -1.0 .. 1.0.
 
-This function sets the variables s.depower, s.steering and s.alpha_depower. 
+This function sets the variables s.depower, s.steering and s.alpha_depower.
 
 It takes the depower offset c0 and the dependency of the steering sensitivity from
 the depower settings into account. The raw steering value is stored in s.kcu_steering.
@@ -166,9 +166,9 @@ function unstretched_length(s::AKM) s.l_tether end
 """
     lift_drag(s::AKM)
 
-Return a tuple of the scalar lift and drag forces. 
+Return a tuple of the scalar lift and drag forces.
 
-**Example:**  
+**Example:**
 
     lift, drag = lift_drag(s)
 """
@@ -324,14 +324,14 @@ function calc_orient_quat(s::AKM; viewer=false, one_point=false)
         x, _, z = kite_ref_frame(s)
         pos_kite_ = pos_kite(s)
         pos_before = pos_kite_ .+ z
-    
+
         rotation = rot(pos_kite_, pos_before, -x)
     else
         x, y, z = kite_ref_frame(s; one_point) # in ENU reference
         x = enu2ned(x)
         y = enu2ned(y)
         z = enu2ned(z)
-            
+
         # reference frame for the orientation: NED (north, east, down)
         ax = @SVector [1, 0, 0]
         ay = @SVector [0, 1, 0]
@@ -344,7 +344,7 @@ end
 
 function calc_orient_quat_old(s::AKM)
     x, y, z = kite_ref_frame(s) # in ENU reference
-        
+
     ax = [0, 1, 0] # in ENU reference frame this is pointing to the south
     ay = [1, 0, 0] # in ENU reference frame this is pointing to the west
     az = [0, 0, -1] # in ENU reference frame this is pointing down
@@ -402,7 +402,7 @@ function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_
     orientation = orient_euler(s; one_point)
     elevation = calc_elevation(s)
     # use azimuth in wind reference frame
-    if neg_azimuth 
+    if neg_azimuth
         azimuth = -calc_azimuth(s)
     else
         azimuth = calc_azimuth(s)
@@ -418,9 +418,9 @@ Undefined if the velocity of the kite is near zero.
 """
 function calc_course(s::AKM, neg_azimuth=false)
     elevation = calc_elevation(s)
-    if neg_azimuth 
+    if neg_azimuth
         azimuth = -calc_azimuth(s)
-    else    
+    else
         azimuth = calc_azimuth(s)
     end
     KiteUtils.calc_course(s.vel_kite, elevation, azimuth)
@@ -429,7 +429,7 @@ end
 """
     calculate_rotational_inertia!(s::AKM, include_kcu::Bool=true, around_kcu::Bool=false)
 
-Calculate the rotational inertia (Ixx, Ixy, Ixz, Iyy, Iyz, Izz) for a kite model from settings. 
+Calculate the rotational inertia (Ixx, Ixy, Ixz, Iyy, Iyz, Izz) for a kite model from settings.
 Modifies the kite model by initializing the masses.
 
 Parameters:
@@ -440,7 +440,7 @@ Parameters:
 - `include_kcu`: Include the kcu in the rotational inertia calculation?
 - `around_kcu`: Uses the kcu as the rotation point.
 
-Returns:  
+Returns:
 The tuple  Ixx, Ixy, Ixz, Iyy, Iyz, Izz where:
 - Ixx: rotational inertia around the x-axis.
 - Ixy: rotational inertia around the xy-plane.
@@ -452,7 +452,7 @@ The tuple  Ixx, Ixy, Ixz, Iyy, Iyz, Izz where:
 """
 function calculate_rotational_inertia!(s::AKM, include_kcu::Bool=true, around_kcu::Bool=false)
     points = KiteUtils.get_particles(s.set.height_k, s.set.h_bridle, s.set.width, s.set.m_k, [0, 0, 0], [0, 0, -1], [10, 0, 0])
-    
+
     pos_matrix = [points[begin+1] points[begin+2] points[begin+3] points[begin+4] points[begin+5]]
     X = pos_matrix[begin, :]
     Y = pos_matrix[begin+1, :]
@@ -520,7 +520,7 @@ end
 #     var_02::MyFloat
 #     ...
 #     var_16::MyFloat
-# end 
+# end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.time = s.t_0
@@ -652,26 +652,27 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
             end
         end
     else
+        y0, yd0 = KiteModels.init(s; delta, upwind_dir)
         set_v_wind_ground!(s, calc_height(s),
             s.set.v_wind; upwind_dir)
-        KiteModels.init(s; delta, upwind_dir)
+        y0, yd0
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
-    
+
     if s.set.solver=="IDA"
         solver  = Sundials.IDA(linear_solver=Symbol(s.set.linear_solver), max_order = s.set.max_order)
     elseif s.set.solver=="DImplicitEuler"
         solver  = DImplicitEuler(autodiff=AutoFiniteDiff())
     elseif s.set.solver=="DFBDF"
-        solver  = DFBDF(autodiff=AutoFiniteDiff(), max_order=Val{s.set.max_order}())        
+        solver  = DFBDF(autodiff=AutoFiniteDiff(), max_order=Val{s.set.max_order}())
     else
         println("Error! Invalid solver in settings.yaml: $(s.set.solver)")
         return nothing
     end
 
     dt = 1/s.set.sample_freq
-    tspan   = (0.0, dt) 
+    tspan   = (0.0, dt)
     abstol  = s.set.abs_tol # max error in m/s and m
 
     differential_vars = ones(Bool, length(y0))
@@ -705,7 +706,7 @@ Parameters:
 - bearing:      set value of heading/ course in radian or nothing (only for logging, not used otherwise)
 - attractor:    the attractor coordinates [azimuth, elevation] in radian or nothing (only for logging)
 - `v_wind_gnd`: wind speed at reference height in m/s
-- `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north; 
+- `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north;
                 clockwise positive. Default: -pi/2, wind from west.
 - dt:           time step in seconds
 
@@ -753,7 +754,7 @@ Copy all example scripts to the folder "examples"
 """
 function copy_examples(; overwrite=true)
     PATH = "examples"
-    if ! isdir(PATH) 
+    if ! isdir(PATH)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
@@ -789,7 +790,7 @@ function install_examples(add_packages=true)
     copy_bin()
     copy_model_settings()
     if add_packages
-        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots", 
+        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots",
                  "LaTeXStrings", "StatsBase", "Timers", "Rotations"])
     end
 end
@@ -817,7 +818,7 @@ function install_examples_3d(add_packages=true, overwrite=false)
 end
 
 function copy_files(relpath, files; overwrite=true)
-    if ! isdir(relpath) 
+    if ! isdir(relpath)
         mkdir(relpath)
     end
     src_path = joinpath(@__DIR__, "..", relpath)
@@ -858,7 +859,7 @@ Copy the scripts create_sys_image, run_julia and setup_env to the folder "bin"
 """
 function copy_bin(; overwrite=true)
     PATH = "bin"
-    if ! isdir(PATH) 
+    if ! isdir(PATH)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
@@ -878,7 +879,7 @@ function copy_bin(; overwrite=true)
         chmod(dst, 0o664)
     end
     PATH = "test"
-    if ! isdir(PATH) 
+    if ! isdir(PATH)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)

@@ -35,7 +35,7 @@ end
         init_392(kps4_local, l)
         KiteModels.set_depower_steering!(kps4_local, kps4_local.set.depower_offset/100.0, 0.0)
         try
-            _, res2 = find_steady_state!(kps4_local; delta=0.001, stiffness_factor=0.07, prn=false) 
+            _, res2 = find_steady_state!(kps4_local; delta=0.001, stiffness_factor=0.07, prn=false)
             @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
             pre_tension = KiteModels.calc_pre_tension(kps4_local)
             @test pre_tension > 1.0001

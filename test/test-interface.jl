@@ -44,4 +44,18 @@ end
     @test kps4.integrator isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
 end
 
+@testset "KPS3 init! steady_state=false" begin
+    kps3.set.upwind_dir = rad2deg(-pi/2)
+    integ = init!(kps3; delta=0.0001, steady_state=false)
+    @test integ isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
+    @test kps3.integrator isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
+end
+
+@testset "KPS4 init! steady_state=false" begin
+    kps4.set.upwind_dir = rad2deg(-pi/2)
+    integ = init!(kps4; delta=0.005, steady_state=false)
+    @test integ isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
+    @test kps4.integrator isa KiteModels.OrdinaryDiffEqCore.ODEIntegrator
+end
+
 nothing
