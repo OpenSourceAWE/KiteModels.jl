@@ -2,6 +2,10 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.9 2026-04-29
+#### Changed
+- the `init!` function now supports a `steady_state` keyword argument (default `true`); when set to `false`, the steady state finder is skipped
+
 ### KiteModels v0.11.8 2026-04-26
 ### Added
 - the function `calc_turbulent_wind`
