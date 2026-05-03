@@ -144,12 +144,8 @@ else
     branch=""
 fi
 
-# Delete any existing custom system image for this Julia version and branch
-if [[ $branch != "" ]]; then
-    SOFILE="bin/kps-image-${julia_major}-${branch}.so"
-else
-    SOFILE="bin/kps-image-${julia_major}.so"
-fi
+# Delete any existing custom system image for this Julia version
+SOFILE="bin/kps-image-${julia_major}.so"
 if test -f "$SOFILE"; then
     echo "Deleting old system image: $SOFILE"
     rm -f "$SOFILE"

@@ -170,8 +170,8 @@ if [ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1 ; then
 else
     branch=""
 fi
-if test -f "kps-image-${julia_major}-${branch}.so"; then
-    mv bin/kps-image-${julia_major}-${branch}.so kps-image-${julia_major}-${branch}.so.bak
+if test -f "kps-image-${julia_major}.so"; then
+    mv kps-image-${julia_major}.so kps-image-${julia_major}.so.bak
 fi
 
 if [[ $julia_major == "1.10" ]]; then
@@ -236,11 +236,7 @@ if [[ $_sysimg_rc -ne 0 ]]; then
     exit $_sysimg_rc
 fi
 
-if [[ $branch != "" ]]; then
-    SOFILE="bin/kps-image-${julia_major}-${branch}.so"
-else
-    SOFILE="bin/kps-image-${julia_major}.so"
-fi
+SOFILE="bin/kps-image-${julia_major}.so"
 if test -f $SOFILE; then
     mv $SOFILE $SOFILE.bak
 fi
@@ -252,15 +248,11 @@ rm LocalPreferences.toml
 echo "Precompiling package KiteModels..."
 $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using KiteModels, KitePodModels, KiteUtils"
 echo "Precompiling package ControlPlots ..."
-if [[ $branch != "" ]]; then
-    $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using Pkg; Pkg.activate(\"test\"); using ControlPlots, KiteModels"
-else
-    $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using ControlPlots, KiteModels"
-fi
+$JULIA_CMD --startup-file=no --project -J $SOFILE -e "using ControlPlots, KiteModels"
 # On Linux, suppress known-harmless Julia extension loading warnings (e.g. DistributionsTestExt).
 # The error spans multiple lines (┌ Error: ... │ ... └ @ Base), so use sed range deletion.
 if [[ "$(uname -s)" == "Linux" ]]; then
     exec 2> >(sed '/Error during loading of extension DistributionsTestExt/,/^└/d' >&2)
 fi
-julia --project=docs -J bin/kps-image-${julia_major}-${branch}.so -e "using LiveServer, Documenter, Pkg; Pkg.instantiate()"
+julia --project=docs -J $SOFILE -e "using LiveServer, Documenter, Pkg; Pkg.instantiate()"
 
