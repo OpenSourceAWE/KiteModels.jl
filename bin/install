@@ -130,13 +130,23 @@ export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 . ./bin/setup_env
 
 echo "Ensuring Revise is installed in the global Julia environment..."
-julia --startup-file=no -e '
+_revise_code='
 using Pkg
 Pkg.activate()
 if Base.find_package("Revise") === nothing
     Pkg.add("Revise")
 end
 '
+
+set +e
+julia --startup-file=no -e "$_revise_code"
+_revise_rc=$?
+set -e
+if [[ $_revise_rc -ne 0 ]]; then
+    echo "First attempt failed. Retrying Revise installation without LD_PRELOAD/LD_LIBRARY_PATH overrides..." >&2
+    env -u LD_PRELOAD -u LD_LIBRARY_PATH command julia --startup-file=no -e "$_revise_code"
+fi
+unset _revise_code _revise_rc
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
     # Avoid Tk backend issues on macOS (e.g. non-responsive close button in PyPlot windows).
