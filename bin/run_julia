@@ -56,10 +56,19 @@ if [[ "$USE_KAIMON" == "true" ]]; then
 fi
 julia_init+='using KiteModels; function menu(); include("examples/menu.jl"); end'
 
-# Run Julia with or without system image
+# Build launch arguments once for primary and fallback execution paths.
+JULIA_ARGS=("+${julia_major}" -t 1 $GCT --project -i -e "$julia_init")
 if test -f "$SOFILE"; then
     echo "Found system image!"
-    julia +${julia_major} -J "$SOFILE" -t 1 $GCT --project -i -e "$julia_init"
-else
-    julia +${julia_major} -t 1 $GCT --project -i -e "$julia_init"
+    JULIA_ARGS=("+${julia_major}" -J "$SOFILE" -t 1 $GCT --project -i -e "$julia_init")
+fi
+
+# Run Julia with setup_env overrides first, then retry once with a clean loader env.
+set +e
+julia "${JULIA_ARGS[@]}"
+_jl_rc=$?
+set -e
+if [[ $_jl_rc -ne 0 ]]; then
+    echo "Julia launcher exited with code ${_jl_rc}. Retrying once without LD_PRELOAD/LD_LIBRARY_PATH overrides..." >&2
+    env -u LD_PRELOAD -u LD_LIBRARY_PATH command julia "${JULIA_ARGS[@]}"
 fi
