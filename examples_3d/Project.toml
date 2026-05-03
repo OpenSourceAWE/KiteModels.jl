@@ -20,7 +20,6 @@ SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 Timers = "21f18d07-b854-4dab-86f0-c15a3821819a"
 
 [sources]
-AtmosphericModels = {url = "https://github.com/OpenSourceAWE/AtmosphericModels.jl.git", rev = "main"}
 KiteModels = {path = ".."}
 
 [compat]
