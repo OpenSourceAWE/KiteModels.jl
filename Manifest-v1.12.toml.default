@@ -151,8 +151,6 @@ version = "1.11.0"
 [[deps.AtmosphericModels]]
 deps = ["FFTW", "HypergeometricFunctions", "KiteUtils", "LinearAlgebra", "MeshGrid", "NPZ", "Printf", "Random", "Statistics"]
 git-tree-sha1 = "3414c2c225d3e5002e6341895cea49134c3f3b86"
-repo-rev = "main"
-repo-url = "https://github.com/OpenSourceAWE/AtmosphericModels.jl.git"
 uuid = "c59cac55-771d-4f45-b14d-1c681463a295"
 version = "0.3.4"
 
