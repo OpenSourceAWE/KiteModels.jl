@@ -19,20 +19,24 @@ fi
 . ./bin/setup_env
 
 USE_KAIMON=false
-if command -v ss &> /dev/null; then
-    if ss -ltn '( sport = :2828 )' | grep -q ':2828'; then
-        USE_KAIMON=true
-    fi
-elif command -v lsof &> /dev/null; then
-    if lsof -nP -iTCP:2828 -sTCP:LISTEN &> /dev/null; then
-        USE_KAIMON=true
-    fi
-fi
 
 julia_version=$(julia --version | awk '{print($3)}')
 julia_major=${julia_version:0:3} 
 if [[ $julia_major == "1.1" ]]; then
     julia_major=${julia_version:0:4} 
+fi
+
+# Kaimon integration requires Julia >= 1.12
+if [[ $julia_major != "1.11" ]]; then
+    if command -v ss &> /dev/null; then
+        if ss -ltn '( sport = :2828 )' | grep -q ':2828'; then
+            USE_KAIMON=true
+        fi
+    elif command -v lsof &> /dev/null; then
+        if lsof -nP -iTCP:2828 -sTCP:LISTEN &> /dev/null; then
+            USE_KAIMON=true
+        fi
+    fi
 fi
 
 if [[ $HOSTNAME == "ufryzen" || $HOSTNAME == "framework" ]]; then
