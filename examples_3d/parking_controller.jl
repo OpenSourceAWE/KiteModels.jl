@@ -23,6 +23,10 @@ import KiteUtils: wrap2pi
     k_ds = 2.0 # influence of the depower settings on the steering sensitivity
     c1 = 0.048 # v9 kite model
     c2 = 0     # a value other than zero creates more problems than it solves
+    max_turn_rate_set::Float64 = 100.0 # clamp outer-loop desired turn-rate [rad/s]
+    max_turn_rate_cmd::Float64 = 100.0 # clamp inner-loop commanded turn-rate [rad/s]
+    max_steering::Float64 = 100.0    # clamp final steering command to physical range
+    max_steering_rate::Float64 = 0.0 # optional rate limit [1/s], 0 disables limiting
 end
 
 mutable struct ParkingController
@@ -30,6 +34,7 @@ mutable struct ParkingController
     pid_tr::DiscretePID{Float64}
     pid_outer::DiscretePID{Float64}
     last_heading::Float64
+    last_steering::Float64
     chi_set::Float64
     last_ndi_gain::Float64
 end
@@ -38,7 +43,7 @@ function ParkingController(pcs::ParkingControllerSettings; last_heading = 0.0)
     Ts = pcs.dt
     pid_tr = DiscretePID(; K = pcs.kp_tr, Ti = pcs.kp_tr / pcs.ki_tr, Ts)
     pid_outer = DiscretePID(; K = pcs.kp, Ti = pcs.kp / pcs.ki, Ts)
-    return ParkingController(pcs, pid_tr, pid_outer, last_heading, 0, 0)
+    return ParkingController(pcs, pid_tr, pid_outer, last_heading, 0.0, 0.0, 0.0)
 end
 
 """
@@ -117,12 +122,22 @@ function calc_steering(
     # calculate the desired turn rate
     heading = wrap2pi(heading) # a different wrap2pi function is needed that avoids any jumps
     psi_dot_set = pc.pid_outer(wrap2pi(chi_set), heading)
-    psi_dot = (wrap2pi(heading - pc.last_heading)) / pc.pcs.dt
+    psi_dot_set = clamp(psi_dot_set, -pc.pcs.max_turn_rate_set, pc.pcs.max_turn_rate_set)
+    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries.
+    dpsi = atan(sin(heading - pc.last_heading), cos(heading - pc.last_heading))
+    psi_dot = dpsi / pc.pcs.dt
     pc.last_heading = heading
     psi_dot_in = pc.pid_tr(psi_dot_set, psi_dot)
+    psi_dot_in = clamp(psi_dot_in, -pc.pcs.max_turn_rate_cmd, pc.pcs.max_turn_rate_cmd)
     # linearize the NDI block
     u_s, ndi_gain = linearize(pc, psi_dot_in, heading, elevation, v_app; ud_prime)
-    u_s, ndi_gain, psi_dot, psi_dot_set
+    u_cmd = clamp(u_s, -pc.pcs.max_steering, pc.pcs.max_steering)
+    if pc.pcs.max_steering_rate > 0.0
+        max_delta = pc.pcs.max_steering_rate * pc.pcs.dt
+        u_cmd = clamp(u_cmd, pc.last_steering - max_delta, pc.last_steering + max_delta)
+    end
+    pc.last_steering = u_cmd
+    u_cmd, ndi_gain, psi_dot, psi_dot_set
 end
 
 function test_linearize()

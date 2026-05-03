@@ -241,6 +241,56 @@ function calc_turbulent_wind(am, pos, upwind_dir, t)
               wx * sin(wind_dir) + wy * cos(wind_dir),
               wz)
     end
+    # Sample the turbulent wind field with a robust axis mapping:
+    # advect along the longer horizontal field dimension, independent of upstream array layout.
+    function sample_wind(wx_pos, wy_pos, wz_pos)
+        wf = am.wf
+        @assert wf !== nothing "Wind field is not initialized"
+        zq = max(wz_pos, 10.0)
+        rel_turb = rel_turbo(am)
+
+        along = wx_pos * cos(wind_dir) + wy_pos * sin(wind_dir)
+        cross = -wx_pos * sin(wind_dir) + wy_pos * cos(wind_dir)
+        v_wind_height = am.set.v_wind * calc_wind_factor(am, zq, am.set.profile_law)
+
+        n1 = size(wf.u, 1)
+        n2 = size(wf.u, 2)
+        dim1_is_long = n1 >= n2
+        nlong = dim1_is_long ? n1 : n2
+        nshort = dim1_is_long ? n2 : n1
+
+        along_idx = (along + t * v_wind_height) / am.set.grid_step
+        while along_idx > nlong - 1
+            along_idx -= nlong - 1
+        end
+        while along_idx < 0
+            along_idx += nlong - 1
+        end
+        along_idx = Int(round(along_idx)) + 1
+
+        cross_idx = cross / am.set.grid_step
+        while cross_idx > nshort - 1
+            cross_idx -= nshort - 1
+        end
+        while cross_idx < 0
+            cross_idx += nshort - 1
+        end
+        cross_idx = Int(round(cross_idx)) + 1
+
+        z1 = zq / am.set.height_step
+        if z1 > size(wf.u, 3) - 1
+            z1 = size(wf.u, 3) - 1
+        elseif z1 < 0
+            z1 = 0
+        end
+        z1 = Int(round(z1)) + 1
+
+        i = dim1_is_long ? along_idx : cross_idx
+        j = dim1_is_long ? cross_idx : along_idx
+        return wf.u[i, j, z1] * rel_turb + v_wind_height,
+               wf.v[i, j, z1] * rel_turb,
+               wf.w[i, j, z1] * rel_turb
+    end
     mean_wind = SVec3(v_wind_gnd * calc_wind_factor(am, height) * cos(wind_dir),
                       v_wind_gnd * calc_wind_factor(am, height) * sin(wind_dir),
                       0.0)
@@ -250,9 +300,9 @@ function calc_turbulent_wind(am, pos, upwind_dir, t)
     if use_turbulence == 0.0
         return mean_wind, mean_wind_tether
     end
-    wx, wy, wz = get_wind(am, pos[1], pos[2], height, t; upwind_dir)
+    wx, wy, wz = sample_wind(pos[1], pos[2], height)
     v_wind = rotate_wind(wx, wy, wz)
-    wx, wy, wz = get_wind(am, 0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0), t; upwind_dir)
+    wx, wy, wz = sample_wind(0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0))
     v_wind_tether = rotate_wind(wx, wy, wz)
     return v_wind, v_wind_tether
 end
