@@ -2,6 +2,23 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.10 2026-05-03
+#### Added
+- `run_julia` now supports optional Kaimon startup when available (Julia >= 1.12)
+
+#### Changed
+- updated manifests and project constraints to keep environments in sync
+- use the latest released `AtmosphericModels` version from the registry
+- `create_sys_image` and `install` now always use a branch-independent system image filename (`kps-image-<julia_major>.so`)
+
+#### Fixed
+- fixed handling of `upwind_dir` propagation to wind calculation
+- fixed `calc_turbulent_wind` and improved controller robustness
+- improved Julia 1.11 compatibility in startup/install tooling
+- `install` now always ensures `Revise` is available in the global Julia environment
+- improved Linux OpenSSL runtime handling to avoid `libssl`/`libcrypto` symbol mismatches
+- fixed failure modes in `install` and startup scripts for more reliable launcher behavior
+
 ### KiteModels v0.11.9 2026-04-29
 #### Changed
 - the `init!` function now supports a `steady_state` keyword argument (default `true`); when set to `false`, the steady state finder is skipped
