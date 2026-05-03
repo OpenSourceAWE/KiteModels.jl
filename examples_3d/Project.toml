@@ -1,4 +1,5 @@
 [deps]
+AtmosphericModels = "c59cac55-771d-4f45-b14d-1c681463a295"
 ControlPlots = "23c2ee80-7a9e-4350-b264-8e670f12517c"
 DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
 DiscretePIDs = "c1363496-6848-4723-8758-079b737f6baf"
@@ -19,6 +20,7 @@ SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 Timers = "21f18d07-b854-4dab-86f0-c15a3821819a"
 
 [sources]
+AtmosphericModels = {url = "https://github.com/OpenSourceAWE/AtmosphericModels.jl.git", rev = "main"}
 KiteModels = {path = ".."}
 
 [compat]
