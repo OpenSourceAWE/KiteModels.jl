@@ -19,7 +19,7 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
-set.use_turbulence = 1.0
+set.use_turbulence = 0.72*0.5
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
