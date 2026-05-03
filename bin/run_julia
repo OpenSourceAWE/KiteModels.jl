@@ -18,16 +18,21 @@ fi
 
 . ./bin/setup_env
 
+USE_KAIMON=false
+if command -v ss &> /dev/null; then
+    if ss -ltn '( sport = :2828 )' | grep -q ':2828'; then
+        USE_KAIMON=true
+    fi
+elif command -v lsof &> /dev/null; then
+    if lsof -nP -iTCP:2828 -sTCP:LISTEN &> /dev/null; then
+        USE_KAIMON=true
+    fi
+fi
+
 julia_version=$(julia --version | awk '{print($3)}')
 julia_major=${julia_version:0:3} 
 if [[ $julia_major == "1.1" ]]; then
     julia_major=${julia_version:0:4} 
-fi
-
-if [ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1 ; then
-    branch=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/g')
-else
-    branch=""
 fi
 
 if [[ $HOSTNAME == "ufryzen" || $HOSTNAME == "framework" ]]; then
@@ -38,17 +43,19 @@ else
     GCT="--gcthreads=4,1"
 fi
 
-# Determine system image filename based on branch
-if [[ -n "$branch" ]]; then
-    SOFILE="bin/kps-image-${julia_major}-${branch}.so"
-else
-    SOFILE="bin/kps-image-${julia_major}.so"
+# Determine system image filename
+SOFILE="bin/kps-image-${julia_major}.so"
+
+julia_init='using Revise; '
+if [[ "$USE_KAIMON" == "true" ]]; then
+    julia_init+='using Kaimon; Gate.serve(); '
 fi
+julia_init+='using KiteModels; function menu(); include("examples/menu.jl"); end'
 
 # Run Julia with or without system image
 if test -f "$SOFILE"; then
     echo "Found system image!"
-    julia +${julia_major} -J "$SOFILE" -t 1 $GCT --project -i -e 'using KiteModels; function menu(); include("examples/menu.jl"); end'
+    julia +${julia_major} -J "$SOFILE" -t 1 $GCT --project -i -e "$julia_init"
 else
-    julia +${julia_major} -t 1 $GCT --project -i -e 'using KiteModels; function menu(); include("examples/menu.jl"); end'
+    julia +${julia_major} -t 1 $GCT --project -i -e "$julia_init"
 fi
