@@ -95,15 +95,18 @@ Settings are in `data/` as YAML files. Key sections:
 
 ## Documentation
 To test if building the docs works locally, use:
-```
+
+```julia
 using Pkg; Pkg.activate("docs"); include("docs/make.jl"); Pkg.activate(".")
 ```
 
 ## System Image
 A precompiled system image can be built with:
+
 ```bash
 bin/create_sys_image
 ```
+
 Launch Julia with it via `bin/run_julia`.
 
 ## Tool routing
@@ -237,12 +240,14 @@ live. You and the user share the same REPL.
 - **Default to `q=true`** (the default). Use `q=false` ONLY when you
   need the return value for a decision. Imports, assignments, and
   function definitions should always use `q=true`:
+
   ```julia
   ex(e="using Statistics")                  # q=true (default)
   ex(e="data = load(...); nothing")         # q=true
   ex(e="length(result) == 5", q=false)      # q=false: need the bool
   ex(e="methods(my_fn)", q=false)           # q=false: need to read them
   ```
+
 - **`s=true`** (rare) suppresses the `agent>` prompt and REPL echo.
   Only use it for huge outputs that would spam the user's terminal.
 - **Revise is active** in kaimon sessions by default. Editing a file
@@ -394,6 +399,7 @@ breakpoint session.
   (broken) dedicated tool.
 - **"Profile a hot block"** → route via `ex` + `Profile` directly,
   not the broken `profile_code` tool:
+
   ```julia
   ex(e="""
   using Profile
