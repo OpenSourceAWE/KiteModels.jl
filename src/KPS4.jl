@@ -126,6 +126,8 @@ $(TYPEDFIELDS)
     pitch::S =            0.0
     "pitch rate [rad/s]"
     pitch_rate::S =       0.0
+    "roll angle from previous step [rad]"
+    last_roll::S =        0.0
     "aoa at particle B"
     alpha_2::S =           0.0
     "aoa at particle C"
@@ -243,6 +245,7 @@ function clear!(s::KPS4)
     s.kcu.set_steering = 0.0
     s.pitch = 0.0
     s.pitch_rate = 0.0
+    s.last_roll = 0.0
     s.alpha_depower = 0.0
     s.depower = 0.0
     s.steering = 0.0

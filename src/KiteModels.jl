@@ -632,6 +632,11 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.set_speed .= [s.sync_speed, 0, 0, 0]
     end
     ss.roll, ss.pitch, ss.yaw = orient_euler(s)
+    # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
+    # psi_m = psi - phi_dot * cos(theta)
+    # This removes the effect of roll on the heading measurement
+    body_rate = ss.heading_rate - azimuth_dot * sin(ss.elevation)
+    ss.turn_rates .= [0, 0, body_rate]
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
