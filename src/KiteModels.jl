@@ -573,6 +573,7 @@ end
 # end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
+    dt = s.t_0 - ss.time
     ss.time = s.t_0
     pos = s.pos
     P = length(pos)
@@ -585,7 +586,11 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.elevation = calc_elevation(s)
     ss.azimuth = calc_azimuth(s)
     ss.winch_force .= [winch_force(s); 0; 0; 0]
-    ss.heading = calc_heading(s)
+    new_heading = calc_heading(s)
+    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
+    dpsi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
+    ss.heading_rate = dpsi / dt
+    ss.heading = new_heading
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
     ss.l_tether .= [s.l_tether; 0; 0; 0]
