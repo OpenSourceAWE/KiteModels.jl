@@ -26,6 +26,7 @@ First, launch it single threaded to avoid problems with KiteViewers or ControlPl
 ```
 
 Second, use the following `.JETLSConfig.toml` file
+
 ```toml
 formatter = "JuliaFormatter"
 
@@ -41,6 +42,7 @@ match_by = "message"
 match_type = "regex"
 severity = "off"
 ```
+
 This suppresses invalid "not concretized" warnings and runs JETLS.jl only on the files you opened, not on all files of your project.
 
 Sometimes JETLS.jl keeps running even after closing VSCode. This can eat up all your memory. In that case, on Linux you can use the command `killall julia` to terminate the language server and free the memory after closing VSCode.
