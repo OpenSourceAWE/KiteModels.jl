@@ -66,7 +66,9 @@ if [[ "$(uname -s)" == "Linux" ]]; then
         # Add dirname of a path to _jlibdirs (deduped).
         _jadd_libdir() {
             local _d; _d=$(dirname "$1")
-            [[ ":${_jlibdirs[*]}:" != *":$_d:"* ]] && _jlibdirs+=("$_d")
+            if [[ ":${_jlibdirs[*]}:" != *":$_d:"* ]]; then
+                _jlibdirs+=("$_d")
+            fi
         }
 
         local _jf
@@ -99,7 +101,9 @@ if [[ "$(uname -s)" == "Linux" ]]; then
             [[ ${#_jpreloads[@]} -gt 0 ]] && _jfinal_preload+=":$(IFS=:; echo "${_jpreloads[*]}")"
             [[ -n "$_jbase_preload" ]] && _jfinal_preload+=":$_jbase_preload"
             # Add glib dir first in LD_LIBRARY_PATH
-            [[ ":${_jlibdirs[*]}:" != *":$_jglib_dir:"* ]] && _jlibdirs=("$_jglib_dir" "${_jlibdirs[@]}")
+            if [[ ":${_jlibdirs[*]}:" != *":$_jglib_dir:"* ]]; then
+                _jlibdirs=("$_jglib_dir" "${_jlibdirs[@]}")
+            fi
         elif [[ ${#_jpreloads[@]} -gt 0 ]]; then
             _jfinal_preload="$(IFS=:; echo "${_jpreloads[*]}")${_jbase_preload:+:$_jbase_preload}"
         fi
