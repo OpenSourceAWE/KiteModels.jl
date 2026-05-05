@@ -288,7 +288,7 @@ After this workshop, you should be able to answer the following questions:
 
 ## Outlook
 [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) uses ModelingToolkit.jl and Symbolics.jl to define kite, tether, winch and pulleys symbolically, enabling automatic equation simplification and order reduction. Furthermore it can use [VortexStepMethod.jl](https://github.com/OpenSourceAWE/VortexStepMethod.jl) [@Cayon2023] to calculate the aerodynamic forces and moments, which increases the accuracy compared to the simple plate models of the package KiteModels.jl.
-KiteModels.jl relies on predefined numerical models with manual implementations for components like kite dynamics and atmospheric effects. 
+KiteModels.jl relies on predefined numerical models with manual implementations for components like kite dynamics and atmospheric effects.
 
 Symbolic preprocessing in SymbolicAWEModels.jl reduces equation count (e.g., from 9 to 6 in tether examples), speeding up simulations and improving numerical stability by eliminating algebraic loops and enforcing constraints exactly. This leads to faster solving compared to KiteModels.jl's direct DAE formulations without such optimizations, as seen in SciML ecosystem benchmarks showing order-of-magnitude speedups.
 
