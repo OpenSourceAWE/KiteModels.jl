@@ -584,7 +584,11 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     end
     ss.orient .= calc_orient_quat(s)
     ss.elevation = calc_elevation(s)
-    ss.azimuth = calc_azimuth(s)
+    new_azimuth = calc_azimuth(s)
+    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
+    daz = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
+    ss.azimuth_rate = daz / dt
+    ss.azimuth = new_azimuth
     ss.winch_force .= [winch_force(s); 0; 0; 0]
     new_heading = calc_heading(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
@@ -635,7 +639,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
     # psi_m = psi - phi_dot * cos(theta)
     # This removes the effect of roll on the heading measurement
-    body_rate = ss.heading_rate - azimuth_dot * sin(ss.elevation)
+    body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
     ss.turn_rates .= [0, 0, body_rate]
     cl, cd = cl_cd(s)
     ss.CL2 = cl
