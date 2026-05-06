@@ -10,7 +10,7 @@ SPDX-License-Identifier: MIT
 [![Test](https://github.com/OpenSourceAWE/KiteModels.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/OpenSourceAWE/KiteModels.jl/actions/workflows/Test.yml?query=branch%3Amain)
 [![Docs](https://github.com/OpenSourceAWE/KiteModels.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/OpenSourceAWE/KiteModels.jl/actions/workflows/Docs.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/OpenSourceAWE/KiteModels.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenSourceAWE/KiteModels.jl)
-[![DOI](https://zenodo.org/badge/443855286.svg)](https://zenodo.org/doi/10.5281/zenodo.15836456)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15836456.svg)](https://doi.org/10.5281/zenodo.15836456)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 ## Kite power system models, consisting of tether and kite
