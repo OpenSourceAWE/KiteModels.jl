@@ -37,7 +37,7 @@ export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
-export set_default_turbulence, spring_forces, states, upwind_dir
+export get_default_turbulence, set_default_turbulence, spring_forces, states, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -942,6 +942,39 @@ function set_default_turbulence(value::Union{Nothing, Real}=nothing)
     KiteUtils.writefile(new_lines, gui_yaml)
     println("default_turbulence set to: $new_value")
     return new_value
+end
+
+"""
+    get_default_turbulence() -> Union{Float64, Nothing}
+
+Read the configured `default_turbulence` from `data/gui.yaml`. If the file does
+not exist it is created from `gui.yaml.default`.
+"""
+function get_default_turbulence()
+    gui_yaml = joinpath(get_data_path(), "gui.yaml")
+    gui_yaml_default = gui_yaml * ".default"
+
+    if !isfile(gui_yaml)
+        if isfile(gui_yaml_default)
+            cp(gui_yaml_default, gui_yaml)
+        else
+            println("Missing $gui_yaml and fallback $gui_yaml_default")
+            return nothing
+        end
+    end
+
+    dict = KiteUtils.YAML.load_file(gui_yaml)
+    if !haskey(dict, "gui") || !haskey(dict["gui"], "default_turbulence")
+        println("Could not read current default_turbulence in $gui_yaml")
+        return nothing
+    end
+
+    try
+        return Float64(dict["gui"]["default_turbulence"])
+    catch
+        println("Could not read current default_turbulence in $gui_yaml")
+        return nothing
+    end
 end
 
 

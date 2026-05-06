@@ -19,7 +19,10 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
-set.use_turbulence = 0.72
+default_turbulence = get_default_turbulence()
+if default_turbulence !== nothing
+    set.use_turbulence = default_turbulence
+end
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
