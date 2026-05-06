@@ -3,7 +3,6 @@
 
 using Pkg
 
-using ControlPlots
 using KiteModels
 using Documenter
 
