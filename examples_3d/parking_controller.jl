@@ -35,19 +35,18 @@ mutable struct ParkingController
     pcs::ParkingControllerSettings
     pid_tr::DiscretePID
     pid_outer::DiscretePID
-    last_heading::Float64
     last_steering::Float64
     chi_set::Float64
     last_ndi_gain::Float64
 end
 
-function ParkingController(pcs::ParkingControllerSettings; last_heading = 0.0)
+function ParkingController(pcs::ParkingControllerSettings)
     Ts = pcs.dt
     pid_tr    = DiscretePID(;K=pcs.kp_tr, Ti=pcs.kp_tr/ pcs.ki_tr, Ts)
     umax = pcs.max_turn_rate_set
     pid_outer = DiscretePID(;K=pcs.kp, Ti=pcs.kp/ pcs.ki, Td=pcs.kd, N=pcs.kd_N,
                              umin=-umax, umax=umax, Ts)
-    return ParkingController(pcs, pid_tr, pid_outer, last_heading, 0.0, 0.0, 0.0)
+    return ParkingController(pcs, pid_tr, pid_outer, 0.0, 0.0, 0.0)
 end
 
 """
@@ -140,7 +139,6 @@ function calc_steering(
     chi_pid = wrap2pi(heading + d_chi)
     psi_dot_set = pc.pid_outer(chi_pid, heading)
     psi_dot_set = clamp(psi_dot_set, -pc.pcs.max_turn_rate_set, pc.pcs.max_turn_rate_set)
-    pc.last_heading = heading
     psi_dot = heading_rate
     psi_dot_in = pc.pid_tr(psi_dot_set, psi_dot)
     psi_dot_in = clamp(psi_dot_in, -pc.pcs.max_turn_rate_cmd, pc.pcs.max_turn_rate_cmd)

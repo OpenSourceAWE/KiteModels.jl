@@ -108,9 +108,6 @@ function sim_parking(integrator)
         time = i * dt 
         steering = 0.0
         if i > 100
-            if i == 100
-                pc.last_heading = sys_state.heading
-            end
             elevation = sys_state.elevation
             chi_set = pcm.navigate(pc, sys_state.azimuth, elevation)
             steering, _, _, _ = pcm.calc_steering(pc, sys_state.heading, sys_state.heading_rate, chi_set; 
