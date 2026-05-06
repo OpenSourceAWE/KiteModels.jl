@@ -195,14 +195,14 @@ end
 
 play_parking()
 stop(viewer)
-let v = filter(!=(0.0), V_WIND_KITE)
-    ti = std(v) / mean(v) * 100
-    println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")
-end
+v = filter(!=(0.0), V_WIND_KITE)
+ti = std(v) / mean(v) * 100
+println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")
 p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad2deg.(AV_UPWIND_DIR)],
          rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)], V_WIND_KITE; 
          xlabel="Time [s]", 
          ylabels=["Azimuth [°]", "azimuth_east [°]", "upwind_dir [°]", "Heading [°]", "Steering [%]", "v_wind_kite [m/s]"],
-         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"])
+         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"],
+         ysize=12, fig="Parking with changing wind direction, TI: $(round(ti, digits=2)) %")
 display(p)
 KiteModels.reactivate_host_app()
