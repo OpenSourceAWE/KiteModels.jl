@@ -30,6 +30,8 @@ parameters, in this context mostly the variable s.
 set_depower_steering!
 set_v_wind_ground!
 calc_turbulent_wind
+get_default_turbulence
+set_default_turbulence
 ```
 
 ## Output functions
