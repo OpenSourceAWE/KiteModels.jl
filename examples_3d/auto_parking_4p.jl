@@ -112,7 +112,7 @@ function simulate(integrator, sys_state)
         if t_sim < 0.3*dt
             t_gc_tot += @elapsed GC.gc(false)
         end
-        sys_state = SysState(kps4)
+        update_sys_state!(sys_state, kps4)
         T[i] = dt * i
         AZIMUTH[i] = sys_state.azimuth
         HEADING[i] = wrap2pi(sys_state.heading)

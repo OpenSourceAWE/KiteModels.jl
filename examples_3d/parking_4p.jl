@@ -46,6 +46,7 @@ heading = zeros(STEPS)
 
 function simulate(integrator, steps, plot = PLOT)
     iter = 0
+    sys_state = SysState(kps4)
     for i = 1:steps
         acc = 0.0
         v_time[i] = kps4.t_0
@@ -80,12 +81,7 @@ function simulate(integrator, steps, plot = PLOT)
             end
             sleep(0.05)
         end
-        sys_state = SysState(kps4)
-        # q = QuatRotation(sys_state.orient)
-        # roll, pitch, yaw = quat2euler(q)
-        # println("Yaw: ", rad2deg(yaw), ", Pitch: ", rad2deg(pitch), ", Roll: ", rad2deg(roll))
-
-        # sys_state.orient = quat2viewer(q)
+        update_sys_state!(sys_state, kps4)
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale = 3)
         if i == 1
             bring_viewer_to_front()
