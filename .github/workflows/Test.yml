@@ -64,6 +64,7 @@ jobs:
           arch: ${{ matrix.arch }}
           
       - uses: julia-actions/cache@v3
+        continue-on-error: true
       - uses: julia-actions/julia-buildpkg@v1
       
       - name: Build PyCall
@@ -119,6 +120,7 @@ jobs:
         version: ${{ matrix.julia_version }}
         
     - uses: julia-actions/cache@v3
+      continue-on-error: true
     - uses: julia-actions/julia-buildpkg@v1
     
     - name: Build PyCall

@@ -51,6 +51,7 @@ jobs:
           arch: ${{ inputs.arch }}
       - name: Use Julia cache
         uses: julia-actions/cache@v3
+        continue-on-error: true
       - name: Prepare version-specific manifest
         shell: bash
         run: |
