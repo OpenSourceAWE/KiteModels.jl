@@ -29,18 +29,12 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - name: Install matplotlib
-        run: sudo apt-get install -y python3-matplotlib
-
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v3
         with:
           version: "1"
       - name: Use Julia cache
         uses: julia-actions/cache@v3
-
-      - name: Build PyCall
-        run: julia --project -e 'ENV["PYTHON"]=""; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
 
       - name: Instantiate environment with development version of the package
         run: |

@@ -1,9 +1,11 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 using REPL.TerminalMenus
+using KiteModels: set_default_turbulence
 
 actions = if haskey(ENV, "USE_V9")
     [
+        ("set_default_turbulence", nothing),
         ("plot_cl_cd_plate", "plot_cl_cd_plate.jl"),
         ("plot_side_cl", "plot_side_cl.jl"),
         ("steering_test_4p", "steering_test_4p.jl"),
@@ -17,6 +19,7 @@ actions = if haskey(ENV, "USE_V9")
     ]
 else
     [
+        ("set_default_turbulence", nothing),
         ("plot_cl_cd_plate", "plot_cl_cd_plate.jl"),
         ("plot_side_cl", "plot_side_cl.jl"),
         ("steering_test_4p", "steering_test_4p.jl"),
@@ -29,7 +32,7 @@ else
     ]
 end
 
-options = ["$(name) = include(\"$(path)\")" for (name, path) in actions]
+options = [path === nothing ? name : "$(name) = include(\"$(path)\")" for (name, path) in actions]
 push!(options, "quit")
 
 function run_sandboxed(script_path::String)
@@ -48,8 +51,12 @@ function extra_menu()
         choice = request("\nChoose function to execute or `q` to quit: ", menu)
 
         if choice != -1 && choice != length(options)
-            _, script_path = actions[choice]
-            run_sandboxed(script_path)
+            name, script_path = actions[choice]
+            if script_path === nothing
+                set_default_turbulence()
+            else
+                run_sandboxed(script_path)
+            end
         else
             println("Left menu. Press <ctrl><d> to quit Julia!")
             active = false

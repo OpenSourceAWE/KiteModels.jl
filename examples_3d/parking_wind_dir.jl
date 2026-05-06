@@ -19,7 +19,10 @@ end
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.sample_freq = 20
-set.use_turbulence = 0.72
+default_turbulence = get_default_turbulence()
+if default_turbulence !== nothing
+    set.use_turbulence = default_turbulence
+end
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -33,14 +36,16 @@ dt::Float64 = 1/set.sample_freq
 
 MIN_DEPOWER = if KiteUtils.PROJECT == "system.yaml"
     # result of tuning
-    pcs.kp_tr=0.04
-    pcs.ki_tr=0.0008
-    pcs.kp = 8.0
-    pcs.ki = 0.2
+    pcs.kp_tr=0.15
+    pcs.ki_tr=0.003
+    pcs.kp = 1.0
+    pcs.ki = 0.025
+    pcs.kd = 2.5
+    pcs.kd_N = 2
     pcs.c1 = 0.048
     pcs.c2 = 0 # has no big effect, can also be set to zero
-    pcs.max_turn_rate_set = 0.45
-    pcs.max_turn_rate_cmd = 0.75
+    pcs.max_turn_rate_set = 0.20
+    pcs.max_turn_rate_cmd = 0.50
     pcs.max_steering = 0.45
     pcs.max_steering_rate = 1.0
     0.22
@@ -49,12 +54,14 @@ else
     println("not system.yaml")
     pcs.kp_tr=0.035
     pcs.ki_tr=0.0015
-    pcs.kp = 10.0
-    pcs.ki = 0.3
+    pcs.kp = 1.0
+    pcs.ki = 0.025
+    pcs.kd = 2.5
+    pcs.kd_N = 2
     pcs.c1 = 0.048
     pcs.c2 = 0    # has no big effect, can also be set to zero
-    pcs.max_turn_rate_set = 0.45
-    pcs.max_turn_rate_cmd = 0.75
+    pcs.max_turn_rate_set = 0.20
+    pcs.max_turn_rate_cmd = 0.50
     pcs.max_steering = 0.45
     pcs.max_steering_rate = 1.0
     0.4
@@ -82,6 +89,8 @@ V_WIND_KITE::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 HEADING::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 SET_STEERING::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
+HEADING_RATE::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
+BODY_RATE::Vector{Float64}     = zeros(Int64(MAX_TIME/dt))
 
 function sim_parking(integrator)
     upwind_dir=UPWIND_DIR
@@ -97,12 +106,9 @@ function sim_parking(integrator)
         time = i * dt 
         steering = 0.0
         if i > 100
-            if i == 100
-                pc.last_heading = sys_state.heading
-            end
             elevation = sys_state.elevation
             chi_set = pcm.navigate(pc, sys_state.azimuth, elevation)
-            steering, _, _, _ = pcm.calc_steering(pc, sys_state.heading, chi_set; 
+            steering, _, _, _ = pcm.calc_steering(pc, sys_state.heading, sys_state.heading_rate, chi_set; 
                                                                          elevation, v_app = sys_state.v_app)
             set_depower_steering(kps4.kcu, MIN_DEPOWER, steering)
         end  
@@ -129,12 +135,14 @@ function sim_parking(integrator)
         if t_sim < 0.3*dt
             t_gc_tot += @elapsed GC.gc(false)
         end
-        sys_state = SysState(kps4)
+        update_sys_state!(sys_state, kps4)
         sys_state.orient .= calc_orient_quat(kps4)
         T[i] = dt * i
         AZIMUTH[i] = sys_state.azimuth
         AZIMUTH_EAST[i] = calc_azimuth_east(kps4)
         HEADING[i] = wrap2pi(sys_state.heading)
+        HEADING_RATE[i] = sys_state.heading_rate
+        BODY_RATE[i] = sys_state.turn_rates[3]
         if mod(i, TIME_LAPSE_RATIO) == 0
             if KiteUtils.PROJECT == "system.yaml"
                 KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
@@ -192,14 +200,18 @@ end
 
 play_parking()
 stop(viewer)
-let v = filter(!=(0.0), V_WIND_KITE)
-    ti = std(v) / mean(v) * 100
-    println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")
-end
+v = filter(!=(0.0), V_WIND_KITE)
+ti = std(v) / mean(v) * 100
+println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")
 p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad2deg.(AV_UPWIND_DIR)],
          rad2deg.(HEADING), [100*(SET_STEERING), 100*(STEERING)], V_WIND_KITE; 
          xlabel="Time [s]", 
          ylabels=["Azimuth [°]", "azimuth_east [°]", "upwind_dir [°]", "Heading [°]", "Steering [%]", "v_wind_kite [m/s]"],
-         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"])
+         labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"],
+         ysize=12, fig="Parking with changing wind direction, TI: $(round(ti, digits=2)) %")
 display(p)
+p2 = plot(T, [rad2deg.(HEADING_RATE), rad2deg.(BODY_RATE)];
+           xlabel = "time [s]", ylabel = "rate [°/s]",
+           labels = ["heading_rate", "body_rate"], fig = "rates")
+display(p2)
 KiteModels.reactivate_host_app()

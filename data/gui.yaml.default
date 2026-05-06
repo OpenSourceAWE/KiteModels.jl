@@ -1,0 +1,4 @@
+gui:
+    project: hydra20_600.yml             # or hydra20_600.yml
+    default_turbulence: 0.0              # default turbulence level for simulations, between 0.0 and 1.0
+ 
