@@ -6,7 +6,7 @@ SPDX-FileCopyrightText = "2025 Bart van de Lint, Uwe Fechner"
 SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
-path = ["data/settings.yaml", "data/system.yaml", "data/vsm_settings.yaml"]
+path = ["data/settings.yaml", "data/system.yaml", "data/vsm_settings.yaml", "data/gui.yaml.default"]
 SPDX-FileCopyrightText = "2025 Uwe Fechner"
 SPDX-License-Identifier = "CC-BY-4.0"
 
