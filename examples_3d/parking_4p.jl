@@ -43,6 +43,8 @@ v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
 v_force = zeros(STEPS)
 heading = zeros(STEPS)
+heading_rate = zeros(STEPS)
+body_rate = zeros(STEPS)
 
 function simulate(integrator, steps, plot = PLOT)
     iter = 0
@@ -82,6 +84,8 @@ function simulate(integrator, steps, plot = PLOT)
             sleep(0.05)
         end
         update_sys_state!(sys_state, kps4)
+        heading_rate[i] = sys_state.heading_rate
+        body_rate[i] = sys_state.turn_rates[3]
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale = 3)
         if i == 1
             bring_viewer_to_front()
@@ -120,6 +124,10 @@ end
 println("heading: $(round(heading[STEPS], digits=2))°")
 p=plot(v_time, heading; xlabel = "time [s]", ylabel = "heading [°]", fig = "heading")
 display(p)
+p2 = plot(v_time, [rad2deg.(heading_rate), rad2deg.(body_rate)];
+           xlabel = "time [s]", ylabel = "rate [°/s]",
+           labels = ["heading_rate", "body_rate"], fig = "rates")
+display(p2)
 if Sys.isapple()
     KiteModels.reactivate_host_app()
 end
