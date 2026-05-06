@@ -2,6 +2,18 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.11 2026-05-06
+#### Added
+- `calc_heading_rate` and `calc_azimuth_rate` in `update_sys_state!` using shortest-angle difference to avoid wrap-boundary spikes
+- `calc_body_rate` (turn rate around z body axis) using the Erhard and Strauch (2013) formula
+- `set_default_turbulence` and `get_default_turbulence` functions for managing turbulence settings via `data/gui.yaml`
+
+#### Changed
+- switched `AtmosphericModels` from tracking the `main` branch to using the latest released version from the registry
+- updated default manifests
+- improved parking controller robustness
+- updated examples to use the default turbulence setting
+
 ### KiteModels v0.11.10 2026-05-03
 #### Added
 - `run_julia` now supports optional Kaimon startup when available (Julia >= 1.12)
