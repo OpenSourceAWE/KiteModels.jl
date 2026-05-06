@@ -36,7 +36,8 @@ export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, cal
 export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
-export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app, spring_forces, states, upwind_dir
+export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
+export set_default_turbulence, spring_forces, states, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -809,6 +810,140 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
     end
     return nothing
 end
+
+function update_yaml_scalar(lines::Vector{String}, key::AbstractString, value)
+    value_str = repr(value)
+    result = String[]
+    updated = false
+    pattern = Regex("^(\\s*" * escape_string(key) * "\\s*)([^#]*?)(\\s*(?:#.*)?)\$")
+    for line in lines
+        stripped = lstrip(line)
+        if !updated && startswith(stripped, key)
+            matched = match(pattern, line)
+            if isnothing(matched)
+                push!(result, key * " " * value_str)
+            else
+                prefix, _, suffix = matched.captures
+                push!(result, prefix * value_str * suffix)
+            end
+            updated = true
+        else
+            push!(result, line)
+        end
+    end
+    return result, updated
+end
+
+function insert_yaml_scalar_in_section(lines::Vector{String}, section::AbstractString, key::AbstractString, value)
+    value_str = repr(value)
+    result = String[]
+    in_section = false
+    inserted = false
+    section_indent = 0
+    child_indent = "    "
+
+    for line in lines
+        stripped = lstrip(line)
+        indent = length(line) - length(stripped)
+
+        if !inserted && in_section && !isempty(stripped)
+            if indent <= section_indent
+                push!(result, child_indent * key * " " * value_str)
+                inserted = true
+                in_section = false
+            elseif indent > section_indent
+                child_indent = line[begin:indent]
+            end
+        end
+
+        push!(result, line)
+
+        if !inserted && startswith(stripped, section)
+            in_section = true
+            section_indent = indent
+            child_indent = line[begin:indent] * "    "
+        end
+    end
+
+    if !inserted
+        push!(result, section)
+        push!(result, child_indent * key * " " * value_str)
+    end
+    return result, true
+end
+
+"""
+    set_default_turbulence([value])
+
+Read or prompt for the `default_turbulence` setting in `data/gui.yaml` and
+persist the new value. If `gui.yaml` does not exist, it is created from
+`gui.yaml.default`.
+"""
+function set_default_turbulence(value::Union{Nothing, Real}=nothing)
+    gui_yaml = joinpath(get_data_path(), "gui.yaml")
+    gui_yaml_default = gui_yaml * ".default"
+
+    if !isfile(gui_yaml)
+        if isfile(gui_yaml_default)
+            cp(gui_yaml_default, gui_yaml)
+        else
+            println("Missing $gui_yaml and fallback $gui_yaml_default")
+            return nothing
+        end
+    end
+
+    lines = KiteUtils.readfile(gui_yaml)
+    dict = KiteUtils.YAML.load_file(gui_yaml)
+    current = get(get(dict, "gui", Dict{Any, Any}()), "default_turbulence", nothing)
+    if !isnothing(current)
+        current = try
+            Float64(current)
+        catch
+            println("Could not read current default_turbulence in $gui_yaml")
+            return nothing
+        end
+    end
+
+    if isnothing(value)
+        if isnothing(current)
+            println("Current default_turbulence is not set.")
+        else
+            println("Current default_turbulence: $current")
+        end
+        print("Enter new default_turbulence [0.0..1.0] (blank to cancel): ")
+        input = strip(readline())
+        if isempty(input)
+            println("Cancelled.")
+            return nothing
+        end
+        value = try
+            parse(Float64, input)
+        catch
+            println("Invalid number: $input")
+            return nothing
+        end
+    end
+
+    new_value = Float64(value)
+    if new_value < 0.0 || new_value > 1.0
+        println("Value out of range. Please use a value between 0.0 and 1.0")
+        return nothing
+    end
+
+    new_lines, updated = update_yaml_scalar(lines, "default_turbulence:", new_value)
+    if !updated
+        new_lines, updated = insert_yaml_scalar_in_section(lines, "gui:", "default_turbulence:", new_value)
+        if !updated
+            println("Could not update default_turbulence in $gui_yaml")
+            return nothing
+        end
+    end
+
+    KiteUtils.writefile(new_lines, gui_yaml)
+    println("default_turbulence set to: $new_value")
+    return new_value
+end
+
 
 """
     copy_examples()
