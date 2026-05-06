@@ -113,7 +113,7 @@ function sim_parking(integrator)
             end
             elevation = sys_state.elevation
             chi_set = pcm.navigate(pc, sys_state.azimuth, elevation)
-            steering, _, _, _ = pcm.calc_steering(pc, sys_state.heading, chi_set; 
+            steering, _, _, _ = pcm.calc_steering(pc, sys_state.heading, sys_state.heading_rate, chi_set; 
                                                                          elevation, v_app = sys_state.v_app)
             set_depower_steering(kps4.kcu, MIN_DEPOWER, steering)
         end  

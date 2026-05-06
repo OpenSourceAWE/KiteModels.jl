@@ -103,13 +103,15 @@ function navigate(pc::ParkingController, azimuth, elevation; limit = 50.0)
 end
 
 """
-    calc_steering(pc::ParkingController, heading; elevation=0.0, v_app=10.0, ud_prime=0.0)
+    calc_steering(pc::ParkingController, heading, heading_rate, chi_set; elevation=0.0, v_app=10.0, ud_prime=0.0)
 
 Calculate rel_steering and ndi_gain from the actual heading, elevation, and apparent wind speed.
 
 Parameters:
 - pc: parking controller
 - heading: actual heading in radians
+- heading_rate: measured heading rate in rad/s
+- chi_set: desired heading in radians
 - elevation: elevation angle in radians
 - v_app: apparent wind speed in m/s
 - ud_prime: depower setting in the range of 0 to 1, 0 means fully powered, 1 means fully depowered
@@ -118,6 +120,7 @@ Parameters:
 function calc_steering(
     pc::ParkingController,
     heading,
+    heading_rate,
     chi_set;
     elevation = 0.0,
     v_app = 10.0,
@@ -137,10 +140,8 @@ function calc_steering(
     chi_pid = wrap2pi(heading + d_chi)
     psi_dot_set = pc.pid_outer(chi_pid, heading)
     psi_dot_set = clamp(psi_dot_set, -pc.pcs.max_turn_rate_set, pc.pcs.max_turn_rate_set)
-    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries.
-    d_psi = atan(sin(heading - pc.last_heading), cos(heading - pc.last_heading))
-    psi_dot = d_psi / pc.pcs.dt
     pc.last_heading = heading
+    psi_dot = heading_rate
     psi_dot_in = pc.pid_tr(psi_dot_set, psi_dot)
     psi_dot_in = clamp(psi_dot_in, -pc.pcs.max_turn_rate_cmd, pc.pcs.max_turn_rate_cmd)
     # linearize the NDI block
