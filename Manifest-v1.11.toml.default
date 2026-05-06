@@ -319,9 +319,9 @@ version = "1.6.0"
 
 [[deps.ControlPlots]]
 deps = ["JLD2", "LaTeXStrings", "Pkg", "Printf", "PyPlot", "StaticArraysCore"]
-git-tree-sha1 = "e2df85353a8457a0a18d9248a50a13bef3287389"
+git-tree-sha1 = "fb1cf8d1213c9f2908f8682f58f7ec252f6cc171"
 uuid = "23c2ee80-7a9e-4350-b264-8e670f12517c"
-version = "0.2.14"
+version = "0.2.15"
 weakdeps = ["ControlSystemsBase"]
 
     [deps.ControlPlots.extensions]
@@ -854,7 +854,7 @@ version = "0.2.1"
 deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
 path = ".."
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.11.9"
+version = "0.11.10"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
@@ -864,9 +864,9 @@ version = "0.4.0"
 
 [[deps.KiteUtils]]
 deps = ["Arrow", "CSV", "DocStringExtensions", "LinearAlgebra", "OrderedCollections", "Parameters", "Parsers", "Pkg", "PrecompileTools", "RecursiveArrayTools", "ReferenceFrameRotations", "Rotations", "StaticArrays", "StructArrays", "StructTypes", "YAML"]
-git-tree-sha1 = "0d4160c6f845b7e19f754f4b9179d4e51b96f43f"
+git-tree-sha1 = "edd32b16440b162db774dc42604f7faa921541e6"
 uuid = "90980105-b163-44e5-ba9f-8b1c83bb0533"
-version = "0.11.7"
+version = "0.11.8"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
@@ -1677,9 +1677,9 @@ version = "1.9.1"
 
 [[deps.SciMLOperators]]
 deps = ["Accessors", "ArrayInterface", "DocStringExtensions", "LinearAlgebra"]
-git-tree-sha1 = "0e34162268883db01c04f988895a80d0659071bb"
+git-tree-sha1 = "4a3bd21622633a70fde04bc6d072f59e482ff66f"
 uuid = "c0aeaf25-5076-4817-a8d5-81caf7dfa961"
-version = "1.17.0"
+version = "1.18.0"
 weakdeps = ["SparseArrays", "StaticArraysCore"]
 
     [deps.SciMLOperators.extensions]
@@ -1943,9 +1943,9 @@ version = "0.2.8"
 
 [[deps.SymbolicIndexingInterface]]
 deps = ["Accessors", "ArrayInterface", "RuntimeGeneratedFunctions", "StaticArraysCore"]
-git-tree-sha1 = "94c58884e013efff548002e8dc2fdd1cb74dfce5"
+git-tree-sha1 = "173ecfe5f7c5a36043b5f2b8cecaa30a4fc958ef"
 uuid = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
-version = "0.3.46"
+version = "0.3.47"
 
     [deps.SymbolicIndexingInterface.extensions]
     SymbolicIndexingInterfacePrettyTablesExt = "PrettyTables"
