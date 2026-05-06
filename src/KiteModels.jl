@@ -586,14 +586,14 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
-    daz = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
-    ss.azimuth_rate = daz / dt
+    d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
+    ss.azimuth_rate = d_az / dt
     ss.azimuth = new_azimuth
     ss.winch_force .= [winch_force(s); 0; 0; 0]
     new_heading = calc_heading(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
-    dpsi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
-    ss.heading_rate = dpsi / dt
+    d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
+    ss.heading_rate = d_psi / dt
     ss.heading = new_heading
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
