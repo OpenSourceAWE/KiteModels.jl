@@ -8,15 +8,16 @@ module ParkingControllers
 using DiscretePIDs, Parameters, Test
 import KiteUtils: wrap2pi
 
-@with_kw mutable struct ParkingControllerSettings
-    @deftype Float64
-    dt::Float64
+@with_kw mutable struct ParkingControllerSettings @deftype Float64
+    dt
     # turn rate controller settings
-    kp_tr = 0.06
-    ki_tr = 0.0012
+    kp_tr=0.06
+    ki_tr=0.0012
     # outer controller (heading/ course) settings
-    kp = 15
-    ki = 0.5
+    kp=15
+    ki=0.5
+    kd=0.0             # derivative time [s] for the outer heading loop, 0 disables
+    kd_N=10.0          # derivative filter coefficient (lower = more filtering)
     # NDI block settings
     va_min = 5.0   # minimum apparent wind speed
     va_max = 100.0 # maximum apparent wind speed
@@ -25,14 +26,15 @@ import KiteUtils: wrap2pi
     c2 = 0     # a value other than zero creates more problems than it solves
     max_turn_rate_set::Float64 = 100.0 # clamp outer-loop desired turn-rate [rad/s]
     max_turn_rate_cmd::Float64 = 100.0 # clamp inner-loop commanded turn-rate [rad/s]
-    max_steering::Float64 = 100.0    # clamp final steering command to physical range
-    max_steering_rate::Float64 = 0.0 # optional rate limit [1/s], 0 disables limiting
+    max_steering::Float64 = 100.0      # clamp final steering command to physical range
+    max_steering_rate::Float64 = 0.0   # optional rate limit [1/s], 0 disables limiting
+    heading_deadband::Float64 = 0.0    # heading error deadband [rad], 0 disables deadband
 end
 
 mutable struct ParkingController
     pcs::ParkingControllerSettings
-    pid_tr::DiscretePID{Float64}
-    pid_outer::DiscretePID{Float64}
+    pid_tr::DiscretePID
+    pid_outer::DiscretePID
     last_heading::Float64
     last_steering::Float64
     chi_set::Float64
@@ -41,8 +43,10 @@ end
 
 function ParkingController(pcs::ParkingControllerSettings; last_heading = 0.0)
     Ts = pcs.dt
-    pid_tr = DiscretePID(; K = pcs.kp_tr, Ti = pcs.kp_tr / pcs.ki_tr, Ts)
-    pid_outer = DiscretePID(; K = pcs.kp, Ti = pcs.kp / pcs.ki, Ts)
+    pid_tr    = DiscretePID(;K=pcs.kp_tr, Ti=pcs.kp_tr/ pcs.ki_tr, Ts)
+    umax = pcs.max_turn_rate_set
+    pid_outer = DiscretePID(;K=pcs.kp, Ti=pcs.kp/ pcs.ki, Td=pcs.kd, N=pcs.kd_N,
+                             umin=-umax, umax=umax, Ts)
     return ParkingController(pcs, pid_tr, pid_outer, last_heading, 0.0, 0.0, 0.0)
 end
 
@@ -121,7 +125,17 @@ function calc_steering(
 )
     # calculate the desired turn rate
     heading = wrap2pi(heading) # a different wrap2pi function is needed that avoids any jumps
-    psi_dot_set = pc.pid_outer(wrap2pi(chi_set), heading)
+    chi_wrapped = wrap2pi(chi_set)
+    dchi = atan(sin(chi_wrapped - heading), cos(chi_wrapped - heading))
+    if pc.pcs.heading_deadband > 0.0
+        if abs(dchi) <= pc.pcs.heading_deadband
+            dchi = 0.0
+        else
+            dchi = sign(dchi) * (abs(dchi) - pc.pcs.heading_deadband)
+        end
+    end
+    chi_pid = wrap2pi(heading + dchi)
+    psi_dot_set = pc.pid_outer(chi_pid, heading)
     psi_dot_set = clamp(psi_dot_set, -pc.pcs.max_turn_rate_set, pc.pcs.max_turn_rate_set)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries.
     dpsi = atan(sin(heading - pc.last_heading), cos(heading - pc.last_heading))
