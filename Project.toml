@@ -39,7 +39,7 @@ WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
 [compat]
 AtmosphericModels = "0.3.4"
 Dierckx = "0.5.4"
-DiffEqBase = "6.161.0"
+DiffEqBase = "6.161.0, 7.2"
 DiscretePIDs = "0.1.5, 1.0"
 DocStringExtensions = "0.9.4"
 Interpolations = "0.15.1, 0.16"
