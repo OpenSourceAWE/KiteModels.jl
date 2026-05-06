@@ -25,6 +25,10 @@ set::Settings = deepcopy(se())
 dt::Float64 = 0.05
 set.solver="DFBDF"              # IDA or DFBDF
 set.linear_solver="GMRES"       # GMRES, LapackDense or Dense
+default_turbulence = get_default_turbulence()
+if default_turbulence !== nothing
+    set.use_turbulence = default_turbulence
+end
 STEPS = 352
 PRINT = false
 STATISTIC = false
