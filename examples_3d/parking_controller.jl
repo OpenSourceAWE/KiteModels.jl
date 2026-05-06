@@ -30,10 +30,10 @@ import KiteUtils: wrap2pi
     max_steering_rate::Float64 = 0.0   # optional rate limit [1/s], 0 disables limiting
 end
 
-mutable struct ParkingController
+mutable struct ParkingController{T}
     pcs::ParkingControllerSettings
-    pid_tr::DiscretePID
-    pid_outer::DiscretePID
+    pid_tr::T
+    pid_outer::T
     last_steering::Float64
     chi_set::Float64
     last_ndi_gain::Float64
@@ -179,9 +179,10 @@ function test_calc_steering()
         pc = ParkingController(pcs)
         # set the heading
         heading = deg2rad(1.0)
+        heading_rate = 0.0
         elevation = deg2rad(70.0)
         chi_set = deg2rad(34.0)
-        u_s, ndi_gain, psi_dot, psi_dot_set = calc_steering(pc, heading, chi_set; elevation)
+        u_s, ndi_gain, psi_dot, psi_dot_set = calc_steering(pc, heading, heading_rate, chi_set; elevation)
         @test u_s ≈ 18.135061759003584
         @test ndi_gain ≈ 2.0833333333333335
         @test psi_dot ≈ 0.3490658503988659
