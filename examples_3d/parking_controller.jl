@@ -126,20 +126,20 @@ function calc_steering(
     # calculate the desired turn rate
     heading = wrap2pi(heading) # a different wrap2pi function is needed that avoids any jumps
     chi_wrapped = wrap2pi(chi_set)
-    dchi = atan(sin(chi_wrapped - heading), cos(chi_wrapped - heading))
+    d_chi = atan(sin(chi_wrapped - heading), cos(chi_wrapped - heading))
     if pc.pcs.heading_deadband > 0.0
-        if abs(dchi) <= pc.pcs.heading_deadband
-            dchi = 0.0
+        if abs(d_chi) <= pc.pcs.heading_deadband
+            d_chi = 0.0
         else
-            dchi = sign(dchi) * (abs(dchi) - pc.pcs.heading_deadband)
+            d_chi = sign(d_chi) * (abs(d_chi) - pc.pcs.heading_deadband)
         end
     end
-    chi_pid = wrap2pi(heading + dchi)
+    chi_pid = wrap2pi(heading + d_chi)
     psi_dot_set = pc.pid_outer(chi_pid, heading)
     psi_dot_set = clamp(psi_dot_set, -pc.pcs.max_turn_rate_set, pc.pcs.max_turn_rate_set)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries.
-    dpsi = atan(sin(heading - pc.last_heading), cos(heading - pc.last_heading))
-    psi_dot = dpsi / pc.pcs.dt
+    d_psi = atan(sin(heading - pc.last_heading), cos(heading - pc.last_heading))
+    psi_dot = d_psi / pc.pcs.dt
     pc.last_heading = heading
     psi_dot_in = pc.pid_tr(psi_dot_set, psi_dot)
     psi_dot_in = clamp(psi_dot_in, -pc.pcs.max_turn_rate_cmd, pc.pcs.max_turn_rate_cmd)

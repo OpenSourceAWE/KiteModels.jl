@@ -91,6 +91,8 @@ V_WIND_KITE::Vector{Float64}   = zeros(Int64(MAX_TIME/dt))
 HEADING::Vector{Float64}       = zeros(Int64(MAX_TIME/dt))
 SET_STEERING::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
+HEADING_RATE::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
+BODY_RATE::Vector{Float64}     = zeros(Int64(MAX_TIME/dt))
 
 function sim_parking(integrator)
     upwind_dir=UPWIND_DIR
@@ -144,6 +146,8 @@ function sim_parking(integrator)
         AZIMUTH[i] = sys_state.azimuth
         AZIMUTH_EAST[i] = calc_azimuth_east(kps4)
         HEADING[i] = wrap2pi(sys_state.heading)
+        HEADING_RATE[i] = sys_state.heading_rate
+        BODY_RATE[i] = sys_state.turn_rates[3]
         if mod(i, TIME_LAPSE_RATIO) == 0
             if KiteUtils.PROJECT == "system.yaml"
                 KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
@@ -211,4 +215,8 @@ p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad
          labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"],
          ysize=12, fig="Parking with changing wind direction, TI: $(round(ti, digits=2)) %")
 display(p)
+p2 = plot(T, [rad2deg.(HEADING_RATE), rad2deg.(BODY_RATE)];
+           xlabel = "time [s]", ylabel = "rate [°/s]",
+           labels = ["heading_rate", "body_rate"], fig = "rates")
+display(p2)
 KiteModels.reactivate_host_app()
