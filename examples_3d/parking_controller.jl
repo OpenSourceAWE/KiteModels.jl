@@ -28,7 +28,6 @@ import KiteUtils: wrap2pi
     max_turn_rate_cmd::Float64 = 100.0 # clamp inner-loop commanded turn-rate [rad/s]
     max_steering::Float64 = 100.0      # clamp final steering command to physical range
     max_steering_rate::Float64 = 0.0   # optional rate limit [1/s], 0 disables limiting
-    heading_deadband::Float64 = 0.0    # heading error deadband [rad], 0 disables deadband
 end
 
 mutable struct ParkingController
@@ -127,16 +126,7 @@ function calc_steering(
 )
     # calculate the desired turn rate
     heading = wrap2pi(heading) # a different wrap2pi function is needed that avoids any jumps
-    chi_wrapped = wrap2pi(chi_set)
-    d_chi = atan(sin(chi_wrapped - heading), cos(chi_wrapped - heading))
-    if pc.pcs.heading_deadband > 0.0
-        if abs(d_chi) <= pc.pcs.heading_deadband
-            d_chi = 0.0
-        else
-            d_chi = sign(d_chi) * (abs(d_chi) - pc.pcs.heading_deadband)
-        end
-    end
-    chi_pid = wrap2pi(heading + d_chi)
+    chi_pid = wrap2pi(chi_set)
     psi_dot_set = pc.pid_outer(chi_pid, heading)
     psi_dot_set = clamp(psi_dot_set, -pc.pcs.max_turn_rate_set, pc.pcs.max_turn_rate_set)
     psi_dot = heading_rate
