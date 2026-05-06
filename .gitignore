@@ -93,3 +93,4 @@ examples_3d/Manifest.toml
 /mwes/mwe_27.jl
 Manifest-v1.13.toml
 data/windfield_*.npz
+data/gui.yaml
