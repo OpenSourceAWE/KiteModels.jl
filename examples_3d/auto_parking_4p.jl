@@ -17,6 +17,10 @@ set::Settings = deepcopy(load_settings("system.yaml"))
 set.abs_tol=0.00006
 set.rel_tol=0.0001
 set.v_wind = 10 # v_min1 6-25; v_min2 5.3-30
+default_turbulence = get_default_turbulence()
+if default_turbulence !== nothing
+    set.use_turbulence = default_turbulence
+end
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -81,13 +85,11 @@ function simulate(integrator, sys_state)
     while true
         steering = 0.0
         if i >= 100
-            if i == 100
-                pc.last_heading = sys_state.heading
-            end
             chi_set = pcm.navigate(pc, sys_state.azimuth, sys_state.elevation)
             steering, ndi_gain, psi_dot, psi_dot_set = pcm.calc_steering(
                 pc,
                 sys_state.heading,
+                sys_state.heading_rate,
                 chi_set;
                 sys_state.elevation,
                 v_app = sys_state.v_app,
