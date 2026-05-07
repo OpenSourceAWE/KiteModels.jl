@@ -841,6 +841,7 @@ function insert_yaml_scalar_in_section(lines::Vector{String}, section::AbstractS
     inserted = false
     section_indent = 0
     child_indent = "    "
+    section_found = false
 
     for line in lines
         stripped = lstrip(line)
@@ -860,12 +861,20 @@ function insert_yaml_scalar_in_section(lines::Vector{String}, section::AbstractS
 
         if !inserted && startswith(stripped, section)
             in_section = true
+            section_found = true
             section_indent = indent
             child_indent = line[begin:indent] * "    "
         end
     end
 
-    if !inserted
+    # If still in section at end of file, insert the key before finishing
+    if !inserted && in_section
+        push!(result, child_indent * key * " " * value_str)
+        inserted = true
+    end
+
+    # Only add a new section if the section was never found
+    if !inserted && !section_found
         push!(result, section)
         push!(result, child_indent * key * " " * value_str)
     end
