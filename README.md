@@ -186,7 +186,7 @@ cd ..
 You can run the examples with:
 
 ```julia
-menu()
+menu() # or menu2()
 ```
 
 ## One point model
@@ -198,10 +198,6 @@ When combined with a controller for the turn rate it can be used to simulate a p
 
 This model assumes the kite to consist of four-point masses with aerodynamic forces acting on points B, C and D. It reacts much more realistically than the one-point model because it has rotational inertia in every axis.
 <p align="center"><img src="https://github.com/OpenSourceAWE/KiteModels.jl/raw/main/docs/src/4-point-kite.png" alt="Four-point kite model diagram" width="200" /></p>
-
-## Ram air kite model
-
-This model represents the kite as a deforming rigid body, with orientation governed by quaternion dynamics. Aerodynamics are computed using the Vortex Step Method. The kite is controlled from the ground via four tethers.
 
 ## Tether
 
