@@ -2,6 +2,10 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.12 2026-05-07
+#### Fixed
+- fixed `insert_yaml_scalar_in_section` function to properly handle YAML sections at end of file, avoiding duplicate keys when setting `default_turbulence`
+
 ### KiteModels v0.11.11 2026-05-06
 #### Added
 - `calc_heading_rate` and `calc_azimuth_rate` in `update_sys_state!` using shortest-angle difference to avoid wrap-boundary spikes
