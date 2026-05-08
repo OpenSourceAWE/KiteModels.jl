@@ -1,7 +1,9 @@
 # Copyright (c) 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
-
-using KiteModels, LinearAlgebra, Pkg, Rotations
+#
+# Demonstrates coordinate frame rotations and quaternion conversions
+# used in kite simulations. Computes orientation quaternions from
+# ENU reference frame vectors and converts them to Euler angles.
 
 if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
