@@ -1,5 +1,9 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Generates turbulent wind field data files for use in kite simulations.
+# Creates .npz files containing 3D wind velocity fields with configurable
+# turbulence intensity, wind speed, and spatial dimensions.
 
 using Pkg
 if dirname(Pkg.project().path) != @__DIR__
