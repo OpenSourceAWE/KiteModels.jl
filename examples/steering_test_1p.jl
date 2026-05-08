@@ -1,7 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Tests the steering response of the KPS3 (single-point) kite model by
+# applying different relative steering values and measuring the resulting
+# turn rate. Plots the relationship between steering input and turn rate.
 
-# apply different rel_steering values and plot turn rate
 using Printf
 using KiteModels, KitePodModels, Pkg
 using KiteUtils: Settings, load_settings
