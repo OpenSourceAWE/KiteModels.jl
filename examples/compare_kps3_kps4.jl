@@ -1,5 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Compares the KPS3 (one-point) and KPS4 (four-point) kite models
+# side by side. Runs the same simulation with both models and
+# prints lift, drag, winch force, and solver statistics.
+
 using Printf
 using KiteModels: KPS3, KPS4, init!, lift_drag, next_step!, reactivate_host_app, winch_force
 using KitePodModels: KCU
