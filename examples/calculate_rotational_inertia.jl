@@ -1,5 +1,10 @@
 # Copyright (c) 2023, 2024 Daan van Wolffelaar,
 # SPDX-License-Identifier: MIT
+#
+# Calculates the rotational inertia matrix of the kite
+# (and optionally the KCU) from KPS4 model.
+# Prints the full 3×3 inertia tensor in kg·m².
+
 using KiteUtils: load_settings
 using KiteModels
 
