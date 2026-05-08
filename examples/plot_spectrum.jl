@@ -1,7 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Loads and plots the frequency response spectrum of the kite system
+# from previously computed data files (.jld2). Visualizes the angle-of-attack
+# gain over a range of excitation frequencies for different configurations.
 
-using Printf
 using KiteModels, LinearAlgebra
 
 using KiteUtils: Settings, load_settings
