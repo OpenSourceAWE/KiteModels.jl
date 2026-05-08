@@ -5,6 +5,7 @@
 # used in kite simulations. Computes orientation quaternions from
 # ENU reference frame vectors and converts them to Euler angles.
 
+using Pkg
 if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
     using StaticArrays
