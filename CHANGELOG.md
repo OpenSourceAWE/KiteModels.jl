@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.12 2026-05-07
+### KiteModels v0.11.12 2026-05-08
 #### Fixed
 - fixed `insert_yaml_scalar_in_section` function to properly handle YAML sections at end of file, avoiding duplicate keys when setting `default_turbulence`
 
