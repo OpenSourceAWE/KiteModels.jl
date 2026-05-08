@@ -1,10 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-using Printf
-# simple parking test without changing the control input
-# shows how to log, plot, and print the simulation results
+# Simple parking test without changing the control input.
+# Shows how to log, plot, and print the simulation results.
 
+using Printf
 using KiteModels, LinearAlgebra
 using KiteUtils: Settings, load_settings
 
