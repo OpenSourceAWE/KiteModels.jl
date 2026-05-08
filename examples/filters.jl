@@ -1,13 +1,17 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Provides digital filter implementations for kite power system simulations,
+# including an exponential moving average (EMA) filter and a Butterworth
+# low-pass filter with configurable cut-off frequency and filter order.
+
 using DSP
 using DSP: Filters
 
 """
     ema_filter(measurement, last_measurement, cut_off_freq, dt)
 
-An exponential moving average (EMA), also known as an exponentially weighted moving average (EWMA),
-is a type of infinite impulse response filter that applies weighting factors which decrease exponentially.
+An exponential moving average (EMA), also known as an exponentially weighted moving average (EWMA), is a type of infinite impulse response filter that applies weighting factors which decrease exponentially.
 The weighting for each older datum decreases exponentially, never reaching zero.
 
 # Arguments
