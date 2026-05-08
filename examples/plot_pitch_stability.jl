@@ -1,7 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Analyzes the pitch stability of the kite by applying sinusoidal
+# excitation and measuring the angle-of-attack response over time.
+# Supports configurable excitation amplitude, frequency, and depower.
 
-using Printf
 using Pkg
 if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
