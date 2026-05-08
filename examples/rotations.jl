@@ -10,6 +10,7 @@ if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
     using StaticArrays
 end
+using LinearAlgebra, Rotations
 
 # kite reference frame; positions in ENU coordinates
 # wind from west, nose to west, kite at zenith
