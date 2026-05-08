@@ -1,5 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Benchmark example for the KPS4 (four-point) kite model.
+# Runs a simulated flight with optional plotting and prints
+# performance statistics at the end.
+
 using KiteModels: KPS4, init!, lift_drag, next_step!, reactivate_host_app, states, winch_force
 using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
