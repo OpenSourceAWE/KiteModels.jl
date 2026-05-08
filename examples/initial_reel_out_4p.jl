@@ -1,5 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Simulates the initial reel-out phase using the KPS4 (four-point)
+# kite model. Configurable reel-out speed, solver settings, and
+# optional 2D plotting of the kite trajectory.
+
 using LinearAlgebra, Printf
 using KiteModels: KCU, KPS4, init!, lift_drag, next_step!, winch_force
 using KiteUtils: Settings, load_settings
