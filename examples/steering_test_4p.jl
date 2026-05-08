@@ -1,7 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Tests the steering response of the KPS4 (four-point) kite model by
+# applying different relative steering values and measuring the resulting
+# turn rate. Fits a turn-rate law model and plots the results.
 
-# apply different rel_steering values and plot turn rate
 using Printf
 using KiteModels, KitePodModels, Pkg
 using KiteUtils: Settings, load_settings
