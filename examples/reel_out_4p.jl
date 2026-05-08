@@ -1,7 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Simulates the reel-out phase using the KPS4 (four-point) kite model.
+# Configurable reel-out speed, solver settings, and optional 2D plotting
+# of the kite trajectory and winch force over time.
 
-using Printf
 using KiteModels
 using KiteUtils: Settings, load_settings
 
