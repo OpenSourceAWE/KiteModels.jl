@@ -1,8 +1,9 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+# Simulate the effect of steering the kite using the one point kite model.
+
 using Printf
-# simulate the effect of steering the kite using the one point kite model
 using KiteModels
 using KiteUtils: Settings, load_settings
 
