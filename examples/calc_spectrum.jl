@@ -1,5 +1,11 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Calculates the frequency response (spectrum) of the kite system by
+# sweeping through excitation frequencies and measuring the resulting
+# angle-of-attack response. Uses a torque-controlled winch model with
+# sinusoidal torque excitation to characterize the system dynamics.
+
 using Pkg
 if ! ("StatsBase" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
