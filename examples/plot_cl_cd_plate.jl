@@ -1,8 +1,9 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# plot the lift and drag coefficients as function of angle of attack
-# of any of the plates of the kite
+# Plot the lift and drag coefficients as function of angle of attack
+# of any of the plates of the kite.
+
 using KiteModels
 using KiteUtils: Settings, load_settings
 
