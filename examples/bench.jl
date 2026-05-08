@@ -1,5 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Benchmark example for the KPS3 (one-point) kite model.
+# Runs a simulated flight for a configurable number of time steps
+# and prints performance statistics at the end.
+
 using Printf
 using KiteModels
 using KiteUtils: Settings, load_settings
