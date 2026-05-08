@@ -1,7 +1,10 @@
 # Copyright (c) 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Simulates the reel-out phase using the KPS4 kite model with a
+# torque-controlled winch. Configurable torque, solver settings, and
+# optional 2D plotting of the kite trajectory and winch force.
 
-using Printf
 using KiteModels, LinearAlgebra
 using KiteUtils: Settings, load_settings
 
