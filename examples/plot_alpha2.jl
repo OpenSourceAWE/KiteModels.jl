@@ -1,5 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# Simulates the KPS4 kite model and plots the angle of attack (alpha_2)
+# alongside reel-out speed and tether force over time. Useful for
+# analyzing the kite's aerodynamic angle response during reel-out.
+
 using Printf
 using KiteModels
 using KiteUtils: Settings, load_settings
