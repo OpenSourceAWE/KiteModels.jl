@@ -28,6 +28,7 @@ makedocs(;
         "Examples 4p" => "examples_4p.md",
         "Quickstart" => "quickstart.md",
         "Advanced usage" => "advanced.md",
+        "Turbulence" => "projects.md",
     ],
 )
 
