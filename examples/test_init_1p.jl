@@ -1,7 +1,9 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# plot the lift and drag coefficients as function of angle of attack
+# Test the initialization of the one-point kite model (KPS3).
+# Initializes the model from a steady-state solution and verifies
+# that the kite reaches the expected elevation and tether force.
 
 using Printf
 using Pkg

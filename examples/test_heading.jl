@@ -1,6 +1,10 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+# Test the heading calculation for a kite at various elevations, azimuths,
+# and pitch angles. The heading is computed from the kite's orientation,
+# elevation, and azimuth in the wind reference frame.
+
 using KiteUtils
 using KiteModels
 using KitePodModels: KCU

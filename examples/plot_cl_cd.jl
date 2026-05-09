@@ -1,7 +1,9 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# Plot the lift and drag coefficients as function of angle of attack.
+# This example sweeps the depower setting of the kite and measures the resulting
+# CL, CD, and angle of attack at steady-state flight conditions.
+# The results are plotted alongside the aerodynamic model's built-in CL/CD curves.
 
 using Printf
 using KiteModels, LinearAlgebra
