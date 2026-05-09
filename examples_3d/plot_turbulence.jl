@@ -32,6 +32,7 @@ v_wind_end   = [norm(calc_turbulent_wind(am, pos_end,   upwind_dir, t)[1]) for t
 p = plotx(time, v_wind_start, v_wind_end;
           fig="v_wind_kite vs time",
           xlabel="Time [s]",
+          ysize=11,
           ylabels=["v_wind_kite [m/s]", "v_wind_kite [m/s]"],
           labels=["pos_start", "pos_end"])
 display(p)
@@ -53,6 +54,7 @@ end
 
 p3 = plotx(time, v_wind_turb[1], v_wind_turb[2], v_wind_turb[3];
            fig="v_wind_kite vs time (pos_start, varying turbulence)",
+           ysize=11,
            xlabel="Time [s]",
            ylabels=["v_wind_kite [m/s]", "v_wind_kite [m/s]", "v_wind_kite [m/s]"],
            labels=["use_turbulence=0.0", "use_turbulence=0.5", "use_turbulence=1.0"])

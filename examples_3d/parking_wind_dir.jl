@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# park the kind while the wind direction changes
+# Park the kite while the wind direction changes.
+
 using Pkg
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(@__DIR__)
