@@ -227,7 +227,7 @@ See the copyright notices in the source files, and the list of authors in [AUTHO
 
 ## Donations
 
-If you like this software, please consider donating to [Flood in Kenya](https://www.gofundme.com/f/climate-refugees-in-kenya) .
+If you like this software, please consider donating to [Medical treatment](https://www.gofundme.com/f/medical-treatment-for-a-survivor-of-male-violence-in-kenya) .
 
 ## See also
 
