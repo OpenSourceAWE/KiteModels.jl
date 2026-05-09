@@ -26,9 +26,9 @@ makedocs(;
         "Parameters" => "parameters.md",
         "Examples 1p" => "examples.md",
         "Examples 4p" => "examples_4p.md",
-        "Quickstart" => "quickstart.md",
-        "Advanced usage" => "advanced.md",
         "Turbulence" => "projects.md",
+        "Quickstart" => "quickstart.md",
+        "Advanced usage" => "advanced.md"
     ],
 )
 
