@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+# Simulate an automated parking maneuver for the four-point kite model (KPS4).
+# The kite is flown to a parking position using a closed-loop controller,
+# and the simulation is visualized in 3D using KiteViewers.
+# At 20s, a disturbance is applied to the steering input to test the controller's response.
+
 # activate the examples_3d environment if needed
 using Pkg
 if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
