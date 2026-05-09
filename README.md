@@ -27,6 +27,12 @@ This package is part of Julia Kite Power Tools, which consists of the following 
 
 ## News
 
+### May 2026
+
+- a turbulent wind field is now available and can be used with the examples. It uses the package [AtmosphericModels.jl](https://github.com/OpenSourceAWE/AtmosphericModels.jl) to generate 3D turbulent wind field files on request. The first
+menu entry in `menu2()` allows you to set a turbulence between 0.0 and 1.0, relative to the one year average turbulence
+at Cabauw, NL.
+
 ### February 2026
 
 - the `SymbolicAWEModel` has been moved to a separate package [SymbolicAWEModels.jl](https://github.com/OpenSourceAWE/SymbolicAWEModels.jl) for better maintainability
