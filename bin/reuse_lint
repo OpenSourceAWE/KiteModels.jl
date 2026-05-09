@@ -1,5 +1,38 @@
+#!/bin/bash
 # Copyright (c) 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-cd ..
-pipx run reuse lint
+set -euo pipefail
+
+if [[ $(basename $(pwd)) == "bin" ]]; then
+    cd ..
+fi
+
+# Prefer pipx when available, but handle broken pipx launchers gracefully.
+if command -v pipx >/dev/null 2>&1; then
+    if pipx run reuse --help >/dev/null 2>&1; then
+        exec pipx run reuse lint
+    fi
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+    if python3 -m pipx --version >/dev/null 2>&1; then
+        exec python3 -m pipx run reuse lint
+    fi
+fi
+
+if command -v reuse >/dev/null 2>&1; then
+    exec reuse lint
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+    if python3 -c "import reuse" >/dev/null 2>&1; then
+        exec python3 -m reuse lint
+    fi
+fi
+
+echo "Could not run REUSE lint. Install one of: pipx + reuse, or python package reuse." >&2
+echo "Examples:" >&2
+echo "  pipx install reuse" >&2
+echo "  python3 -m pip install --user reuse" >&2
+exit 1
