@@ -1,6 +1,10 @@
 #!/bin/bash -eu
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
+#
+# This script creates a precompiled system image for faster Julia startup.
+# It is used when the package is installed via the package manager and the
+# examples are installed with install_examples().
 
 update=false
 if [[ $# -gt 0 ]]; then
