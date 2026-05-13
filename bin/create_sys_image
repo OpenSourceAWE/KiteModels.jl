@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 #
-# This script creates a precompiled system image for faster Julia startup.
+# This script creates a precompiled system image for faster startup of the examples.
 # It is useful only when KiteModels.jl is checked out as a git repository
 # (i.e., used in development mode, not installed as a regular package).
 
