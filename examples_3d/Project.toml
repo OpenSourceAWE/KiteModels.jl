@@ -23,7 +23,7 @@ Timers = "21f18d07-b854-4dab-86f0-c15a3821819a"
 KiteModels = {path = ".."}
 
 [compat]
-ControlPlots = "0.2.13"
+ControlPlots = "0.2.13, 0.3"
 KiteModels = "0.11.0"
 KiteViewers = "0.5.1"
 julia = "1.10, 1.11, 1.12"
