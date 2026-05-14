@@ -57,10 +57,10 @@ fi
 julia_init+='using KiteModels; function menu(); include("examples/menu.jl"); end'
 
 # Build launch arguments once for primary and fallback execution paths.
-JULIA_ARGS=("+${julia_major}" -t 1 $GCT --project -i -e "$julia_init" "$@")
+JULIA_ARGS=("+${julia_major}" -t "auto" $GCT --project -i -e "$julia_init" "$@")
 if test -f "$SOFILE"; then
     echo "Found system image!"
-    JULIA_ARGS=("+${julia_major}" -J "$SOFILE" -t 1 $GCT --project -i -e "$julia_init" "$@")
+    JULIA_ARGS=("+${julia_major}" -J "$SOFILE" -t "auto" $GCT --project -i -e "$julia_init" "$@")
 fi
 
 # Run Julia with setup_env overrides first, then retry once with a clean loader env.
