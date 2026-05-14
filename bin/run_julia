@@ -16,11 +16,6 @@ if [[ "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ]]; then
     fi
 fi
 
-# Avoid OpenMP duplicate-runtime conflict on Windows (libiomp5md.dll vs libomp.dll)
-case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*) export KMP_DUPLICATE_LIB_OK=TRUE ;;
-esac
-
 . ./bin/setup_env
 
 USE_KAIMON=false

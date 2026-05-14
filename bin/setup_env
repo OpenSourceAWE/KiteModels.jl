@@ -10,6 +10,11 @@
 export LD_PRELOAD="${LD_PRELOAD:-}"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 
+# Avoid OpenMP duplicate-runtime conflict on Windows (libiomp5md.dll vs libomp.dll)
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) export KMP_DUPLICATE_LIB_OK=TRUE ;;
+esac
+
 if [[ "$(uname -s)" == "Linux" ]]; then
     export FONTCONFIG_FILE=/etc/fonts/fonts.conf
 
