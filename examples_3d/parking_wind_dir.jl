@@ -24,6 +24,7 @@ default_turbulence = get_default_turbulence()
 if default_turbulence !== nothing
     set.use_turbulence = default_turbulence
 end
+PLOT_HEADING_RATE = false
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -103,6 +104,12 @@ function sim_parking(integrator)
     t_gc_tot = 0
     sys_state = SysState(kps4)
     println("Kite position at start: ", round.(pos_kite(kps4), digits=2))
+    if KiteUtils.PROJECT == "system.yaml"
+        KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
+    else
+        KiteViewers.update_system(viewer, sys_state; scale = 0.08*0.5, kite_scale=3)
+    end
+    bring_viewer_to_front()
     while true
         time = i * dt 
         steering = 0.0
@@ -150,9 +157,7 @@ function sim_parking(integrator)
             else
                 KiteViewers.update_system(viewer, sys_state; scale = 0.08*0.5, kite_scale=3)
             end
-            if i == TIME_LAPSE_RATIO
-                bring_viewer_to_front()
-            end
+
             wait_until(start_time_ns + 1e9*dt, always_sleep=true) 
             mtime = 0
             if i > 10/dt 
@@ -185,6 +190,12 @@ function play_parking()
     kps4.set.use_turbulence = 0.0
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
     kps4.set.use_turbulence = saved_turbulence
+    sys_state = SysState(kps4)
+    if KiteUtils.PROJECT == "system.yaml"
+        KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
+    else
+        KiteViewers.update_system(viewer, sys_state; scale = 0.08*0.5, kite_scale=3)
+    end
     toc()
     try
         sim_parking(integrator)
@@ -211,8 +222,10 @@ p=plotx(T, rad2deg.(AZIMUTH), rad2deg.(AZIMUTH_EAST),[rad2deg.(UPWIND_DIR_), rad
          labels=["azimuth", "azimuth_east", ["upwind_dir", "filtered_upwind_dir"], "heading", ["set_steering", "steering"], "v_wind_kite"],
          ysize=12, fig="Parking with changing wind direction, TI: $(round(ti, digits=2)) %")
 display(p)
-p2 = plot(T, [rad2deg.(HEADING_RATE), rad2deg.(BODY_RATE)];
-           xlabel = "time [s]", ylabel = "rate [°/s]",
-           labels = ["heading_rate", "body_rate"], fig = "rates")
-display(p2)
+if PLOT_HEADING_RATE
+    p2 = plot(T, [rad2deg.(HEADING_RATE), rad2deg.(BODY_RATE)];
+            xlabel = "time [s]", ylabel = "rate [°/s]",
+            labels = ["heading_rate", "body_rate"], fig = "rates")
+    display(p2)
+end
 KiteModels.reactivate_host_app()
