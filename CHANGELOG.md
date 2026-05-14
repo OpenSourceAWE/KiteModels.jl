@@ -10,18 +10,23 @@ SPDX-License-Identifier: MIT
 - Added `CondaPkg` directory to `.gitignore`
 - Added missing imports in `examples/rotations.jl`
 - Updated `bin/reuse_lint` script
+- Added Julia version selection dialog to `bin/update_default_manifest`
+- Run tests also on Julia 1.11 in `bin/install`
+- Suppress verbose CondaPkg logs in `bin/setup_env`
 
 #### Changed
-- Use `-t auto` in `bin/run_julia` for better terminal handling
+- Use `-t auto` in `bin/run_julia` to allow multithreading in the REPL
 - Improved `examples_3d/parking_wind_dir.jl` example
 - Improved plots in `examples_3d/parking_wind_dir.jl` and `examples_3d/plot_turbulence.jl`
 - Updated documentation build (`docs/make.jl`)
 - Cleaned up removed `initial_reel_out_4p` example files
 - Improved comments throughout the codebase
+- Improved messages in `bin/install`
 
 #### Fixed
 - Fixed Windows compatibility in `bin/setup_env`
 - Fixed bug in `examples/rotations.jl`
+- Fixed `Pkg.test()` call for Julia 1.11 in `bin/install`
 
 ### KiteModels v0.11.12 2026-05-08
 #### Fixed
