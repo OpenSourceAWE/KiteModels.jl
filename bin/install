@@ -407,8 +407,9 @@ end
 ' || _ec=$?
     if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.11)")
     elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.11)"); fi
-    echo "Precompiling test project..."
+    echo "Precompiling test project and running the tests..."
     run_precompile "--project=test"
+    julia --project=test -e 'using Pkg; Pkg.test()'
     _ec=0; julia --project=examples_3d -e '
 using Pkg
 try
