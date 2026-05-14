@@ -108,39 +108,6 @@ print_memory_snapshot() {
     fi
 }
 
-PYTHON_PATH=$(which python3)
-if [ -x "$PYTHON_PATH" ]; then
-    echo "Python is found at $PYTHON_PATH"
-    if $PYTHON_PATH -c "import matplotlib" &> /dev/null; then
-        echo "Matplotlib found. Using existing installation."
-        export PYTHON=$PYTHON_PATH
-    else
-        echo "Matplotlib is not found."
-        if [[ $_yes_to_all == true ]]; then
-            echo "Installing matplotlib with Conda..."
-            export PYTHON=""
-        else
-            read -p "Do you want to install matplotlib with Conda? (y/n): " choice
-            case "$choice" in 
-              y|Y ) 
-                export PYTHON=""
-                ;;
-              n|N ) 
-                echo "Exiting without installing matplotlib."
-                exit 1
-                ;;
-              * ) 
-                echo "Invalid choice. Exiting."
-                exit 1
-                ;;
-            esac
-        fi
-    fi
-else
-    echo "Python is not found."
-    exit 1
-fi
-
 # Check memory and limit threads if needed
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
     # Windows: use wmic or PowerShell
