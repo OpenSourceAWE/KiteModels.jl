@@ -30,6 +30,8 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     #    libffi.so.6:        absent/wrong version on Ubuntu 22.04+; added to LD_LIBRARY_PATH
     #  - libfontconfig.so.1: override version missing FcConfigSetDefaultSubstitute via LD_PRELOAD
     #  - libglib-2.0.so.0:   override version missing g_string_copy via LD_PRELOAD (placed first)
+    #  - libexpat.so.1:      CondaPkg/pixi env copy used when it provides
+    #                        XML_SetAllocTrackerActivationThreshold (Python 3.13+/pyexpat)
     #
     # All Julia invocations are handled by forwarding every argument to `command julia`,
     # so both `julia +1.11 ...` and `$JULIA_CMD` with `JULIA_CMD="julia +1.11"` work.
@@ -89,6 +91,19 @@ if [[ "$(uname -s)" == "Linux" ]]; then
         _jf=$(_jfind_artifact libfontconfig.so.1 FcConfigSetDefaultSubstitute) && {
             _jadd_libdir "$_jf"; _jpreloads+=("$_jf")
         }
+
+        # CondaPkg pixi env: add libexpat dir when it provides symbols newer than
+        # the system copy (e.g. XML_SetAllocTrackerActivationThreshold, needed by
+        # Python 3.13+ via pyexpat).
+        for _jcondapkg_lib in \
+            "$PWD/examples/.CondaPkg/.pixi/envs/default/lib" \
+            "$PWD/.CondaPkg/.pixi/envs/default/lib"; do
+            if [[ -f "$_jcondapkg_lib/libexpat.so.1" ]] && \
+               nm -D "$_jcondapkg_lib/libexpat.so.1" 2>/dev/null | grep -q "XML_SetAllocTrackerActivationThreshold"; then
+                _jadd_libdir "$_jcondapkg_lib/libexpat.so.1"
+                break
+            fi
+        done
 
         # libglib: needs g_string_copy; placed FIRST in LD_PRELOAD to win the SONAME race
         local _jglib _jglib_dir _jfinal_preload="" _jfinal_libpath=""

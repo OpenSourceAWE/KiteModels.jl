@@ -94,3 +94,5 @@ examples_3d/Manifest.toml
 Manifest-v1.13.toml
 data/windfield_*.npz
 data/gui.yaml
+examples/.CondaPkg/
+examples_3d/.CondaPkg/

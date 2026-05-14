@@ -5,17 +5,8 @@
 
 using Pkg
 
-function globaldependencies()
-    projectpath = Pkg.project().path
-    basepath, _ = splitdir(projectpath)
-    Pkg.activate()
-    globaldependencies = keys(Pkg.project().dependencies)
-    Pkg.activate(basepath)
-    globaldependencies
-end
-
-if !("Documenter" ∈ keys(Pkg.project().dependencies))
-    using Pkg
-    Pkg.activate("docs")
+_docs_project = joinpath(@__DIR__, "..", "docs")
+if !isfile(joinpath(dirname(Pkg.project().path), "make.jl"))
+    Pkg.activate(_docs_project)
 end
 using LiveServer; servedocs(launch_browser=true)
