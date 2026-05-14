@@ -76,12 +76,12 @@ if [[ -z "$_backend" ]]; then
     echo "     - Self-contained; downloads ~200 MB on first use"
     echo ""
     if [[ "$_yes" == true ]]; then
-        _choice="1"
-        echo "Using default: 1 (system Python)"
+        _choice="2"
+        echo "Using default: 2 (CondaPkg)"
     else
-        read -rp "Enter 1 or 2 [default: 1]: " _choice
+        read -rp "Enter 1 or 2 [default: 2]: " _choice
     fi
-    case "${_choice:-1}" in
+    case "${_choice:-2}" in
         1) _backend="system" ;;
         2) _backend="conda"  ;;
         *)
@@ -205,6 +205,14 @@ if [[ "$_backend" == "system" ]]; then
         exit 1
     fi
     echo "Found system Python: $_syspython"
+
+    # Remove the CondaPkg-managed environment so that setup_env does not set
+    # JULIA_PYTHONCALL_EXE to the conda Python, which would override the system
+    # Python configured below.
+    if [[ -d "examples/.CondaPkg" ]]; then
+        echo "Removing examples/.CondaPkg (switching from CondaPkg to system Python)..."
+        rm -rf "examples/.CondaPkg"
+    fi
 
     echo ""
     echo "Saving python_exe=$_syspython to examples/LocalPreferences.toml..."
