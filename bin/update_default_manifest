@@ -62,10 +62,8 @@ elif [[ $julia_major == "1.11" ]]; then
     cp examples/Manifest-v1.11.toml Manifest-v1.11.toml.default
     rm -rf ~/.julia/compiled/v1.11/KiteModels/
     echo "Updated Manifest-v1.11.toml.default !"
-    echo "Make sure to run the tests before committing the new version!"
 else
     cp Manifest-v1.12.toml Manifest-v1.12.toml.default
     rm -rf ~/.julia/compiled/v1.12/KiteModels/
     echo "Updated Manifest-v1.12.toml.default !"
-    echo "Make sure to run the tests before committing the new version!"
 fi
