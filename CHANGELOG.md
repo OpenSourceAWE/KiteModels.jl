@@ -2,6 +2,27 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.13 2026-05-14
+#### Added
+- Use PythonCall (#286): updated to ControlPlots 0.3, which uses PythonCall instead of PyCall
+- Documented turbulence in the documentation (`docs/src/projects.md`)
+- Forward script arguments to Julia in `bin/run_julia`
+- Added `CondaPkg` directory to `.gitignore`
+- Added missing imports in `examples/rotations.jl`
+- Updated `bin/reuse_lint` script
+
+#### Changed
+- Use `-t auto` in `bin/run_julia` for better terminal handling
+- Improved `examples_3d/parking_wind_dir.jl` example
+- Improved plots in `examples_3d/parking_wind_dir.jl` and `examples_3d/plot_turbulence.jl`
+- Updated documentation build (`docs/make.jl`)
+- Cleaned up removed `initial_reel_out_4p` example files
+- Improved comments throughout the codebase
+
+#### Fixed
+- Fixed Windows compatibility in `bin/setup_env`
+- Fixed bug in `examples/rotations.jl`
+
 ### KiteModels v0.11.12 2026-05-08
 #### Fixed
 - fixed `insert_yaml_scalar_in_section` function to properly handle YAML sections at end of file, avoiding duplicate keys when setting `default_turbulence`
