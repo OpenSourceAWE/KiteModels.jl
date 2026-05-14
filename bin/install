@@ -149,7 +149,7 @@ fi
 unset _revise_code _revise_rc
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    # Avoid Tk backend issues on macOS (e.g. non-responsive close button in PyPlot windows).
+    # Avoid Tk backend issues on macOS (e.g. non-responsive close button in ControlPlots windows).
     # Keep user override if MPLBACKEND is already set.
     if [[ -z "${MPLBACKEND:-}" ]]; then
         export MPLBACKEND=qtagg
@@ -311,7 +311,7 @@ run_precompile() {
 }
 
 # Run Pkg.precompile() for a project with a clean dynamic-loader environment.
-# This is used for docs to avoid Conda/PyCall symbol conflicts caused by
+# This is used for docs to avoid Conda/PythonCall symbol conflicts caused by
 # LD_PRELOAD/LD_LIBRARY_PATH overrides from setup_env.
 run_precompile_clean_env() {
     local _proj="$1"
@@ -334,14 +334,14 @@ run_precompile_clean_env() {
 
     # If there is a pyexpat/libexpat mismatch and this is --project=docs, skip with a warning.
     # This is a Conda env corruption issue (Python 3.13 with libexpat < 2.7.0).
-    # The user should run: julia -e 'using Conda; Conda.update()'  to fix it permanently.
+    # The user should run: julia --project=examples -e 'using CondaPkg; CondaPkg.update()'  to fix it permanently.
     if _log_clean | grep -qE "Failed to precompile|dependencies? errored" || [[ $_precompile_rc -ne 0 ]]; then
         if [[ "$_proj" == "--project=docs" ]] && _has_pyexpat_mismatch; then
             rm -f "$_plog"
             echo
             echo "Warning: docs precompile skipped due to Conda libexpat/pyexpat symbol mismatch."
             echo "  Python 3.13 requires libexpat >= 2.7.0 (symbol XML_SetAllocTrackerActivationThreshold)."
-            echo "  Fix with: julia -e 'using Conda; Conda.update()'"
+            echo "  Fix with: julia --project=examples -e 'using CondaPkg; CondaPkg.update()'"
             echo "  Installation continues; docs work normally once the Conda env is repaired."
             echo
             return 0
@@ -629,9 +629,9 @@ julia --project=examples_3d -e 'using ControlPlots' || true
 julia --project=examples_3d -e 'using KiteViewers' || true
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    if julia -e '
+    if julia --project=examples -e '
 try
-    using PyCall
+    using PythonCall
     pyimport("matplotlib")
     pyimport("matplotlib.backends.backend_qtagg")
 catch
@@ -641,64 +641,36 @@ end
         echo
         echo "QtAgg already installed; skipping QtAgg dependency installation."
     else
-        if [[ $_yes_to_all == true ]]; then
-            echo
-            echo "Installing QtAgg dependencies for PyPlot on macOS..."
-            julia -e '
+        _install_matplotlib_condapkg_macos() {
+            julia --project=examples -e '
 using Pkg
-
-for pkg in ["PyCall", "PyPlot", "Conda"]
+for pkg in ["PythonCall", "CondaPkg"]
     if Base.find_package(pkg) === nothing
         Pkg.add(pkg)
     end
 end
-
-if get(ENV, "PYTHON", nothing) != ""
-    ENV["PYTHON"] = ""
-    Pkg.build("PyCall")
-end
-
-using Conda
-Conda.add("matplotlib")
-Conda.add("pyqt")
-
-Pkg.build("PyPlot")
-
-println("Installed matplotlib + pyqt in Conda.jl environment.")
-println("QtAgg should now be available for matplotlib/PyPlot.jl.")
+using CondaPkg
+CondaPkg.add("matplotlib")
+CondaPkg.add("pyqt")
+CondaPkg.resolve()
+println("Installed matplotlib + pyqt in CondaPkg environment.")
+println("QtAgg should now be available for matplotlib/PythonCall.")
 '
+        }
+        if [[ $_yes_to_all == true ]]; then
+            echo
+            echo "Installing QtAgg dependencies for ControlPlots on macOS..."
+            _install_matplotlib_condapkg_macos
         else
             echo
-            echo "Installing QtAgg dependencies for PyPlot on macOS..."
+            echo "Installing QtAgg dependencies for ControlPlots on macOS..."
             read -rp "Do you want to install matplotlib and pyqt? (y/n) [default: y]: " _install_choice
             case "${_install_choice}" in
                 n|N)
                     echo "Skipping QtAgg dependency installation."
                     ;;
                 *)
-                    julia -e '
-using Pkg
-
-for pkg in ["PyCall", "PyPlot", "Conda"]
-    if Base.find_package(pkg) === nothing
-        Pkg.add(pkg)
-    end
-end
-
-if get(ENV, "PYTHON", nothing) != ""
-    ENV["PYTHON"] = ""
-    Pkg.build("PyCall")
-end
-
-using Conda
-Conda.add("matplotlib")
-Conda.add("pyqt")
-
-Pkg.build("PyPlot")
-
-println("Installed matplotlib + pyqt in Conda.jl environment.")
-println("QtAgg should now be available for matplotlib/PyPlot.jl.")
-'
+                    _install_matplotlib_condapkg_macos
                     ;;
             esac
         fi
