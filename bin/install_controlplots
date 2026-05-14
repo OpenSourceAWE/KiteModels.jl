@@ -2,12 +2,12 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 #
-# Install and configure matplotlib for ControlPlots.jl (via PyCall/PyPlot).
+# Install and configure matplotlib for ControlPlots.jl (via PythonCall).
 #
 # Two backends are supported:
 #   1) System Python  – uses the matplotlib package installed by Ubuntu/Debian (apt).
 #                       Fastest option; shares the system Python install.
-#   2) Conda          – installs matplotlib into Julia's own Conda environment.
+#   2) CondaPkg       – installs matplotlib into a pixi-managed Conda environment.
 #                       Self-contained; does not require root / sudo.
 #
 # Both options configure the Qt (qtagg) backend for interactive plot windows.
@@ -18,7 +18,7 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --system   Use the system Python and matplotlib (Ubuntu/Debian apt)"
-    echo "  --conda    Use Julia's Conda environment to install matplotlib"
+    echo "  --conda    Use CondaPkg (pixi) to install matplotlib"
     echo "  -y, --yes  Non-interactive; accept defaults"
     echo "  -h, --help Show this help message"
 }
@@ -71,7 +71,7 @@ if [[ -z "$_backend" ]]; then
     echo "     - Requires sudo"
     echo "     - Shares the system-wide Python installation"
     echo ""
-    echo "  2) Conda          (installs matplotlib into Julia's own Conda environment)"
+    echo "  2) CondaPkg       (installs matplotlib into a pixi-managed Conda environment)"
     echo "     - No sudo required"
     echo "     - Self-contained; downloads ~200 MB on first use"
     echo ""
@@ -95,36 +95,21 @@ echo ""
 echo "Selected backend: $_backend"
 echo ""
 
-# ── Helper: rebuild PyCall and verify matplotlib ──────────────────────────────
+# ── Helper: install matplotlib via CondaPkg ───────────────────────────────────
 
-_rebuild_pycall_and_verify() {
-    # $1 = PYTHON value to pass (empty string → Conda, path → system)
-    local _pyval="$1"
-    echo "Rebuilding PyCall with PYTHON='${_pyval}'..."
-    env -u LD_PRELOAD -u LD_LIBRARY_PATH \
-        PYTHON="$_pyval" \
-        julia --project=examples -e '
+_install_matplotlib_condapkg() {
+    echo "Installing matplotlib and pyqt into CondaPkg (pixi) environment..."
+    julia --project=examples -e '
 using Pkg
-ENV["PYTHON"] = get(ENV, "PYTHON", "")
-Pkg.build("PyCall")
-println("PyCall rebuilt successfully.")
-'
-}
-
-_install_matplotlib_conda() {
-    echo "Installing matplotlib and pyqt into Julia's Conda environment..."
-    env -u LD_PRELOAD -u LD_LIBRARY_PATH \
-        PYTHON="" \
-        julia --project=examples -e '
-using Pkg
-# Ensure Conda is available
-if Base.find_package("Conda") === nothing
-    Pkg.add("Conda")
+# Ensure CondaPkg is available
+if Base.find_package("CondaPkg") === nothing
+    Pkg.add("CondaPkg")
 end
-using Conda
-Conda.add("matplotlib")
-Conda.add("pyqt")
-println("matplotlib and pyqt installed in Conda environment.")
+using CondaPkg
+CondaPkg.add("matplotlib")
+CondaPkg.add("pyqt")
+CondaPkg.resolve()
+println("matplotlib and pyqt installed in CondaPkg environment.")
 '
 }
 
@@ -221,35 +206,26 @@ if [[ "$_backend" == "system" ]]; then
     fi
     echo "Found system Python: $_syspython"
 
-    # Point PyCall at the system Python and rebuild.
-    env -u LD_PRELOAD -u LD_LIBRARY_PATH \
-        PYTHON="$_syspython" \
-        julia --project=examples -e '
-using Pkg
-ENV["PYTHON"] = ENV["PYTHON"]   # already set by the shell
-Pkg.build("PyCall")
-println("PyCall rebuilt to use system Python: " * ENV["PYTHON"])
-'
-
     echo ""
-    echo "Saving PYTHON=$_syspython to examples/LocalPreferences.toml..."
+    echo "Saving python_exe=$_syspython to examples/LocalPreferences.toml..."
     # Write (or update) LocalPreferences.toml in the examples directory so that
-    # Julia's PyCall always uses the system Python when running examples.
+    # PythonCall always uses the system Python when running examples.
     _prefs_file="examples/LocalPreferences.toml"
     if [[ -f "$_prefs_file" ]]; then
-        # Remove any existing [PyCall] section (naive sed approach).
+        # Remove any existing [PythonCall] and legacy [PyCall] sections.
         _tmp=$(mktemp)
         awk '
-            /^\[PyCall\]/ { in_pycall=1; next }
-            in_pycall && /^\[/ { in_pycall=0 }
-            !in_pycall { print }
+            /^\[PythonCall\]/ { in_pc=1; next }
+            /^\[PyCall\]/ { in_pc=1; next }
+            in_pc && /^\[/ { in_pc=0 }
+            !in_pc { print }
         ' "$_prefs_file" > "$_tmp"
         mv "$_tmp" "$_prefs_file"
     fi
     {
         echo ""
-        echo "[PyCall]"
-        echo "python = \"$_syspython\""
+        echo "[PythonCall]"
+        echo "exe = \"$_syspython\""
     } >> "$_prefs_file"
     echo "Written to $_prefs_file."
 
@@ -257,44 +233,35 @@ println("PyCall rebuilt to use system Python: " * ENV["PYTHON"])
     _verify_controlplots
 
     echo ""
-    echo "Done. ControlPlots will use the system Python matplotlib with the Qt (qtagg) backend."
+    echo "Done. ControlPlots will use the system Python (PythonCall) matplotlib with the Qt (qtagg) backend."
 
-# ── Conda backend ─────────────────────────────────────────────────────────────
+# ── CondaPkg backend ──────────────────────────────────────────────────────────
 
 elif [[ "$_backend" == "conda" ]]; then
-    # Remove any LocalPreferences.toml [PyCall] section so PyCall uses Conda.
+    # Remove any [PythonCall] exe setting and legacy [PyCall] section so that
+    # PythonCall falls back to the CondaPkg-managed Python.
     _prefs_file="examples/LocalPreferences.toml"
     if [[ -f "$_prefs_file" ]]; then
         _tmp=$(mktemp)
         awk '
-            /^\[PyCall\]/ { in_pycall=1; next }
-            in_pycall && /^\[/ { in_pycall=0 }
-            !in_pycall { print }
+            /^\[PythonCall\]/ { in_pc=1; next }
+            /^\[PyCall\]/ { in_pc=1; next }
+            in_pc && /^\[/ { in_pc=0 }
+            !in_pc { print }
         ' "$_prefs_file" > "$_tmp"
-        # If PyCall section existed, update; otherwise leave unchanged.
         if ! diff -q "$_prefs_file" "$_tmp" &>/dev/null; then
             mv "$_tmp" "$_prefs_file"
-            echo "Removed [PyCall] section from $_prefs_file (switching to Conda)."
+            echo "Removed [PythonCall]/[PyCall] section from $_prefs_file (switching to CondaPkg)."
         else
             rm -f "$_tmp"
         fi
     fi
 
-    # Rebuild PyCall with PYTHON="" to trigger Conda mode.
-    env -u LD_PRELOAD -u LD_LIBRARY_PATH \
-        PYTHON="" \
-        julia --project=examples -e '
-using Pkg
-ENV["PYTHON"] = ""
-Pkg.build("PyCall")
-println("PyCall rebuilt to use Conda-managed Python.")
-'
-
-    _install_matplotlib_conda
+    _install_matplotlib_condapkg
 
     _set_mplbackend_qtagg
     _verify_controlplots
 
     echo ""
-    echo "Done. ControlPlots will use the Conda-managed matplotlib with the Qt (qtagg) backend."
+    echo "Done. ControlPlots will use the CondaPkg-managed matplotlib with the Qt (qtagg) backend."
 fi
