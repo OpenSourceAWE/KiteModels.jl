@@ -220,13 +220,14 @@ if [[ "$_backend" == "system" ]]; then
     # PythonCall always uses the system Python when running examples.
     _prefs_file="examples/LocalPreferences.toml"
     if [[ -f "$_prefs_file" ]]; then
-        # Remove any existing [PythonCall] and legacy [PyCall] sections.
+        # Remove any existing [PythonCall], [CondaPkg] and legacy [PyCall] sections.
         _tmp=$(mktemp)
         awk '
-            /^\[PythonCall\]/ { in_pc=1; next }
-            /^\[PyCall\]/ { in_pc=1; next }
-            in_pc && /^\[/ { in_pc=0 }
-            !in_pc { print }
+            /^\[PythonCall\]/ { in_sec=1; next }
+            /^\[PyCall\]/ { in_sec=1; next }
+            /^\[CondaPkg\]/ { in_sec=1; next }
+            in_sec && /^\[/ { in_sec=0 }
+            !in_sec { print }
         ' "$_prefs_file" > "$_tmp"
         mv "$_tmp" "$_prefs_file"
     fi
@@ -234,6 +235,9 @@ if [[ "$_backend" == "system" ]]; then
         echo ""
         echo "[PythonCall]"
         echo "exe = \"$_syspython\""
+        echo ""
+        echo "[CondaPkg]"
+        echo "backend = \"Null\""
     } >> "$_prefs_file"
     echo "Written to $_prefs_file."
 
@@ -252,14 +256,15 @@ elif [[ "$_backend" == "conda" ]]; then
     if [[ -f "$_prefs_file" ]]; then
         _tmp=$(mktemp)
         awk '
-            /^\[PythonCall\]/ { in_pc=1; next }
-            /^\[PyCall\]/ { in_pc=1; next }
-            in_pc && /^\[/ { in_pc=0 }
-            !in_pc { print }
+            /^\[PythonCall\]/ { in_sec=1; next }
+            /^\[PyCall\]/ { in_sec=1; next }
+            /^\[CondaPkg\]/ { in_sec=1; next }
+            in_sec && /^\[/ { in_sec=0 }
+            !in_sec { print }
         ' "$_prefs_file" > "$_tmp"
         if ! diff -q "$_prefs_file" "$_tmp" &>/dev/null; then
             mv "$_tmp" "$_prefs_file"
-            echo "Removed [PythonCall]/[PyCall] section from $_prefs_file (switching to CondaPkg)."
+            echo "Removed [PythonCall]/[PyCall]/[CondaPkg] section from $_prefs_file (switching to CondaPkg)."
         else
             rm -f "$_tmp"
         fi
