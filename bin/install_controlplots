@@ -114,8 +114,10 @@ println("matplotlib and pyqt installed in CondaPkg environment.")
 }
 
 _verify_controlplots() {
+    local _cpkg_backend="${1:-}"
     echo "Verifying ControlPlots can be loaded..."
     if env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+        ${_cpkg_backend:+JULIA_CONDAPKG_BACKEND="$_cpkg_backend"} \
         julia --project=examples -e '
 using ControlPlots
 println("ControlPlots loaded successfully.")
@@ -242,7 +244,7 @@ if [[ "$_backend" == "system" ]]; then
     echo "Written to $_prefs_file."
 
     _set_mplbackend_qtagg
-    _verify_controlplots
+    _verify_controlplots "Null"
 
     echo ""
     echo "Done. ControlPlots will use the system Python (PythonCall) matplotlib with the Qt (qtagg) backend."
