@@ -7,6 +7,7 @@
 
 using KiteModels, LinearAlgebra
 using KiteUtils: Settings, load_settings
+using Printf
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
@@ -40,6 +41,7 @@ end
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
 v_force = zeros(STEPS)
+v_elevation = zeros(STEPS)
 
 function simulate(integrator, steps, plot=false)
     iter = 0
@@ -60,6 +62,7 @@ function simulate(integrator, steps, plot=false)
         v_time[i] = kps4.t_0
         v_speed[i] = kps4.v_reel_out
         v_force[i] = winch_force(kps4)
+        v_elevation[i] = rad2deg(calc_elevation(kps4))
         next_step!(kps4, integrator; set_torque, dt)
         iter += kps4.iter
         
@@ -100,8 +103,8 @@ println("Average number of callbacks per time step: $(round(av_steps, digits=2))
 
 if PLOT
     local p
-    p = plotx(v_time, v_speed, v_force; 
-    ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
+    p = plotx(v_time, v_speed, v_force, v_elevation; 
+    ylabels=["v_reelout  [m/s]","tether_force [N]","elevation [deg]"], fig="winch")
     display(p)
     reactivate_host_app()
 end
