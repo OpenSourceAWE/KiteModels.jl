@@ -327,6 +327,13 @@ Return the absolute value of the force at the winch as calculated during the las
 function winch_force(s::KPS3) norm(s.last_force) end
 
 """
+    reel_out_speed(s::KPS3)
+
+Return the current reel-out speed of the winch in m/s.
+"""
+function reel_out_speed(s::KPS3) s.v_reel_out end
+
+"""
     calc_set_cl_cd!(s::KPS3, vec_c, v_app)
 
 Calculate the lift over drag ratio as a function of the direction vector of the last tether

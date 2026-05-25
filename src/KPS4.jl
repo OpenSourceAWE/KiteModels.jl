@@ -624,6 +624,13 @@ Return the absolute value of the force at the winch as calculated during the las
 function winch_force(s::KPS4) norm(s.last_force) end
 
 """
+    reel_out_speed(s::KPS4)
+
+Return the current reel-out speed of the winch in m/s.
+"""
+function reel_out_speed(s::KPS4) s.v_reel_out end
+
+"""
     cl_cd(s::KPS4)
 
 Calculate the lift and drag coefficients of the kite, based on the current angles of attack.

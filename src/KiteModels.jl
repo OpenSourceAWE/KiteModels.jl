@@ -34,7 +34,7 @@ export clear!, find_steady_state!, residual!                                    
 export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
 export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
 export calc_azimuth_east, calc_azimuth_north
-export cl_cd, lift_drag, lift_over_drag, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
+export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
 export get_default_turbulence, set_default_turbulence, spring_forces, states, upwind_dir
