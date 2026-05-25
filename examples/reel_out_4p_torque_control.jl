@@ -60,9 +60,9 @@ function simulate(integrator, steps, plot=false)
         n = set.gear_ratio
         set_torque = -r/n * force + dforce
         v_time[i] = kps4.t_0
-        v_speed[i] = kps4.v_reel_out
-        v_force[i] = winch_force(kps4)
-        v_elevation[i] = rad2deg(calc_elevation(kps4))
+        v_speed[i] = KiteModels.reel_out_speed(kps4)
+        v_force[i] = KiteModels.winch_force(kps4)
+        v_elevation[i] = rad2deg(KiteModels.calc_elevation(kps4))
         next_step!(kps4, integrator; set_torque, dt)
         iter += kps4.iter
         
