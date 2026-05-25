@@ -42,6 +42,8 @@ v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
 v_force = zeros(STEPS)
 v_elevation = zeros(STEPS)
+v_heading = zeros(STEPS)
+v_wind_kite = zeros(STEPS)
 
 function simulate(integrator, steps, plot=false)
     iter = 0
@@ -63,6 +65,8 @@ function simulate(integrator, steps, plot=false)
         v_speed[i] = KiteModels.reel_out_speed(kps4)
         v_force[i] = force
         v_elevation[i] = rad2deg(KiteModels.calc_elevation(kps4))
+        v_heading[i] = rad2deg(KiteModels.calc_heading(kps4; respos=false))
+        v_wind_kite[i] = norm(KiteModels.v_wind_kite(kps4))
         next_step!(kps4, integrator; set_torque, dt)
         iter += kps4.iter
         
@@ -103,11 +107,12 @@ println("Average number of callbacks per time step: $(round(av_steps, digits=2))
 
 if PLOT
     local p
-    p = plotx(v_time, v_speed, v_force, v_elevation; 
-    ylabels=["v_reelout  [m/s]","tether_force [N]","elevation [deg]"], fig="winch")
+    p = plotx(v_time, v_speed, v_force, v_elevation, v_heading, v_wind_kite; 
+    ylabels=["v_reelout  [m/s]","tether_force [N]","elevation [deg]","heading [deg]","wind at kite [m/s]"], fig="winch")
     display(p)
     reactivate_host_app()
 end
+println("Number of states: $(states(kps4))")
 # savefig("docs/src/reelout_force_4p.png")
 
 # Solver: DFBDF, reltol=0.000001
