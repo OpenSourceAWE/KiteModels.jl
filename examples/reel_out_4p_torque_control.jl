@@ -55,13 +55,13 @@ function simulate(integrator, steps, plot=false)
         if kps4.t_0 > 15.0
             dforce = +4.5
         end
-        force = norm(kps4.forces[1])
+        force = winch_force(kps4)
         r = set.drum_radius
         n = set.gear_ratio
         set_torque = -r/n * force + dforce
         v_time[i] = kps4.t_0
         v_speed[i] = KiteModels.reel_out_speed(kps4)
-        v_force[i] = KiteModels.winch_force(kps4)
+        v_force[i] = force
         v_elevation[i] = rad2deg(KiteModels.calc_elevation(kps4))
         next_step!(kps4, integrator; set_torque, dt)
         iter += kps4.iter
