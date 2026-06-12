@@ -12,9 +12,9 @@ using Printf
 set::Settings = deepcopy(load_settings("system.yaml"))
 
 # the following values can be changed to match your interest
-dt::Float64 = 0.05
+dt::Float64 = 0.05/3
 set.solver="DFBDF" # IDA or DFBDF
-STEPS = 600
+STEPS = 600*3
 const PLOT = true
 FRONT_VIEW = false
 ZOOM = true
@@ -113,6 +113,9 @@ if PLOT
     reactivate_host_app()
 end
 println("Number of states: $(states(kps4))")
+println("Kite mass: $(set.mass) kg")
+println("KCU mass:  $(set.kcu_mass) kg")
+println("Tether diameter: $(set.d_tether) mm")
 # savefig("docs/src/reelout_force_4p.png")
 
 # Solver: DFBDF, reltol=0.000001
