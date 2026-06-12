@@ -54,7 +54,7 @@ if PLOT
     end
     using ControlPlots, StatsBase
     using ControlPlots: plt
-    close("all")
+    plt.close("all")
 end
 
 function simulate(integrator, steps; plot=false)
@@ -132,7 +132,7 @@ function shift_vector(vec, shift)
 end
 
 function plot_steering_vs_turn_rate()
-    close("all")
+    plt.close("all")
     lg = load_log("tmp")
     sl = lg.syslog
     psi = rad2deg.(wrap2pi.(sl.heading))
