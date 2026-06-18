@@ -71,6 +71,7 @@ println("Simulation speed: $(round(speed, digits=2)) times realtime.")
 if PLOT
     local p
     p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
+    display(p)
     p = plot(v_time[1:STEPS-100], alpha_2[1:STEPS-100], fig="alpha_2")
     display(p)
 end

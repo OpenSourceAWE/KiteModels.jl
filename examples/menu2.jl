@@ -51,7 +51,7 @@ function extra_menu()
         choice = request("\nChoose function to execute or `q` to quit: ", menu)
 
         if choice != -1 && choice != length(options)
-            name, script_path = actions[choice]
+            _, script_path = actions[choice]
             if script_path === nothing
                 set_default_turbulence()
             else
