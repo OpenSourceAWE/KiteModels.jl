@@ -109,9 +109,6 @@ i = 1
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu, integrator, logger
-    cl = 0.0
-    cd = 0.0
-    aoa = 0.0
 
     logger = Logger(set.segments + 5, STEPS)
     DEP[i] = depower

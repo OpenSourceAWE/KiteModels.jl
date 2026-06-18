@@ -87,9 +87,6 @@ kps4::KPS4 = KPS4(KCU(set))  # Initialize before loop
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu
-    cl = 0.0
-    cd = 0.0
-    aoa = 0.0
     if depower < 0.356
         depower = 0.356
     end
