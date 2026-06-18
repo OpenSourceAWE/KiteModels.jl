@@ -6,6 +6,7 @@
 using Printf
 using KiteModels
 using KiteUtils: Settings, load_settings
+using Pkg
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
@@ -37,7 +38,6 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
 if PLOT
-    using Pkg
     if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
         Pkg.activate("examples")
     end
