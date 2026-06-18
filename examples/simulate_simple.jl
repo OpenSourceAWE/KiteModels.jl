@@ -17,9 +17,7 @@ set.rel_tol=0.00001
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600
-PLOT = true
-FRONT_VIEW = false
-ZOOM = true
+const PLOT = true
 PRINT = false
 STATISTIC = false
 UPWIND_DIR = -pi/2 +deg2rad(10)
@@ -30,8 +28,8 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end

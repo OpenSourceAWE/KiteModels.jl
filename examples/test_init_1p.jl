@@ -7,8 +7,8 @@
 
 using Printf
 using Pkg
-if ! ("Rotations" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
@@ -24,9 +24,8 @@ V_WIND = 14.5
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 1
-PLOT = true
+const PLOT = true
 STATISTIC = false
-# end of user parameter section #
 
 elev = set.elevation
 set.v_wind = V_WIND # 25

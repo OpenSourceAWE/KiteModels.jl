@@ -10,8 +10,8 @@ using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
 using Printf
 using Pkg
-if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
 using MakieControlPlots
@@ -25,8 +25,7 @@ set.linear_solver = "GMRES"       # GMRES, LapackDense or Dense
 STEPS = 200
 PRINT = false
 STATISTIC = false
-PLOT = true
-# end of user parameter section #
+const PLOT = true
 
 kcu::KCU   = KCU(set)
 kps4::KPS4 = KPS4(kcu)

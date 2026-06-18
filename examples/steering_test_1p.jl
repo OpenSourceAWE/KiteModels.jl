@@ -30,7 +30,7 @@ STEPS = if set.kcu_model == "KCU2"
 else
     2400
 end
-PLOT = true
+const PLOT = true
 FRONT_VIEW = true
 ZOOM = true
 STATISTIC = false
@@ -45,8 +45,8 @@ kps3::KPS3 = KPS3(kcu)
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots, StatsBase
     close("all")

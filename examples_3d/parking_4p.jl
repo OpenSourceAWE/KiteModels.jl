@@ -8,7 +8,7 @@
 using Printf
 
 using Pkg
-if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
+if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Timers;
@@ -31,8 +31,7 @@ end
 STEPS = 352
 PRINT = false
 STATISTIC = false
-PLOT = false
-UPWIND_DIR2 = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
+const PLOT = false
 ZOOM = true
 FRONT_VIEW = true
 SHOW_KITE = true

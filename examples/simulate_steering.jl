@@ -15,9 +15,7 @@ set.rel_tol=0.00001
 # the following values can be changed to match your interest
 dt::Float64 = 0.05
 STEPS = 600
-PLOT = true
-FRONT_VIEW = true
-ZOOM = false
+const PLOT = true
 PRINT = false
 STATISTIC = false
 # end of user parameter section #
@@ -27,8 +25,8 @@ kps3::KPS3 = KPS3(kcu)
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end

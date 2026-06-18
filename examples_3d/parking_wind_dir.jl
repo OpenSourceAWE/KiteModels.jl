@@ -4,7 +4,7 @@
 # Park the kite while the wind direction changes.
 
 using Pkg
-if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
+if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Timers; tic()

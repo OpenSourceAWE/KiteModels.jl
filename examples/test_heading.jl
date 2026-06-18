@@ -13,8 +13,8 @@ using LinearAlgebra
 using Test
 
 using Pkg
-if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
     using StaticArrays
 end
 

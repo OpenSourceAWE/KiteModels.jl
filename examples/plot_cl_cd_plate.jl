@@ -14,8 +14,8 @@ else
 end
 
 using Pkg
-if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using MakieControlPlots, LaTeXStrings
 

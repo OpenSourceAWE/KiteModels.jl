@@ -18,17 +18,15 @@ set.rel_tol=0.000001
 dt::Float64 = 0.05
 ALPHA_ZERO = 8.8            # for KPS4
 STEPS = round(0.5*600/dt*0.05)
-PLOT = true
-FRONT_VIEW = false
-ZOOM = true
+const PLOT = true
 PRINT = false
 STATISTIC = false
 # end of user parameter section #
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end

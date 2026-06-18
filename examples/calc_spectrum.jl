@@ -7,8 +7,8 @@
 # sinusoidal torque excitation to characterize the system dynamics.
 
 using Pkg
-if ! ("StatsBase" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
 using Printf
@@ -22,8 +22,8 @@ else
 end
 
 using Pkg
-if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using MakieControlPlots, DSP, JLD2
 
@@ -41,7 +41,7 @@ use_butter  = true
 order = 4         # order of the Butterworth filter
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 640
-PLOT = false
+const PLOT = false
 STATISTIC = false
 DEPOWER       = 0.38
 F_EX_MIN = 0.1

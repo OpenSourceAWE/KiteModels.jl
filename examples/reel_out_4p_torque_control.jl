@@ -15,9 +15,7 @@ set::Settings = deepcopy(load_settings("system.yaml"))
 dt::Float64 = 0.05/3
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600*3
-PLOT = true
-FRONT_VIEW = false
-ZOOM = true
+const PLOT = true
 PRINT = false
 STATISTIC = false
 ALPHA_ZERO = 8.8 
@@ -32,8 +30,8 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end

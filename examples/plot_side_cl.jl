@@ -38,7 +38,8 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
 if PLOT
-    if Pkg.project().path != joinpath(@__DIR__, "Project.toml")
+    using Pkg
+    if dirname(Pkg.project().path) != @__DIR__
         Pkg.activate(@__DIR__)
     end
     using MakieControlPlots

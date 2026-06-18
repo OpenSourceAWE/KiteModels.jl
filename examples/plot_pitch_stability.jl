@@ -6,8 +6,8 @@
 # Supports configurable excitation amplitude, frequency, and depower.
 
 using Pkg
-if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
 using DSP, KiteModels, LinearAlgebra, StatsBase
@@ -36,7 +36,7 @@ use_butter  = true
 order = 4         # order of the Butterworth filter
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600
-PLOT = true
+const PLOT = true
 PRINT = true
 STATISTIC = false
 V_WIND_200    = 7.0
@@ -58,8 +58,8 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end

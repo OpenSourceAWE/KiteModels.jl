@@ -30,8 +30,8 @@ else
 end
 
 using Pkg
-if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using MakieControlPlots
 
@@ -42,7 +42,7 @@ set.rel_tol=0.00001
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 550# 740
-PLOT = true
+const PLOT = true
 PRINT = true
 STATISTIC = false
 # end of user parameter section #
@@ -62,8 +62,8 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end
