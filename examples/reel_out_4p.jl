@@ -6,6 +6,7 @@
 # of the kite trajectory and winch force over time.
 
 using KiteModels
+using Printf
 using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))
@@ -69,6 +70,7 @@ function simulate(integrator, steps, plot=false)
                     plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(35,75),
                                             segments=set.segments, fig="side_view")
                 end
+                sleep(0.025)
             end
         end
     end
