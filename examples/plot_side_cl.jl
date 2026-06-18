@@ -27,7 +27,7 @@ set.depower = 38.0
 dt::Float64 = 0.02
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 100
-PLOT = true
+const PLOT = true
 FRONT_VIEW = false
 ZOOM = true
 PRINT = false
@@ -38,8 +38,8 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 
 if PLOT
-    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if Pkg.project().path != joinpath(@__DIR__, "Project.toml")
+        Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
 end
