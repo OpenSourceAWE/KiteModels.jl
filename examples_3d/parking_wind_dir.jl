@@ -10,7 +10,7 @@ end
 using Timers; tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations, LinearAlgebra, Statistics
+using MakieControlPlots, KiteModels, Rotations, LinearAlgebra, Statistics
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))

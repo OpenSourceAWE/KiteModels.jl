@@ -221,8 +221,8 @@ run_precompile "--project"
 rm LocalPreferences.toml
 echo "Precompiling package KiteModels..."
 $JULIA_CMD --startup-file=no --project -J $SOFILE -e "using KiteModels, KitePodModels, KiteUtils"
-echo "Precompiling package ControlPlots ..."
-$JULIA_CMD --startup-file=no --project=examples -J $SOFILE -e "using ControlPlots, KiteModels"
+echo "Precompiling package MakieControlPlots ..."
+$JULIA_CMD --startup-file=no --project=examples -J $SOFILE -e "using MakieControlPlots, KiteModels"
 # On Linux, suppress known-harmless Julia extension loading warnings (e.g. DistributionsTestExt).
 # The error spans multiple lines (┌ Error: ... │ ... └ @ Base), so use sed range deletion.
 if [[ "$(uname -s)" == "Linux" ]]; then

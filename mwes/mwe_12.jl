@@ -3,11 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
     using TestEnv; TestEnv.activate()
-    # pkg"add ControlPlots#main"
 end
-using ControlPlots
+using MakieControlPlots
 using KiteModels, KitePodModels, KiteUtils
 
 set = deepcopy(se())

@@ -45,10 +45,10 @@ kps3::KPS3 = KPS3(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
         Pkg.activate("examples")
     end
-    using ControlPlots, StatsBase
+    using MakieControlPlots, StatsBase
     close("all")
 end
 
@@ -153,8 +153,5 @@ end
 save_log(logger, "tmp")
 if PLOT
     plot_steering_vs_turn_rate()
-    if Sys.isapple()
-        plt.show(block = true)
-    end
     reactivate_host_app()
 end

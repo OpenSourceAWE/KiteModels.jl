@@ -65,7 +65,7 @@ If possible, install [Julia 1.11](https://ufechner7.github.io/2024/08/09/install
 sudo apt install python3-matplotlib
 ```
 
-Make sure that `ControlPlots.jl` works as explained in the [ControlPlots.jl installation instructions](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
+Make sure that `MakieControlPlots.jl` works as explained in the [MakieControlPlots.jl installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
 Before installing this software it is suggested to create a new project, for example like this:
 
@@ -120,7 +120,7 @@ Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-wit
 sudo apt install python3-matplotlib
 ```
 
-Make sure that `ControlPlots.jl` works as explained in the [installation instructions](https://github.com/aenarete/ControlPlots.jl?tab=readme-ov-file#installation).
+Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
 Before installing this software it is suggested to create a new folder, for example like this:
 

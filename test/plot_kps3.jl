@@ -3,14 +3,14 @@
 
 # activate the test environment if needed
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate(joinpath(@__DIR__, "..", "test"))
 end
 
 using KiteModels
 using KitePodModels
 using KiteUtils
-using ControlPlots
+using MakieControlPlots
 using LinearAlgebra
 
 kcu::KCU = KCU(se())

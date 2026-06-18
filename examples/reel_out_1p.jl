@@ -26,10 +26,10 @@ kps3::KPS3 = KPS3(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
         Pkg.activate("examples")
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 v_time = zeros(STEPS)
@@ -100,9 +100,6 @@ else
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
-end
-if Sys.isapple()
-    plt.show(block = true)
 end
 lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")

@@ -14,8 +14,7 @@ using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001

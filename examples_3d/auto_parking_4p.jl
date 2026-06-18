@@ -15,7 +15,7 @@ using Timers;
 tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations
+using MakieControlPlots, KiteModels, Rotations
 using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))

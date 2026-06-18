@@ -38,11 +38,10 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
         Pkg.activate("examples")
     end
-    using ControlPlots
-    plt.close("all")
+    using MakieControlPlots
 end
 
 function simulate(integrator, steps, steering; plot=false)

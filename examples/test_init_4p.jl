@@ -4,15 +4,14 @@
 # plot the lift and drag coefficients as function of angle of attack
 using Printf
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
 using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001

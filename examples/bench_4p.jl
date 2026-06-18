@@ -10,11 +10,11 @@ using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
 using Printf
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
 
-using ControlPlots
+using MakieControlPlots
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 

@@ -17,8 +17,7 @@ using Pkg
 if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using ControlPlots, LaTeXStrings
-plt.close("all")
+using MakieControlPlots, LaTeXStrings
 
 set.v_wind = 14.0 # 25
 kcu::KCU = KCU(set)

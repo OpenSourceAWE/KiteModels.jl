@@ -15,7 +15,7 @@ using Timers;
 tic()
 using KiteModels, KitePodModels, Rotations, StaticArrays
 using KiteViewers
-using ControlPlots: plot, plot2d, plotx
+using MakieControlPlots: plot, plot2d, plotx
 toc()
 
 set::Settings = deepcopy(se())

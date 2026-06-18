@@ -16,11 +16,10 @@ else
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
     Pkg.activate("examples")
 end
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
@@ -51,10 +50,10 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+    if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
         Pkg.activate("examples")
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 function simulate(kps4, integrator, logger, steps)

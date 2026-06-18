@@ -21,5 +21,5 @@ There is no related issue.
 <!-- mark true if NA -->
 <!-- leave PR as draft until all is checked -->
 - [ ] Tests are passing
-- [ ] Lint workflow is passing
-- [ ] Docs were updated and workflow is passing
+- [ ] JETLS is not reporting any warnings
+- [ ] Docs were updated and the script `scripts/build_docu.jl` succeeds
