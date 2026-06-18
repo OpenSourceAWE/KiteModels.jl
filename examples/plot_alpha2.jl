@@ -24,7 +24,7 @@ set.linear_solver = "GMRES"       # GMRES, LapackDense or Dense
 STEPS = 200
 PRINT = false
 STATISTIC = false
-const PLOT = true
+PLOT = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)

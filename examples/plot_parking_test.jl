@@ -42,7 +42,7 @@ set.rel_tol=0.00001
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 550# 740
-const PLOT = true
+PLOT = true
 PRINT = true
 STATISTIC = false
 # end of user parameter section #

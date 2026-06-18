@@ -80,6 +80,7 @@ function simulate(integrator, steps, plot=false)
                     plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(37, 78),
                                             segments=set.segments, fig="side_view")
                 end
+                sleep(0.025)
             end
         end
     end

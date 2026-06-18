@@ -34,7 +34,7 @@ STEPS = if set.kcu_model == "KCU2"
 else
     2400
 end
-const PLOT = true
+PLOT = true
 FRONT_VIEW = true
 ZOOM = true
 STATISTIC = false

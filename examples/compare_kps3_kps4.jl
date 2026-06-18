@@ -18,7 +18,7 @@ set.rel_tol=0.000001
 dt::Float64 = 0.05
 ALPHA_ZERO = 8.8            # for KPS4
 STEPS = round(0.5*600/dt*0.05)
-const PLOT = true
+PLOT = true
 FRONT_VIEW = false
 ZOOM = true
 PRINT = false
@@ -52,6 +52,7 @@ function simulate(s, integrator, steps, plot = false; fig = "")
             front = FRONT_VIEW,
             fig,
         )
+        sleep(0.025)
     end
     for i in 1:steps
         if PRINT
@@ -76,6 +77,7 @@ function simulate(s, integrator, steps, plot = false; fig = "")
                     front = FRONT_VIEW,
                     fig,
                 )
+                sleep(0.025)
             end
         end
     end

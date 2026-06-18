@@ -31,7 +31,7 @@ end
 STEPS = 352
 PRINT = false
 STATISTIC = false
-const PLOT = false
+PLOT = false
 UPWIND_DIR2 = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
 ZOOM = true
 FRONT_VIEW = true

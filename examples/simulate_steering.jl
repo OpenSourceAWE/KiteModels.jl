@@ -15,7 +15,7 @@ set.rel_tol=0.00001
 # the following values can be changed to match your interest
 dt::Float64 = 0.05
 STEPS = 600
-const PLOT = true
+PLOT = true
 FRONT_VIEW = true
 ZOOM = false
 PRINT = false

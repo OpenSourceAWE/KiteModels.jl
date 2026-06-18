@@ -22,7 +22,7 @@ dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
-const PLOT = true
+PLOT = true
 STATISTIC = false
 UPWIND_DIR = -90 + 10
 # end of user parameter section #

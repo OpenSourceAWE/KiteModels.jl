@@ -24,7 +24,7 @@ V_WIND = 14.5
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 1
-const PLOT = true
+PLOT = true
 STATISTIC = false
 # end of user parameter section #
 
