@@ -81,6 +81,7 @@ function simulate(integrator, steps, plot=false)
                     catch
                     end
                 end
+                sleep(0.025)
             end
         end
     end

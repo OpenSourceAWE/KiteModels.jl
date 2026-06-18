@@ -59,7 +59,8 @@ function simulate(integrator, steps, plot=false)
             reltime = i*dt-dt
             if mod(i, 5) == 1
                 lines, sc, txt = plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments, 
-                                        lines, sc, txt, fig="simulate_steering")       
+                                        lines, sc, txt, fig="simulate_steering")
+                sleep(0.025)
             end
         end
     end

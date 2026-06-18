@@ -54,6 +54,7 @@ function simulate(integrator, steps, plot=false)
             if mod(i, 5) == 1
                 plot2d(kps4.pos, reltime; zoom=ZOOM, xlim=(40,60), front=FRONT_VIEW,
                 segments=set.segments, fig="upwind_dir = $(rad2deg(UPWIND_DIR)) °")
+                sleep(0.025)
             end
         end
         sys_state = SysState(kps4)

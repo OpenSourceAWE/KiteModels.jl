@@ -96,6 +96,7 @@ function simulate(integrator, steps; plot=false)
             if mod(i, 5) == 1
                 plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
                        fig="steering_test_1p")
+                sleep(0.025)
             end
         end
     end
