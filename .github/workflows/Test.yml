@@ -35,22 +35,6 @@ jobs:
             version: 1
             build_is_production_build: true
     steps:
-      - name: Install matplotlib and xvfb
-        run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y python3-matplotlib xvfb
-          fi
-        shell: bash
-
-      - name: Start virtual display
-        run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            Xvfb :99 -screen 0 1024x768x24 &
-            echo "DISPLAY=:99" >> $GITHUB_ENV
-          fi
-        shell: bash
-       
       - uses: actions/checkout@v6
       
       - name: Use default manifest
@@ -67,10 +51,6 @@ jobs:
         continue-on-error: true
       - uses: julia-actions/julia-buildpkg@v1
       
-      - name: Build PyCall
-        run: julia --project -e 'ENV["PYTHON"]="python3"; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
-        shell: bash
-        
       - uses: julia-actions/julia-runtest@v1
         env:
           BUILD_IS_PRODUCTION_BUILD: ${{ matrix.build_is_production_build }}
@@ -91,22 +71,6 @@ jobs:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Install matplotlib and xvfb
-      run: |
-        if [ "$RUNNER_OS" = "Linux" ]; then
-          sudo apt-get update
-          sudo apt-get install -y python3-matplotlib xvfb
-        fi
-      shell: bash
-
-    - name: Start virtual display
-      run: |
-        if [ "$RUNNER_OS" = "Linux" ]; then
-          Xvfb :99 -screen 0 1024x768x24 &
-          echo "DISPLAY=:99" >> $GITHUB_ENV
-        fi
-      shell: bash
-      
     - uses: actions/checkout@v6
     
     - name: Use default manifest
@@ -123,10 +87,6 @@ jobs:
       continue-on-error: true
     - uses: julia-actions/julia-buildpkg@v1
     
-    - name: Build PyCall
-      run: julia --project -e 'ENV["PYTHON"]="python3"; using Pkg; Pkg.instantiate(); Pkg.add("PyCall"); Pkg.build("PyCall")'
-      shell: bash
-      
     - uses: julia-actions/julia-runtest@v1
       env:
         BUILD_IS_PRODUCTION_BUILD: false
