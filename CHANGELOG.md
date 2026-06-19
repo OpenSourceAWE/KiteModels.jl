@@ -2,6 +2,26 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.14 2026-06-19
+#### Added
+- Added function `reel_out_speed` to `KiteModels.jl`, `KPS3.jl`, and `KPS4.jl`
+- Added `output/` directory to `.gitignore`
+
+#### Changed
+- Switched from `ControlPlots` to `MakieControlPlots` across all examples, tests, docs, and scripts (#295)
+- Removed `bin/install_controlplots`
+- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behaviour
+- Cleaned up `bin/install`: no special handling for `ControlPlots` any more
+- `examples/reel_out_4p_torque_control.jl` now uses `reel_out_speed` and interface functions, and plots heading and wind at kite
+- Updated PR template: replaced "Lint workflow is passing" with "JETLS is not reporting any warnings"; updated docs check to reference `scripts/build_docu.jl`
+- Updated default manifests (`Manifest-v1.11.toml.default`, `Manifest-v1.12.toml.default`)
+- Removed obsolete `mwes` files (`mwe_03` – `mwe_14`, `mwe_20`, `mwe_21`)
+- Removed `TestEnv` references from remaining `mwes` scripts
+- Bumped `MakieControlPlots` to version 0.1.4 to fix a bug with `plot2d` and missing parameter support
+
+#### Fixed
+- Fixed plotting issue in examples after migration to `MakieControlPlots`
+
 ### KiteModels v0.11.13 2026-05-14
 #### Added
 - Use PythonCall (#286): updated to ControlPlots 0.3, which uses PythonCall instead of PyCall
