@@ -16,7 +16,7 @@ set.rel_tol=0.00001
 # the following values can be changed to match your interest
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
-STEPS = 600
+STEPS = 480
 const PLOT = true
 PRINT = false
 STATISTIC = false

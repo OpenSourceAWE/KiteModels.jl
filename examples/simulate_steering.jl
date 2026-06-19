@@ -19,7 +19,7 @@ const PLOT = true
 PRINT = false
 STATISTIC = false
 FRONT_VIEW = false
-ZOOM = 1.0
+ZOOM = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -57,7 +57,7 @@ function simulate(integrator, steps, plot=false)
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments, 
+                plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
                                         fig="simulate_steering")
                 sleep(0.025)
             end

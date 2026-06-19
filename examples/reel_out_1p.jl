@@ -24,7 +24,7 @@ const PLOT = true
 PRINT = false
 STATISTIC = false
 FRONT_VIEW = false
-ZOOM = 1.0
+ZOOM = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -93,7 +93,6 @@ end
 lift, drag = KiteModels.lift_drag(kps3)
 println("lift, drag  [N]: $(round(lift, digits=2)), $(round(drag, digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
-
 p1 = plotx(v_time, v_speed, v_force; ylabels=["v_reelout  [m/s]", "tether_force [N]"], fig="winch")
 display(p1)
 reactivate_host_app()
