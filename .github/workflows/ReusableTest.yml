@@ -66,6 +66,7 @@ jobs:
         run: |
           Xvfb :99 -screen 0 1024x768x24 &
           echo "DISPLAY=:99" >> $GITHUB_ENV
+      - uses: julia-actions/julia-buildpkg@v1
       - name: Resolve and instantiate test environment
         shell: bash
         run: |
@@ -77,7 +78,11 @@ jobs:
             echo "Copied $TEST_MANIFEST to $TEST_TARGET"
           fi
           julia --project=test -e "using Pkg; Pkg.resolve(); Pkg.instantiate()"
-      - uses: julia-actions/julia-buildpkg@v1
+          if [ -f "$TEST_MANIFEST" ] && [ ! -f "$TEST_TARGET" ]; then
+            cp "$TEST_MANIFEST" "$TEST_TARGET"
+            echo "Copied $TEST_MANIFEST to $TEST_TARGET"
+          fi
+          julia --project=test -e "using Pkg; Pkg.resolve(); Pkg.instantiate()"
 
       - uses: julia-actions/julia-runtest@v1
         env:
