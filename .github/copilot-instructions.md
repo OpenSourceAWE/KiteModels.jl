@@ -85,7 +85,7 @@ Settings are in `data/` as YAML files. Key sections:
 
 - **OrdinaryDiffEqBDF/Sundials**: ODE solvers
 - **KiteUtils**: Settings, state types, utilities
-- **ControlPlots**: Plotting used directly in example scripts
+- **MakieControlPlots**: Plotting used directly in example scripts
 
 ## Testing Notes
 

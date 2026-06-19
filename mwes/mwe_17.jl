@@ -78,7 +78,7 @@ q = QuatRotation(rot)
 println("q: ", q)
 roll, pitch, yaw = rad2deg.(quat2euler(q))
 println("--> orient_quat:       roll: ", roll, " pitch:  ", pitch, "  yaw: ", yaw)
-@test roll ≈ -90
+@assert roll ≈ -90# fails
 
 q = Rotations.params(q)
 roll, pitch, yaw = rad2deg.(quat2euler(q))

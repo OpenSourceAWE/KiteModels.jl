@@ -16,11 +16,10 @@ else
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
@@ -33,7 +32,6 @@ STEPS = 500
 const PLOT = true
 PRINT = true
 STATISTIC = false
-DEPOWER::StepRangeLen = 0.47:-0.005:0.355
 # end of user parameter section #
 
 bridle_length = KiteModels.bridle_length(set)
@@ -51,10 +49,10 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 function simulate(kps4, integrator, logger, steps)
@@ -89,9 +87,6 @@ kps4::KPS4 = KPS4(KCU(set))  # Initialize before loop
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu
-    cl = 0.0
-    cd = 0.0
-    aoa = 0.0
     if depower < 0.356
         depower = 0.356
     end

@@ -7,8 +7,8 @@
 # sinusoidal torque excitation to characterize the system dynamics.
 
 using Pkg
-if ! ("StatsBase" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
 using Printf
@@ -22,12 +22,10 @@ else
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
-using ControlPlots, DSP, JLD2
-using ControlPlots: plt
-plt.close("all")
+using MakieControlPlots, DSP, JLD2
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
@@ -169,12 +167,8 @@ function plot_spectrum(name)
     spectrum = jldopen("data/" * name * ".jld2") do file
         read(file, "spectrum")
     end
-    plt.figure(name)
-    plt.plot(spectrum.f_ex, todb.(spectrum.aoa_eff))
-    plt.xlabel("f_ex [Hz]")
-    plt.ylabel("AOA amplitude [dB°]")
-    plt.gca().set_xscale("log")
-    plt.grid(true)
+    display(plot(spectrum.f_ex, todb.(spectrum.aoa_eff);
+          xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", xscale=:log10, grid=true, fig=name))
 end
 
 plot_spectrum(spectrum.name)

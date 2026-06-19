@@ -7,15 +7,14 @@
 
 using Printf
 using Pkg
-if ! ("Rotations" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
@@ -27,7 +26,6 @@ set.solver="DFBDF" # IDA or DFBDF
 STEPS = 1
 const PLOT = true
 STATISTIC = false
-# end of user parameter section #
 
 elev = set.elevation
 set.v_wind = V_WIND # 25

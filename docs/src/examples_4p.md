@@ -52,10 +52,10 @@ for i in 1:length(kps.pos)
 end
 ```
 
-And finally, we plot the position of the particles in the x-z plane. When you type ```using ControlPlots``` you will be asked if you want to install the ControlPlots package. Just press \<ENTER\> and it gets installed.
+And finally, we plot the position of the particles in the x-z plane. If MakieControlPlots is not yet installed, you can add it with ```using Pkg; Pkg.add("MakieControlPlots")``` before running the script.
 
 ```julia
-using ControlPlots
+using MakieControlPlots
 plot(x,z, xlabel="x [m]", ylabel="z [m]", scatter=true)
 ```
 

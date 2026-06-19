@@ -3,9 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
 using KiteModels, StaticArrays, LinearAlgebra, BenchmarkTools
 function test(vec)
     KiteModels.norm(vec)

@@ -16,12 +16,12 @@ set.rel_tol=0.00001
 # the following values can be changed to match your interest
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
-STEPS = 600
+STEPS = 480
 const PLOT = true
-FRONT_VIEW = false
-ZOOM = true
 PRINT = false
 STATISTIC = false
+ZOOM = true
+FRONT_VIEW = false
 UPWIND_DIR = -pi/2 +deg2rad(10)
 # end of user parameter section #
 
@@ -30,10 +30,10 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 logger = Logger(set.segments + 5, STEPS)
@@ -54,6 +54,7 @@ function simulate(integrator, steps, plot=false)
             if mod(i, 5) == 1
                 plot2d(kps4.pos, reltime; zoom=ZOOM, xlim=(40,60), front=FRONT_VIEW,
                 segments=set.segments, fig="upwind_dir = $(rad2deg(UPWIND_DIR)) °")
+                sleep(0.025)
             end
         end
         sys_state = SysState(kps4)
@@ -84,9 +85,6 @@ else
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
-end
-if Sys.isapple()
-    plt.show(block = true)
 end
 reactivate_host_app()
 lift, drag = KiteModels.lift_drag(kps4)

@@ -6,8 +6,8 @@
 # ENU reference frame vectors and converts them to Euler angles.
 
 using Pkg
-if ! ("StaticArrays" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
     using StaticArrays
 end
 using LinearAlgebra, Rotations

@@ -8,14 +8,14 @@
 using Printf
 
 using Pkg
-if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
+if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Timers;
 tic()
 using KiteModels, KitePodModels, Rotations, StaticArrays
 using KiteViewers
-using ControlPlots: plot, plot2d, plotx
+using MakieControlPlots: plot, plot2d, plotx
 toc()
 
 set::Settings = deepcopy(se())
@@ -32,7 +32,6 @@ STEPS = 352
 PRINT = false
 STATISTIC = false
 const PLOT = false
-UPWIND_DIR2 = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
 ZOOM = true
 FRONT_VIEW = true
 SHOW_KITE = true

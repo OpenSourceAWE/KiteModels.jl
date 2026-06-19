@@ -1,12 +1,10 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
-#
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
-using ControlPlots
+Pkg.activate(joinpath(@__DIR__,"..","examples"))
+Pkg.instantiate()
+using MakieControlPlots
 using KiteModels, KitePodModels, KiteUtils
 
 set = deepcopy(se())

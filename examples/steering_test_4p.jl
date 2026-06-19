@@ -49,12 +49,10 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots, StatsBase
-    using ControlPlots: plt
-    plt.close("all")
+    using MakieControlPlots, StatsBase
 end
 
 function simulate(integrator, steps; plot=false)
@@ -101,6 +99,7 @@ function simulate(integrator, steps; plot=false)
             if mod(i, 5) == 1
                 plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
                        fig="steering_test_4p")
+                sleep(0.025)
             end
         end
     end
@@ -132,7 +131,6 @@ function shift_vector(vec, shift)
 end
 
 function plot_steering_vs_turn_rate()
-    plt.close("all")
     lg = load_log("tmp")
     sl = lg.syslog
     psi = rad2deg.(wrap2pi.(sl.heading))
@@ -189,9 +187,6 @@ function plot_aoa()
               fig="aoa side plates")
     display(p1)
 
-    if Sys.isapple()
-        plt.show(block=true)
-    end
     reactivate_host_app()
 end
 

@@ -14,11 +14,10 @@ else
 end
 
 using Pkg
-if ! ("LaTeXStrings" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
-using ControlPlots, LaTeXStrings
-plt.close("all")
+using MakieControlPlots, LaTeXStrings
 
 set.v_wind = 14.0 # 25
 kcu::KCU = KCU(set)
@@ -31,9 +30,9 @@ function plot_cl_cd(alpha)
         cl[i] = kps4.calc_cl(alpha)
         cd[i] = kps4.calc_cd(alpha)
     end
-    display(plot(ALPHA, [cl, cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="CL, CD", labels=["CL", "CD"], fig="CL_CD"))
+    display(plot(ALPHA, [cl, cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="CL, CD", labels=["CL", "CD"], fig="CL_CD", xticks=-10:5:20, xsize=18))
     reactivate_host_app()
-    display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", labels=["LoD"], fig="LoD"))
+    display(plot(ALPHA, [cl./cd]; xlabel=L"\mathrm{AoA}~\alpha", ylabel="LoD", labels=["LoD"], fig="LoD", xticks=-10:5:20, xsize=18))
     reactivate_host_app()
 end
 

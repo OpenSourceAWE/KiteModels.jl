@@ -4,13 +4,13 @@
 # Park the kite while the wind direction changes.
 
 using Pkg
-if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
+if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Timers; tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations, LinearAlgebra, Statistics
+using MakieControlPlots, KiteModels, Rotations, LinearAlgebra, Statistics
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))

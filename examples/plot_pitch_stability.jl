@@ -6,8 +6,8 @@
 # Supports configurable excitation amplitude, frequency, and depower.
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
 using DSP, KiteModels, LinearAlgebra, StatsBase
@@ -20,8 +20,8 @@ else
     error("No valid data for the V3 kite available.")
 end
 
-using ControlPlots
-# plt.close("all")
+using MakieControlPlots
+
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
@@ -58,10 +58,10 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 FORCE = zeros(STEPS)

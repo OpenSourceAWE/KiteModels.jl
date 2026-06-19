@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("test")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using BenchmarkTools, KiteUtils, LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels

@@ -19,18 +19,18 @@ dt::Float64 = 0.05
 ALPHA_ZERO = 8.8            # for KPS4
 STEPS = round(0.5*600/dt*0.05)
 const PLOT = true
-FRONT_VIEW = false
-ZOOM = true
 PRINT = false
 STATISTIC = false
+ZOOM = true
+FRONT_VIEW = false
 # end of user parameter section #
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 set.version = 2
@@ -52,6 +52,7 @@ function simulate(s, integrator, steps, plot = false; fig = "")
             front = FRONT_VIEW,
             fig,
         )
+        sleep(0.025)
     end
     for i in 1:steps
         if PRINT
@@ -76,6 +77,7 @@ function simulate(s, integrator, steps, plot = false; fig = "")
                     front = FRONT_VIEW,
                     fig,
                 )
+                sleep(0.025)
             end
         end
     end
@@ -84,9 +86,6 @@ end
 
 integrator = init!(kps3, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps3, integrator, STEPS, true; fig = "kps3")
-if Sys.isapple()
-    plt.show(block = true)
-end
 reactivate_host_app()
 
 lift, drag = lift_drag(kps3)
@@ -98,9 +97,6 @@ println("Average number of callbacks per time step: $(round(av_steps, digits=2))
 kps4.set.alpha_zero = ALPHA_ZERO
 integrator = init!(kps4; delta = 0.003, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps4, integrator, STEPS, true; fig = "kps4")
-if Sys.isapple()
-    plt.show(block = true)
-end
 reactivate_host_app()
 
 lift, drag = lift_drag(kps4)

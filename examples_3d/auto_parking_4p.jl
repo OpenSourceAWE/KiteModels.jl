@@ -8,14 +8,14 @@
 
 # activate the examples_3d environment if needed
 using Pkg
-if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate(joinpath(@__DIR__))
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using Timers;
 tic()
 
 using KiteViewers
-using ControlPlots, KiteModels, Rotations
+using MakieControlPlots, KiteModels, Rotations
 using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))

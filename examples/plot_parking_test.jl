@@ -30,11 +30,10 @@ else
 end
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
@@ -63,10 +62,10 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 function simulate(kps4, integrator, logger, steps)
@@ -110,9 +109,6 @@ i = 1
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu, integrator, logger
-    cl = 0.0
-    cd = 0.0
-    aoa = 0.0
 
     logger = Logger(set.segments + 5, STEPS)
     DEP[i] = depower

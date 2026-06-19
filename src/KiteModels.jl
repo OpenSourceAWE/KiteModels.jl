@@ -1031,7 +1031,7 @@ function install_examples(add_packages=true)
     copy_bin()
     copy_model_settings()
     if add_packages
-        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots",
+        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "MakieControlPlots",
                  "LaTeXStrings", "StatsBase", "Timers", "Rotations"])
     end
 end
@@ -1053,7 +1053,7 @@ function install_examples_3d(add_packages=true, overwrite=false)
     copy_bin(; overwrite)
     copy_model_settings(; overwrite)
     if add_packages
-        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "ControlPlots",
+        Pkg.add(["KiteUtils", "KitePodModels", "WinchModels", "MakieControlPlots",
                  "LaTeXStrings", "StatsBase", "Timers", "Rotations", "KiteViewers"])
     end
 end

@@ -10,8 +10,8 @@ using LinearAlgebra
 using Printf
 
 using Pkg
-if ! ("KiteViewers" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples_3d")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using Timers;
 tic()

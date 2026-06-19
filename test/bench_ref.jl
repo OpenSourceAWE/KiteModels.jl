@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("Test" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("test")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
 const reference = 4.826620521958565e7 # AMD Ryzen 7840U, Julia 1.11, 1 thread

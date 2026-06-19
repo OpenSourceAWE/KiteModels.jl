@@ -14,7 +14,7 @@ For code navigation, but also for getting warnings about problematic code it is 
 to use the new [JETLS.jl](https://aviatesk.github.io/JETLS.jl/release/) language server. There is JETLS plugin for VSCode, but JETLS can also be used with many other editors. It is very new and still a bit sensitive. I suggest to use the following two
 configuration files:
 
-First, launch it single threaded to avoid problems with KiteViewers or ControlPlots. To do that, add the following `settings.json` file to the `.vscode` folder of your project:
+First, launch it single threaded to avoid problems with KiteViewers or MakieControlPlots. To do that, add the following `settings.json` file to the `.vscode` folder of your project:
 
 ```json
 {
@@ -42,8 +42,6 @@ match_by = "message"
 match_type = "regex"
 severity = "off"
 ```
-
-This suppresses invalid "not concretized" warnings and runs JETLS.jl only on the files you opened, not on all files of your project.
 
 Sometimes JETLS.jl keeps running even after closing VSCode. This can eat up all your memory. In that case, on Linux you can use the command `killall julia` to terminate the language server and free the memory after closing VSCode.
 
@@ -96,7 +94,7 @@ while the time for the second execution is the same (3.9s). So now about 15s of 
 
 ### Coding style
 
-- add the packages `TestEnv` and `Revise` to your global environment, not to any project
+- add the packages `Revise` to your global environment, not to any project
 
 - avoid hard-coded numeric values like `9.81` in the code, instead define a global constant `G_EARTH` or read this value from a configuration file
 

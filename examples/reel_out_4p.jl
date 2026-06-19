@@ -6,6 +6,7 @@
 # of the kite trajectory and winch force over time.
 
 using KiteModels
+using Printf
 using KiteUtils: Settings, load_settings
 
 set::Settings = deepcopy(load_settings("system.yaml"))
@@ -15,11 +16,11 @@ dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 STEPS = 600
 const PLOT = true
-FRONT_VIEW = false
-ZOOM = true
 PRINT = false
 STATISTIC = false
-ALPHA_ZERO = 8.8 
+ALPHA_ZERO = 8.8
+const FRONT_VIEW = false
+const ZOOM = 1.5
 # end of user parameter section #
 
 set.alpha_zero = ALPHA_ZERO
@@ -30,10 +31,10 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 v_time = zeros(STEPS)
@@ -66,9 +67,10 @@ function simulate(integrator, steps, plot=false)
                     plot2d(kps4.pos, reltime; zoom=ZOOM, front=true,
                                             segments=set.segments, fig="front_view")
                 else
-                    plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(35,75),
+                    plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(35,75), dx=3,
                                             segments=set.segments, fig="side_view")
                 end
+                sleep(0.025)
             end
         end
     end

@@ -6,6 +6,7 @@
 using Printf
 using KiteModels
 using KiteUtils: Settings, load_settings
+using Pkg
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
@@ -38,11 +39,10 @@ kps4::KPS4 = KPS4(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
-    plt.close("all")
+    using MakieControlPlots
 end
 
 function simulate(integrator, steps, steering; plot=false)
@@ -61,7 +61,8 @@ function simulate(integrator, steps, steering; plot=false)
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments)                       
+                plot2d(kps4.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments)
+                sleep(0.025)
             end
         end
     end

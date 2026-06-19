@@ -10,10 +10,10 @@ using KiteModels
 using KiteUtils: Settings, load_settings
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
-using ControlPlots
+using MakieControlPlots
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
@@ -25,7 +25,6 @@ STEPS = 200
 PRINT = false
 STATISTIC = false
 const PLOT = true
-# end of user parameter section #
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
@@ -72,6 +71,7 @@ println("Simulation speed: $(round(speed, digits=2)) times realtime.")
 if PLOT
     local p
     p = plotx(v_time[1:STEPS-100], v_speed[1:STEPS-100], v_force[1:STEPS-100]; ylabels=["v_reelout  [m/s]","tether_force [N]"], fig="winch")
+    display(p)
     p = plot(v_time[1:STEPS-100], alpha_2[1:STEPS-100], fig="alpha_2")
     display(p)
 end

@@ -3,8 +3,8 @@
 
 # activate the test environment if needed
 using Pkg
-if ! ("PackageCompiler" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate(joinpath(@__DIR__, "..", "test"))
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
     Pkg.resolve()
     Pkg.instantiate()
 end

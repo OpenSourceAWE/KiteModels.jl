@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if !("Test" ∈ keys(Pkg.project().dependencies))
+if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Test, KiteModels, KiteUtils.YAML

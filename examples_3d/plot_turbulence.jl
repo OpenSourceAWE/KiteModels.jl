@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
+if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 
-using KiteModels, KiteUtils, LinearAlgebra, Statistics, ControlPlots
+using KiteModels, KiteUtils, LinearAlgebra, Statistics, MakieControlPlots
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))

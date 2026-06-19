@@ -16,10 +16,10 @@ set.rel_tol=0.00001
 dt::Float64 = 0.05
 STEPS = 600
 const PLOT = true
-FRONT_VIEW = true
-ZOOM = false
 PRINT = false
 STATISTIC = false
+FRONT_VIEW = false
+ZOOM = true
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
@@ -27,15 +27,14 @@ kps3::KPS3 = KPS3(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots
+    using MakieControlPlots
 end
 
 function simulate(integrator, steps, plot=false)
     iter = 0
-    lines, sc, txt = nothing, nothing, nothing
     for i in 1:steps
         if PRINT
             lift, drag = KiteModels.lift_drag(kps3)
@@ -58,8 +57,8 @@ function simulate(integrator, steps, plot=false)
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
-                lines, sc, txt = plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments, 
-                                        lines, sc, txt, fig="simulate_steering")       
+                plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments, fig="simulate_steering", dx=-6)
+                sleep(0.025)
             end
         end
     end
@@ -78,9 +77,6 @@ else
     speed = (STEPS-100) / runtime * dt
     println("Simulation speed: $(round(speed, digits=2)) times realtime.")
     av_steps
-end
-if Sys.isapple()
-    plt.show(block = true)
 end
 reactivate_host_app()
 lift, drag = KiteModels.lift_drag(kps3)

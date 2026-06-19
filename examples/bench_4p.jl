@@ -10,11 +10,11 @@ using KitePodModels: KCU
 using KiteUtils: Settings, load_settings
 using Printf
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 
-using ControlPlots
+using MakieControlPlots
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
@@ -26,7 +26,6 @@ STEPS = 200
 PRINT = false
 STATISTIC = false
 const PLOT = true
-# end of user parameter section #
 
 kcu::KCU   = KCU(set)
 kps4::KPS4 = KPS4(kcu)

@@ -4,28 +4,28 @@
 # plot the lift and drag coefficients as function of angle of attack
 using Printf
 using Pkg
-if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
 using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
-using ControlPlots
-plt.close("all")
+using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
 V_WIND = 14.5
 
 # the following values can be changed to match your interest
+# STATISTIC = true prints detailed solver statistics
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
 const PLOT = true
 STATISTIC = false
-UPWIND_DIR = -90 + 10
+UPWIND_DIR = -170.0 # Zero is at north; clockwise positive
 # end of user parameter section #
 
 elev = set.elevation

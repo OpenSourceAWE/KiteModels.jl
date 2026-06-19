@@ -45,10 +45,10 @@ kps3::KPS3 = KPS3(kcu)
 
 if PLOT
     using Pkg
-    if ! ("ControlPlots" ∈ keys(Pkg.project().dependencies))
-        Pkg.activate("examples")
+    if dirname(Pkg.project().path) != @__DIR__
+        Pkg.activate(@__DIR__)
     end
-    using ControlPlots, StatsBase
+    using MakieControlPlots, StatsBase
     close("all")
 end
 
@@ -96,6 +96,7 @@ function simulate(integrator, steps; plot=false)
             if mod(i, 5) == 1
                 plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, segments=set.segments,
                        fig="steering_test_1p")
+                sleep(0.025)
             end
         end
     end
@@ -153,8 +154,5 @@ end
 save_log(logger, "tmp")
 if PLOT
     plot_steering_vs_turn_rate()
-    if Sys.isapple()
-        plt.show(block = true)
-    end
     reactivate_host_app()
 end

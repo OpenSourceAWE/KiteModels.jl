@@ -48,6 +48,7 @@ calc_azimuth_north
 calc_heading
 calc_course
 cl_cd
+reel_out_speed
 winch_force
 spring_forces
 lift_drag

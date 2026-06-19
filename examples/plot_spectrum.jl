@@ -16,12 +16,10 @@ else
 end
 
 using Pkg
-if ! ("JLD2" ∈ keys(Pkg.project().dependencies))
-    Pkg.activate("examples")
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
 end
-using ControlPlots, DSP, JLD2, StatsBase
-using ControlPlots: plt
-plt.close("all")
+using MakieControlPlots, DSP, JLD2, StatsBase
 
 #if !@isdefined Spectrum begin
     mutable struct Spectrum
@@ -44,11 +42,10 @@ function plot_spectrum3(name)
     spectrum = jldopen(filepath) do file
         read(file, "spectrum")
     end
-    plt.figure("spectrum")
     f_min = 1.5 # Hz
     f_max = 4.0 # Hz
-    f_ex = []
-    aoa_eff = []
+    f_ex = Float64[]
+    aoa_eff = Float64[]
     for i in 1:length(spectrum.f_ex)
         if spectrum.f_ex[i] < f_min
             continue
@@ -59,16 +56,8 @@ function plot_spectrum3(name)
         push!(f_ex, spectrum.f_ex[i])
         push!(aoa_eff, spectrum.aoa_eff[i])
     end
-    plt.plot(f_ex, todb.(aoa_eff); label=name)
-    plt.xlabel("f_ex [Hz]")
-    plt.ylabel("AOA amplitude [dB°]")
-    plt.gca().set_xscale("log")
-    plt.grid(true)
-    plt.legend()
+    display(plot(f_ex, todb.(aoa_eff); xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", xscale=:log10, grid=true, label=name, fig="spectrum", xticks=[1.5, 2.0, 3.0, 4.0], xlims=(f_min, f_max)))
 end
 
 plot_spectrum3("spectrum2_8.0_-0.0")
-if Sys.isapple()
-    plt.show(block = true)
-end
 reactivate_host_app()
