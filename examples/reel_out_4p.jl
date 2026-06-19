@@ -65,7 +65,7 @@ function simulate(integrator, steps, plot=false)
                     plot2d(kps4.pos, reltime; zoom=ZOOM, front=true,
                                             segments=set.segments, fig="front_view")
                 else
-                    plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(35,75),
+                    plot2d(kps4.pos, reltime; zoom=ZOOM, front=false, xlim=(35,75), dx=3,
                                             segments=set.segments, fig="side_view")
                 end
                 sleep(0.025)
