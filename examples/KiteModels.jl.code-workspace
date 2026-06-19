@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../MakieControlPlots"
+		},
+		{
+			"path": "../../ControlPlots.jl"
+		}
+	],
+	"settings": {}
+}
