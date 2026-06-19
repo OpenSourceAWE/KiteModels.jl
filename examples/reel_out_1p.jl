@@ -68,7 +68,7 @@ function simulate(integrator, steps, plot=false)
                     last_label_y = y_label
                 end
                 plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
-                                        segments=set.segments, fig="side_view", xlim=(0,120), dx=1.0, xy=(96.0, y_label))
+                                        segments=set.segments, fig="side_view", xlim=(0,120), dx=1.0)
                 sleep(0.025)
             end
         end
