@@ -43,8 +43,6 @@ match_type = "regex"
 severity = "off"
 ```
 
-This suppresses invalid "not concretized" warnings and runs JETLS.jl only on the files you opened, not on all files of your project.
-
 Sometimes JETLS.jl keeps running even after closing VSCode. This can eat up all your memory. In that case, on Linux you can use the command `killall julia` to terminate the language server and free the memory after closing VSCode.
 
 ## Forking the repository and creating a custom system image
@@ -96,7 +94,7 @@ while the time for the second execution is the same (3.9s). So now about 15s of 
 
 ### Coding style
 
-- add the packages `TestEnv` and `Revise` to your global environment, not to any project
+- add the packages `Revise` to your global environment, not to any project
 
 - avoid hard-coded numeric values like `9.81` in the code, instead define a global constant `G_EARTH` or read this value from a configuration file
 
