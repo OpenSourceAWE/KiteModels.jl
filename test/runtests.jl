@@ -34,7 +34,13 @@ KiteUtils.set_data_path("")
             title = titlecase(replace(splitext(file[6:end])[1], "-" => " "))
             title = rpad(title, 25)
             @testset "$title" begin
-                Base.include(Module(), joinpath(@__DIR__, file))
+                path = joinpath(@__DIR__, file)
+                try
+                    Base.include(Module(), path)
+                catch err
+                    @error "Test file failed" file=path exception=(err, catch_backtrace())
+                    rethrow()
+                end
             end
         end
     end
