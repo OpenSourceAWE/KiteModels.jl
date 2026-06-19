@@ -111,8 +111,10 @@ jobs:
           echo "Copied $DEFAULT to $TARGET"
         fi
     - name: Install xvfb for headless GL rendering
+      if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y xvfb
     - name: Start virtual framebuffer
+      if: runner.os == 'Linux'
       run: |
         Xvfb :99 -screen 0 1024x768x24 &
         echo "DISPLAY=:99" >> $GITHUB_ENV
