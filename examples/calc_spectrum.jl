@@ -168,7 +168,7 @@ function plot_spectrum(name)
         read(file, "spectrum")
     end
     display(plot(spectrum.f_ex, todb.(spectrum.aoa_eff);
-          xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", fig=name))
+          xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", xscale=:log10, grid=true, fig=name))
 end
 
 plot_spectrum(spectrum.name)

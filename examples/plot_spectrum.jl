@@ -56,7 +56,7 @@ function plot_spectrum3(name)
         push!(f_ex, spectrum.f_ex[i])
         push!(aoa_eff, spectrum.aoa_eff[i])
     end
-    display(plot(f_ex, todb.(aoa_eff); xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", title=name, fig="spectrum"))
+    display(plot(f_ex, todb.(aoa_eff); xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", xscale=:log10, grid=true, label=name, fig="spectrum"))
 end
 
 plot_spectrum3("spectrum2_8.0_-0.0")
