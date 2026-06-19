@@ -11,7 +11,7 @@ let
     STATISTIC = false
     FRONT_VIEW = false
     ZOOM = false
-    const PLOT = true
+    PLOT = true
 
     if PLOT
         using MakieControlPlots
