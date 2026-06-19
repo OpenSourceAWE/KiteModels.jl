@@ -18,7 +18,9 @@ STEPS = 600
 const PLOT = true
 PRINT = false
 STATISTIC = false
-ALPHA_ZERO = 8.8 
+ALPHA_ZERO = 8.8
+const FRONT_VIEW = false
+const ZOOM = 1.5
 # end of user parameter section #
 
 set.alpha_zero = ALPHA_ZERO

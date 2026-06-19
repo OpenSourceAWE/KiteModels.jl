@@ -20,6 +20,8 @@ STEPS = 480
 const PLOT = true
 PRINT = false
 STATISTIC = false
+ZOOM = true
+FRONT_VIEW = false
 UPWIND_DIR = -pi/2 +deg2rad(10)
 # end of user parameter section #
 

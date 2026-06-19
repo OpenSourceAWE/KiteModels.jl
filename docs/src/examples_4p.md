@@ -52,7 +52,7 @@ for i in 1:length(kps.pos)
 end
 ```
 
-And finally, we plot the position of the particles in the x-z plane. When you type ```using MakieControlPlots``` the package gets automatically installed if missing.
+And finally, we plot the position of the particles in the x-z plane. If MakieControlPlots is not yet installed, you can add it with ```using Pkg; Pkg.add("MakieControlPlots")``` before running the script.
 
 ```julia
 using MakieControlPlots
