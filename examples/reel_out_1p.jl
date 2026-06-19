@@ -37,7 +37,6 @@ v_force = zeros(STEPS)
 function simulate(integrator, steps, plot=false)
     iter = 0
     last_label_y = 5.0
-    _, _, txt = nothing, nothing, nothing
     for i in 1:steps
         if PRINT
             lift, drag = KiteModels.lift_drag(kps3)
@@ -68,17 +67,8 @@ function simulate(integrator, steps, plot=false)
                     y_label = clamp(z_kite - 14.0, y_low, y_high)
                     last_label_y = y_label
                 end
-                _, _, txt = plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
+                plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
                                         segments=set.segments, fig="side_view", xlim=(0,120), dx=1.0, xy=(96.0, y_label))
-                if !isnothing(txt)
-                    txt.set_x(96.0)
-                    txt.set_y(y_label)
-                    txt.set_visible(true)
-                    try
-                        txt.set_annotation_clip(false)
-                    catch
-                    end
-                end
                 sleep(0.025)
             end
         end
