@@ -21,8 +21,8 @@ STEPS = round(0.5*600/dt*0.05)
 const PLOT = true
 PRINT = false
 STATISTIC = false
-ZOOM = 1.0
-FRONT_VIEW = true
+ZOOM = true
+FRONT_VIEW = false
 # end of user parameter section #
 
 if PLOT

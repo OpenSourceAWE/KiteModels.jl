@@ -23,6 +23,7 @@ set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
 const PLOT = true
+UPWIND_DIR = - 90.0-pi/2+deg2rad(10) # Zero is at north; clockwise positive
 # end of user parameter section #
 
 elev = set.elevation
