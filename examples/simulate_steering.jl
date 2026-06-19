@@ -18,6 +18,8 @@ STEPS = 600
 const PLOT = true
 PRINT = false
 STATISTIC = false
+FRONT_VIEW = false
+ZOOM = 1.0
 # end of user parameter section #
 
 kcu::KCU = KCU(set)

@@ -6,7 +6,13 @@
 # of the kite trajectory and winch force over time.
 
 using KiteModels
+using Printf
 using KiteUtils: Settings, load_settings
+using Pkg
+if dirname(Pkg.project().path) != @__DIR__
+    Pkg.activate(@__DIR__)
+end
+using MakieControlPlots
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
@@ -17,18 +23,12 @@ STEPS = 500
 const PLOT = true
 PRINT = false
 STATISTIC = false
+FRONT_VIEW = false
+ZOOM = 1.0
 # end of user parameter section #
 
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
-
-if PLOT
-    using Pkg
-    if dirname(Pkg.project().path) != @__DIR__
-        Pkg.activate(@__DIR__)
-    end
-    using MakieControlPlots
-end
 
 v_time = zeros(STEPS)
 v_speed = zeros(STEPS)
