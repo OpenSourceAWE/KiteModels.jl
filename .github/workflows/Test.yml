@@ -36,15 +36,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       
-      - name: Use default manifest
-        run: |
-          if [ -f Manifest.toml.default ]; then cp Manifest.toml.default Manifest.toml; fi
-        shell: bash
-        
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+          
+      - name: Prepare version-specific manifest
+        shell: bash
+        run: |
+          JULIA_VERSION=$(julia --version | awk '{print $3}' | cut -d'.' -f1,2)
+          DEFAULT="Manifest-v${JULIA_VERSION}.toml.default"
+          TARGET="Manifest-v${JULIA_VERSION}.toml"
+          if [ -f "$DEFAULT" ] && [ ! -f "$TARGET" ]; then
+            cp "$DEFAULT" "$TARGET"
+            echo "Copied $DEFAULT to $TARGET"
+          fi
           
       - uses: julia-actions/cache@v3
         continue-on-error: true
@@ -72,15 +78,21 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     
-    - name: Use default manifest
-      run: |
-        if [ -f Manifest.toml.default ]; then cp Manifest.toml.default Manifest.toml; fi
-      shell: bash
-      
     - uses: julia-actions/setup-julia@v3
       with:
         arch: ${{ matrix.julia_arch }}
         version: ${{ matrix.julia_version }}
+        
+    - name: Prepare version-specific manifest
+      shell: bash
+      run: |
+        JULIA_VERSION=$(julia --version | awk '{print $3}' | cut -d'.' -f1,2)
+        DEFAULT="Manifest-v${JULIA_VERSION}.toml.default"
+        TARGET="Manifest-v${JULIA_VERSION}.toml"
+        if [ -f "$DEFAULT" ] && [ ! -f "$TARGET" ]; then
+          cp "$DEFAULT" "$TARGET"
+          echo "Copied $DEFAULT to $TARGET"
+        fi
         
     - uses: julia-actions/cache@v3
       continue-on-error: true
