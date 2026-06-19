@@ -57,7 +57,13 @@ jobs:
           if [ -f "$DEFAULT" ] && [ ! -f "$TARGET" ]; then
             cp "$DEFAULT" "$TARGET"
             echo "Copied $DEFAULT to $TARGET"
-          fi        
+          fi
+      - name: Install xvfb for headless GL rendering
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Start virtual framebuffer
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
       - uses: julia-actions/julia-buildpkg@v1
 
       - uses: julia-actions/julia-runtest@v1
