@@ -44,8 +44,8 @@ function plot_spectrum3(name)
     end
     f_min = 1.5 # Hz
     f_max = 4.0 # Hz
-    f_ex = []
-    aoa_eff = []
+    f_ex = Float64[]
+    aoa_eff = Float64[]
     for i in 1:length(spectrum.f_ex)
         if spectrum.f_ex[i] < f_min
             continue
@@ -56,7 +56,7 @@ function plot_spectrum3(name)
         push!(f_ex, spectrum.f_ex[i])
         push!(aoa_eff, spectrum.aoa_eff[i])
     end
-    display(plot(f_ex, todb.(aoa_eff); xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", xscale=:log10, grid=true, label=name, fig="spectrum"))
+    display(plot(f_ex, todb.(aoa_eff); xlabel="f_ex [Hz]", ylabel="AOA amplitude [dB°]", xscale=:log10, grid=true, label=name, fig="spectrum", xticks=[1.5, 2.0, 3.0, 4.0], xlims=(f_min, f_max)))
 end
 
 plot_spectrum3("spectrum2_8.0_-0.0")
