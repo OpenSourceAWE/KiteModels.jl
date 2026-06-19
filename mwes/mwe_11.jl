@@ -1,11 +1,9 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
-#
 # SPDX-License-Identifier: MIT
 
 using Pkg
-if ! ("MakieControlPlots" ∈ keys(Pkg.project().dependencies))
-    using TestEnv; TestEnv.activate()
-end
+Pkg.activate(joinpath(@__DIR__,"..","examples"))
+Pkg.instantiate()
 using MakieControlPlots
 using KiteModels, KitePodModels, KiteUtils
 
