@@ -10,7 +10,7 @@ if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
     using StaticArrays
 end
-using LinearAlgebra, Rotations
+using LinearAlgebra, KiteUtils.Rotations
 
 # kite reference frame; positions in ENU coordinates
 # wind from west, nose to west, kite at zenith
