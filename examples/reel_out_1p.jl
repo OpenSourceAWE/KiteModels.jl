@@ -58,7 +58,6 @@ function simulate(integrator, steps, plot=false)
             if mod(i, 5) == 1
                 z_kite = kps3.pos[end][3]
                 z_max = maximum(pos[3] for pos in kps3.pos)
-                y_label = last_label_y
                 if isfinite(z_kite) && isfinite(z_max)
                     y_axis_1 = 0.0
                     y_axis_2 = z_max + 5.0

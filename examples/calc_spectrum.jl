@@ -25,7 +25,7 @@ using Pkg
 if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
-using MakieControlPlots, DSP, JLD2
+using DSP, JLD2, MakieControlPlots
 
 set.abs_tol=0.0006
 set.rel_tol=0.00001
