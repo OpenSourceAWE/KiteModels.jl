@@ -209,6 +209,7 @@ if [[ $_sysimg_rc -ne 0 ]]; then
     fi
     exit $_sysimg_rc
 fi
+echo "System image created successfully."
 
 SOFILE="bin/kps-image-${julia_major}.so"
 if test -f $SOFILE; then
