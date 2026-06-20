@@ -32,6 +32,7 @@ STEPS = 500
 const PLOT = true
 PRINT = true
 STATISTIC = false
+DEPOWER       = 0.20:0.025:0.50
 # end of user parameter section #
 
 bridle_length = KiteModels.bridle_length(set)
@@ -46,14 +47,7 @@ function set_tether_diameter!(set, d; c_spring_4mm = 614600, damping_4mm = 473)
 end
 
 set_tether_diameter!(set, set.d_tether)
-
-if PLOT
-    using Pkg
-    if dirname(Pkg.project().path) != @__DIR__
-        Pkg.activate(@__DIR__)
-    end
-    using MakieControlPlots
-end
+close("all")
 
 function simulate(kps4, integrator, logger, steps)
     iter = 0
@@ -87,9 +81,7 @@ kps4::KPS4 = KPS4(KCU(set))  # Initialize before loop
 for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu
-    if depower < 0.356
-        depower = 0.356
-    end
+
     logger = Logger(set.segments + 5, STEPS)
     DEP[i] = depower
     set.depower = 100*depower
