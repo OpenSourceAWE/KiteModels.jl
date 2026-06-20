@@ -6,7 +6,7 @@ if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 
-using KiteModels, KiteUtils, LinearAlgebra, Statistics, MakieControlPlots
+using KiteModels, KiteUtils, LinearAlgebra, MakieControlPlots, Statistics
 
 set::Settings = if haskey(ENV, "USE_V9")
     deepcopy(load_settings("system_v9.yaml"))
