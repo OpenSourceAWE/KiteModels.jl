@@ -16,7 +16,7 @@ using LinearAlgebra
 kcu::KCU = KCU(se())
 kps3::KPS3 = KPS3(kcu)
 
-FRONT_VIEW = false
+const FRONT_VIEW = false
 
 clear!(kps3)
 kps3.stiffness_factor = 0.04

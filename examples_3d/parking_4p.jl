@@ -33,7 +33,7 @@ PRINT = false
 STATISTIC = false
 const PLOT = false
 ZOOM = true
-FRONT_VIEW = true
+const FRONT_VIEW = true
 SHOW_KITE = true
 # end of user parameter section #
 

@@ -31,7 +31,7 @@ else
     2400
 end
 const PLOT = true
-FRONT_VIEW = true
+const FRONT_VIEW = true
 ZOOM = true
 STATISTIC = false
 # end of user parameter section #

@@ -22,7 +22,7 @@ const PLOT = true
 PRINT = false
 STATISTIC = false
 ZOOM = true
-FRONT_VIEW = false
+const FRONT_VIEW = false
 # end of user parameter section #
 
 if PLOT
