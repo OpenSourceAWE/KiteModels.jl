@@ -58,7 +58,6 @@ function simulate(integrator, steps; plot=false)
     iter = 0
     steering = K*0.1
     set_depower_steering(kps3.kcu, kps3.depower, 0)
-    last_heading = 0.0
     heading = 0.0
     for i in 1:steps
         reltime = i*dt-dt

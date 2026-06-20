@@ -62,7 +62,6 @@ function simulate(integrator, steps, plot=false)
                     y_axis_2 = z_max + 5.0
                     y_low = min(y_axis_1, y_axis_2) + 0.5
                     y_high = max(y_axis_1, y_axis_2) - 0.5
-                    y_label = clamp(z_kite - 14.0, y_low, y_high)
                 end
                 plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
                                         segments=set.segments, fig="side_view", xlim=(0,120), dx=1.0)
