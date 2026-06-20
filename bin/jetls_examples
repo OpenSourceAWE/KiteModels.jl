@@ -7,8 +7,10 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
 
-echo -e "\033[1mChecking examples with jetls...\033[0m"
-jetls -t 1,0 -- check --root=. examples/*.jl
-echo
-echo -e "\033[1mChecking 3D examples with jetls...\033[0m"
-jetls -t 1,0 -- check --root=. examples_3d/*.jl
+mkdir -p output
+LOG_FILE="output/jetls_examples_$(date +%Y%m%d_%H%M%S).log"
+
+echo -e "\033[1mChecking examples with jetls...\033[0m" | tee -a "$LOG_FILE"
+jetls -t 1,0 -- check --root=. examples/*.jl 2>&1 | tee -a "$LOG_FILE"
+echo -e "\033[1mChecking 3D examples with jetls...\033[0m" | tee -a "$LOG_FILE"
+jetls -t 1,0 -- check --root=. examples_3d/*.jl 2>&1 | tee -a "$LOG_FILE"
