@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.14 2026-06-19
+### KiteModels v0.11.14 2026-06-20
 #### Added
 - Added function `reel_out_speed` to `KiteModels.jl`, `KPS3.jl`, and `KPS4.jl`
 - Added `output/` directory to `.gitignore`
@@ -10,7 +10,7 @@ SPDX-License-Identifier: MIT
 #### Changed
 - Switched from `ControlPlots` to `MakieControlPlots` across all examples, tests, docs, and scripts (#295)
 - Removed `bin/install_controlplots`
-- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behaviour
+- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behavior
 - Cleaned up `bin/install`: no special handling for `ControlPlots` any more
 - `examples/reel_out_4p_torque_control.jl` now uses `reel_out_speed` and interface functions, and plots heading and wind at kite
 - Updated PR template: replaced "Lint workflow is passing" with "JETLS is not reporting any warnings"; updated docs check to reference `scripts/build_docu.jl`
@@ -21,6 +21,9 @@ SPDX-License-Identifier: MIT
 
 #### Fixed
 - Fixed plotting issue in examples after migration to `MakieControlPlots`
+- Fixed jetls warnings: sorted `using` imports alphabetically in `auto_parking_4p.jl`, `parking_wind_dir.jl`, and `plot_turbulence.jl`
+- Fixed jetls warning: removed unused `y_label` assignment in `reel_out_1p.jl`
+- Fixed jetls warning: removed redundant `last_heading` initialization in `steering_test_1p.jl` and `steering_test_4p.jl`
 
 ### KiteModels v0.11.13 2026-05-14
 #### Added
