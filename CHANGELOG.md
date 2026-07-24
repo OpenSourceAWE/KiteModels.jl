@@ -2,6 +2,15 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.15 2026-07-24
+#### Added
+- Added `CLAUDE.md` with guidance for Claude Code when working in this repository
+
+#### Changed
+- `KPS4.wm` field type widened from `Union{AsyncMachine, TorqueControlledMachine}` to `WinchModels.AbstractWinchModel`, allowing other `WinchModels` subtypes
+- `bin/create_sys_image` now prints a success message when the system image is created
+- `bin/run_julia` no longer probes for and loads Kaimon
+
 ### KiteModels v0.11.14 2026-06-20
 #### Added
 - Added function `reel_out_speed` to `KiteModels.jl`, `KPS3.jl`, and `KPS4.jl`
