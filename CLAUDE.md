@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 Uwe Fechner
+SPDX-License-Identifier: MIT
+-->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
