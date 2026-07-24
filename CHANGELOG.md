@@ -5,6 +5,7 @@ SPDX-License-Identifier: MIT
 ### KiteModels v0.11.15 2026-07-24
 #### Added
 - Added `CLAUDE.md` with guidance for Claude Code when working in this repository
+- Added `bin/release` script for creating a new release
 
 #### Changed
 - `KPS4.wm` field type widened from `Union{AsyncMachine, TorqueControlledMachine}` to `WinchModels.AbstractWinchModel`, allowing other `WinchModels` subtypes
