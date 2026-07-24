@@ -67,7 +67,7 @@ $(TYPEDFIELDS)
     "Reference to the atmospheric model as implemented in the package AtmosphericModels"
     am::AtmosphericModel = AtmosphericModel(set)
     "Reference to winch model as implemented in the package WinchModels"
-    wm::Union{AsyncMachine, TorqueControlledMachine}
+    wm::WinchModels.AbstractWinchModel
     "Integrator, storing the current state"
     integrator::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing} = nothing
     "Iterations, number of calls to the function residual!"
