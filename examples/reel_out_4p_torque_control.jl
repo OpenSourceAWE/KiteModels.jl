@@ -18,12 +18,14 @@ STEPS = 600*3
 const PLOT = true
 PRINT = false
 STATISTIC = false
-ALPHA_ZERO = 8.8 
+ALPHA_ZERO = 8.8
+AREA = 17.5 # projected kite area [m²], matched to the V3Kite VSM wing area
 const FRONT_VIEW = false
 ZOOM = true
 # end of user parameter section #
 
 set.alpha_zero = ALPHA_ZERO
+set.area = AREA
 set.version = 2
 set.winch_model = "TorqueControlledMachine"
 
