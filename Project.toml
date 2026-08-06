@@ -37,7 +37,7 @@ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
 
 [compat]
-AtmosphericModels = "0.3.4"
+AtmosphericModels = "0.3.6"
 Dierckx = "0.5.4"
 DiffEqBase = "6.161.0"
 DiscretePIDs = "0.1.5, 1.0"

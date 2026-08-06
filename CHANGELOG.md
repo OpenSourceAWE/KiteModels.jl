@@ -11,6 +11,8 @@ SPDX-License-Identifier: MIT
 - `KPS4.wm` field type widened from `Union{AsyncMachine, TorqueControlledMachine}` to `WinchModels.AbstractWinchModel`, allowing other `WinchModels` subtypes
 - `bin/create_sys_image` now prints a success message when the system image is created
 - `bin/run_julia` no longer probes for and loads Kaimon
+- `calc_turbulent_wind` moved to `AtmosphericModels` (still available here via `@reexport`); its
+  `upwind_dir` argument is now a keyword, matching `get_wind`. Requires `AtmosphericModels >= 0.3.6`.
 
 ### KiteModels v0.11.14 2026-06-20
 #### Added

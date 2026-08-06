@@ -26,8 +26,8 @@ time = 0:0.1:240
 am = AtmosphericModel(set)
 upwind_dir = deg2rad(set.upwind_dir)
 
-v_wind_start = [norm(calc_turbulent_wind(am, pos_start, upwind_dir, t)[1]) for t in time]
-v_wind_end   = [norm(calc_turbulent_wind(am, pos_end,   upwind_dir, t)[1]) for t in time]
+v_wind_start = [norm(calc_turbulent_wind(am, pos_start, t; upwind_dir)[1]) for t in time]
+v_wind_end   = [norm(calc_turbulent_wind(am, pos_end,   t; upwind_dir)[1]) for t in time]
 
 p = plotx(time, v_wind_start, v_wind_end;
           fig="v_wind_kite vs time",
@@ -42,7 +42,7 @@ v_wind_turb = map([0.0, 0.5, 1.0]) do turb
     set_turb = deepcopy(set)
     set_turb.use_turbulence = turb
     am_turb = AtmosphericModel(set_turb)
-    v_vecs  = [calc_turbulent_wind(am_turb, pos_start, upwind_dir, t)[1] for t in time]
+    v_vecs  = [calc_turbulent_wind(am_turb, pos_start, t; upwind_dir)[1] for t in time]
     v_mags  = norm.(v_vecs)
     mean_v  = mean(v_mags)
     # TI = std of longitudinal (along-wind) component / mean speed
