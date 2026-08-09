@@ -2,6 +2,19 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.16 (unreleased)
+#### Fixed
+- `calc_turbulent_wind` scaled the sampled turbulence with `rel_turbo(am)` only. As of
+  `AtmosphericModels` 0.3.8 the stored wind field has the reference intensity instead of being
+  pre-scaled by `use_turbulence`, so the factor is now applied here; without it, every simulation
+  would have flown at full Cabauw turbulence regardless of the setting. `AtmosphericModels` compat
+  raised to `0.3.8` accordingly — with an older version the field is pre-scaled and the factor
+  would be applied twice.
+- `calc_turbulent_wind` took the `rel_turbs` correction for `set.v_wind` (`rel_turbo(am)`) while
+  the wind field itself may have been loaded for a different ground wind speed. It now reads
+  `am.wf.v_wind_gnd`, the speed the loaded field was generated for, so the two can no longer
+  disagree.
+
 ### KiteModels v0.11.15 2026-07-24
 #### Added
 - Added `CLAUDE.md` with guidance for Claude Code when working in this repository

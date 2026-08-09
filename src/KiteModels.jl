@@ -248,7 +248,8 @@ function calc_turbulent_wind(am, pos, upwind_dir, t)
         wf = am.wf
         @assert wf !== nothing "Wind field is not initialized"
         zq = max(wz_pos, 10.0)
-        rel_turb = rel_turbo(am)
+        # The stored field has the reference intensity since AtmosphericModels 0.3.8.
+        rel_turb = use_turbulence * rel_turbo(am, wf.v_wind_gnd)
 
         along = wx_pos * cos(wind_dir) + wy_pos * sin(wind_dir)
         cross = -wx_pos * sin(wind_dir) + wy_pos * cos(wind_dir)
