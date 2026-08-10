@@ -9,6 +9,10 @@ SPDX-License-Identifier: MIT
   interpolated trilinearly between the grid points of the wind field instead of being read at the
   nearest one, so the kite no longer flies through steps in the wind. Without turbulence it has no
   effect. `examples_3d/parking_wind_dir.jl` switches it on via its `INTERPOLATE` parameter.
+- `test/test-update-sys-state.jl` covers `update_sys_state!` for both `KPS3` and `KPS4`: every field
+  against the getter it comes from, the `zoom` scaling, `nothing` set values logging as `NaN`, the
+  turn rate around the body z-axis, and the shortest-angle difference that keeps `heading_rate` and
+  `azimuth_rate` free of spikes at the wrap boundary.
 
 #### Changed
 - `calc_turbulent_wind` no longer duplicates the wind field lookup: it forwards to
