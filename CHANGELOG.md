@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.16 (unreleased)
+### KiteModels v0.11.16 2026-08-10
 #### Added
 - `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,
   the previous behaviour), which is passed on to `calc_turbulent_wind`: the turbulence is then
