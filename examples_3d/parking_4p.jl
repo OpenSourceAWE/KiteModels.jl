@@ -33,8 +33,9 @@ PRINT = false
 STATISTIC = false
 const PLOT = false
 ZOOM = true
-FRONT_VIEW = true
+const FRONT_VIEW = true
 SHOW_KITE = true
+UPWIND_DIR2       = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
 # end of user parameter section #
 
 kcu::KCU = KCU(set)

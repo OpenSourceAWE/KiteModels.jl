@@ -20,7 +20,7 @@ PRINT = false
 STATISTIC = false
 ALPHA_ZERO = 8.8
 const FRONT_VIEW = false
-const ZOOM = 1.5
+ZOOM = true
 # end of user parameter section #
 
 set.alpha_zero = ALPHA_ZERO

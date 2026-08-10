@@ -17,7 +17,7 @@ using Pkg
 if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
-using MakieControlPlots, LaTeXStrings
+using LaTeXStrings, MakieControlPlots
 
 set.v_wind = 14.0 # 25
 kcu::KCU = KCU(set)

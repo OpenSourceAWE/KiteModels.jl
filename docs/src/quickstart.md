@@ -146,7 +146,7 @@ Try out changing the following default settings:
 dt = 0.05
 STEPS = 600
 PLOT = true
-FRONT_VIEW = false
+const FRONT_VIEW = false
 ZOOM = true
 PRINT = false
 STATISTIC = false

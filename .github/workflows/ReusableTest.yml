@@ -39,7 +39,7 @@ jobs:
     continue-on-error: ${{ inputs.allow_failure }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: julia-actions/setup-julia@v3
         with:
@@ -57,8 +57,32 @@ jobs:
           if [ -f "$DEFAULT" ] && [ ! -f "$TARGET" ]; then
             cp "$DEFAULT" "$TARGET"
             echo "Copied $DEFAULT to $TARGET"
-          fi        
+          fi
+      - name: Install xvfb for headless GL rendering
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Start virtual framebuffer
+        if: runner.os == 'Linux'
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
       - uses: julia-actions/julia-buildpkg@v1
+      - name: Resolve and instantiate test environment
+        shell: bash
+        run: |
+          JULIA_VERSION=$(julia --version | awk '{print $3}' | cut -d'.' -f1,2)
+          TEST_MANIFEST="test/Manifest-v${JULIA_VERSION}.toml"
+          TEST_TARGET="test/Manifest.toml"
+          if [ -f "$TEST_MANIFEST" ] && [ ! -f "$TEST_TARGET" ]; then
+            cp "$TEST_MANIFEST" "$TEST_TARGET"
+            echo "Copied $TEST_MANIFEST to $TEST_TARGET"
+          fi
+          julia --project=test -e "using Pkg; Pkg.resolve(); Pkg.instantiate()"
+          if [ -f "$TEST_MANIFEST" ] && [ ! -f "$TEST_TARGET" ]; then
+            cp "$TEST_MANIFEST" "$TEST_TARGET"
+            echo "Copied $TEST_MANIFEST to $TEST_TARGET"
+          fi
+          julia --project=test -e "using Pkg; Pkg.resolve(); Pkg.instantiate()"
 
       - uses: julia-actions/julia-runtest@v1
         env:

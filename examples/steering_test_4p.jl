@@ -35,7 +35,7 @@ else
     2400
 end
 const PLOT = true
-FRONT_VIEW = true
+const FRONT_VIEW = true
 ZOOM = true
 STATISTIC = false
 # end of user parameter section #
@@ -60,7 +60,6 @@ function simulate(integrator, steps; plot=false)
     iter = 0
     steering = 0.1
     set_depower_steering(kps4.kcu, kps4.depower, 0)
-    last_heading = 0.0
     heading = 0.0
     for i in 1:steps
         reltime = i*dt-dt

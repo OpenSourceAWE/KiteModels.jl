@@ -123,7 +123,7 @@ for depower in DEPOWER
     integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.04, prn=STATISTIC)
     if ! isnothing(integrator)
         try
-            cl, cd = simulate(kps4, integrator, logger, STEPS)
+            simulate(kps4, integrator, logger, STEPS)
         catch e
             println("Error: $e")
             if PLOT

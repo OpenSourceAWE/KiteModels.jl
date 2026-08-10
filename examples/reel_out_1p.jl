@@ -23,7 +23,7 @@ STEPS = 500
 const PLOT = true
 PRINT = false
 STATISTIC = false
-FRONT_VIEW = false
+const FRONT_VIEW = false
 ZOOM = true
 # end of user parameter section #
 
@@ -36,7 +36,6 @@ v_force = zeros(STEPS)
 
 function simulate(integrator, steps, plot=false)
     iter = 0
-    last_label_y = 5.0
     for i in 1:steps
         if PRINT
             lift, drag = KiteModels.lift_drag(kps3)
@@ -58,14 +57,11 @@ function simulate(integrator, steps, plot=false)
             if mod(i, 5) == 1
                 z_kite = kps3.pos[end][3]
                 z_max = maximum(pos[3] for pos in kps3.pos)
-                y_label = last_label_y
                 if isfinite(z_kite) && isfinite(z_max)
                     y_axis_1 = 0.0
                     y_axis_2 = z_max + 5.0
                     y_low = min(y_axis_1, y_axis_2) + 0.5
                     y_high = max(y_axis_1, y_axis_2) - 0.5
-                    y_label = clamp(z_kite - 14.0, y_low, y_high)
-                    last_label_y = y_label
                 end
                 plot2d(kps3.pos, reltime; zoom=ZOOM, front=FRONT_VIEW, 
                                         segments=set.segments, fig="side_view", xlim=(0,120), dx=1.0)
