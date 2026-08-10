@@ -2,6 +2,38 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.16 2026-08-10
+#### Added
+- `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,
+  the previous behaviour), which is passed on to `calc_turbulent_wind`: the turbulence is then
+  interpolated trilinearly between the grid points of the wind field instead of being read at the
+  nearest one, so the kite no longer flies through steps in the wind. Without turbulence it has no
+  effect. `examples_3d/parking_wind_dir.jl` switches it on via its `INTERPOLATE` parameter.
+
+#### Changed
+- `calc_turbulent_wind` no longer duplicates the wind field lookup: it forwards to
+  `AtmosphericModels.calc_turbulent_wind`, which the two fixes below had brought it in line with
+  anyway. The results are bit-identical, the signature `(am, pos, upwind_dir, t)` is unchanged, and
+  the new keyword argument `interpolate` is passed through, so the turbulence can now be
+  interpolated between grid points instead of being read at the nearest one.
+- `set_v_wind_ground!` had a second copy of the mean wind profile for the case
+  `use_turbulence == 0`. It now takes both the mean and the turbulent wind from
+  `calc_turbulent_wind`, so the height profile has one implementation. The turbulent branch
+  used to evaluate the wind field at `pos_kite(s)[3]` and ignore the `height` argument; it now
+  uses `height`, which every caller in this package passes as `calc_height(s)` anyway.
+
+#### Fixed
+- `calc_turbulent_wind` scaled the sampled turbulence with `rel_turbo(am)` only. As of
+  `AtmosphericModels` 0.3.8 the stored wind field has the reference intensity instead of being
+  pre-scaled by `use_turbulence`, so the factor is now applied here; without it, every simulation
+  would have flown at full Cabauw turbulence regardless of the setting. `AtmosphericModels` compat
+  raised to `0.3.8` accordingly — with an older version the field is pre-scaled and the factor
+  would be applied twice.
+- `calc_turbulent_wind` took the `rel_turbs` correction for `set.v_wind` (`rel_turbo(am)`) while
+  the wind field itself may have been loaded for a different ground wind speed. It now reads
+  `am.wf.v_wind_gnd`, the speed the loaded field was generated for, so the two can no longer
+  disagree.
+
 ### KiteModels v0.11.15 2026-07-24
 #### Added
 - Added `CLAUDE.md` with guidance for Claude Code when working in this repository

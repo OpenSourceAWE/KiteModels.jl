@@ -29,7 +29,7 @@ import Base.zero
 import OrdinaryDiffEqCore.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
-export calc_set_cl_cd!, copy_bin, copy_examples, copy_examples_3d, update_sys_state!    # helper functions
+export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
 export clear!, find_steady_state!, residual!                                           # low level workers
 export init!, init_pos_vel, next_step!, reinit!                                        # high level workers
 export calc_azimuth, calc_course, calc_elevation, calc_heading, calc_height, calc_orient_quat, pos_kite # getters
@@ -211,27 +211,62 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
-    set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
+    calc_turbulent_wind(am, pos, upwind_dir, t; interpolate=false)
+
+Calculate the wind velocity vectors at the kite and at the mid-tether point.
+
+When `am.set.use_turbulence == 0.0`, returns the mean wind based on a log/power-law
+height profile. When `use_turbulence != 0.0`, returns the fully turbulent wind vectors
+looked up from the pre-computed wind field via `get_wind`.
+
+Forwards to `AtmosphericModels.calc_turbulent_wind`, which takes `upwind_dir` as a keyword
+argument; the positional argument order used here is kept for backwards compatibility.
+
+Parameters:
+- `am`:          atmospheric model (settings are read from `am.set`)
+- `pos`:         3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
+- `upwind_dir`:  upwind direction in radians; zero is north, clockwise positive
+- `t`:           current simulation time [s]
+- `interpolate`: if `true`, interpolate the turbulence trilinearly between the surrounding grid
+                 points instead of using the nearest one
+
+Returns a tuple `(v_wind, v_wind_tether)` where:
+- `v_wind`:        wind velocity vector at kite height [m/s]
+- `v_wind_tether`: wind velocity vector at half the kite height [m/s]
+"""
+function calc_turbulent_wind(am, pos, upwind_dir, t; interpolate=false)
+    AtmosphericModels.calc_turbulent_wind(am, pos, t; upwind_dir, interpolate)
+end
+
+"""
+    set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2, interpolate=false)
 
 Set the vector of the wind-velocity at the height of the kite. As parameter the height,
 the ground wind speed [m/s] and the upwind direction [radians] are needed.
 Is called by the function next_step!.
+
+Both the mean and the turbulent wind come from [`calc_turbulent_wind`](@ref), evaluated at the
+horizontal position of the kite and at `height`; `interpolate` is passed on to it. Since that
+function reads the ground wind speed from the settings, a `v_wind_gnd` differing from
+`s.set.v_wind` rescales the result; it has no effect while turbulence is switched on, where the
+wind field itself sets the speed.
 """
-function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
-    if height < 6.0
-        height = 6.0
+function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2, interpolate=false)
+    if height < AtmosphericModels.MIN_KITE_HEIGHT
+        height = AtmosphericModels.MIN_KITE_HEIGHT
     end
     wind_dir = -upwind_dir - pi/2
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
-    if s.set.use_turbulence != 0.0
-        pos = pos_kite(s)
-        v_wind, v_wind_tether = calc_turbulent_wind(s.am, pos, s.t_0; upwind_dir)
-        s.v_wind .= v_wind
-        s.v_wind_tether .= v_wind_tether
+    pos = pos_kite(s)
+    v_wind, v_wind_tether = calc_turbulent_wind(s.am, SVec3(pos[1], pos[2], height), upwind_dir, s.t_0;
+                                                interpolate)
+    scale = if s.set.use_turbulence == 0.0 && v_wind_gnd != s.set.v_wind
+        v_wind_gnd / s.set.v_wind
     else
-        s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
-        s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+        1.0
     end
+    s.v_wind .= scale * v_wind
+    s.v_wind_tether .= scale * v_wind_tether
     s.rho = calc_rho(s.am, height)
     nothing
 end
@@ -660,7 +695,8 @@ end
 
 """
     next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing
-               attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq)
+               attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq,
+               interpolate=false)
 
 Calculates the next simulation step. Either `set_speed` or `set_torque` must be provided.
 
@@ -676,12 +712,16 @@ Parameters:
 - `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north;
                 clockwise positive. Default: -pi/2, wind from west.
 - dt:           time step in seconds
+- `interpolate`: if `true`, interpolate the turbulence between the grid points of the wind field
+                instead of using the nearest one. Removes the steps a kite flying through the
+                field sees; without turbulence it makes no difference.
 
 Returns:
 `Nothing`
 """
 function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing,
-                    attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq)
+                    attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq,
+                    interpolate=false)
     KitePodModels.on_timer(s.kcu)
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
     s.sync_speed = set_speed
@@ -692,7 +732,7 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
         s.attractor = attractor
     end
     s.t_0 = integrator.t
-    set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir)
+    set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
     s.iter = 0
     if s.set.solver == "IDA"
         Sundials.step!(integrator, dt, true)
