@@ -50,3 +50,4 @@ KiteUtils.set_data_path("")
         include("bench4.jl")
     end
 end
+nothing
