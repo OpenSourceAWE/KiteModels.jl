@@ -3,6 +3,25 @@ SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
 ### KiteModels v0.11.16 (unreleased)
+#### Added
+- `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,
+  the previous behaviour), which is passed on to `calc_turbulent_wind`: the turbulence is then
+  interpolated trilinearly between the grid points of the wind field instead of being read at the
+  nearest one, so the kite no longer flies through steps in the wind. Without turbulence it has no
+  effect. `examples_3d/parking_wind_dir.jl` switches it on via its `INTERPOLATE` parameter.
+
+#### Changed
+- `calc_turbulent_wind` no longer duplicates the wind field lookup: it forwards to
+  `AtmosphericModels.calc_turbulent_wind`, which the two fixes below had brought it in line with
+  anyway. The results are bit-identical, the signature `(am, pos, upwind_dir, t)` is unchanged, and
+  the new keyword argument `interpolate` is passed through, so the turbulence can now be
+  interpolated between grid points instead of being read at the nearest one.
+- `set_v_wind_ground!` had a second copy of the mean wind profile for the case
+  `use_turbulence == 0`. It now takes both the mean and the turbulent wind from
+  `calc_turbulent_wind`, so the height profile has one implementation. The turbulent branch
+  used to evaluate the wind field at `pos_kite(s)[3]` and ignore the `height` argument; it now
+  uses `height`, which every caller in this package passes as `calc_height(s)` anyway.
+
 #### Fixed
 - `calc_turbulent_wind` scaled the sampled turbulence with `rel_turbo(am)` only. As of
   `AtmosphericModels` 0.3.8 the stored wind field has the reference intensity instead of being
