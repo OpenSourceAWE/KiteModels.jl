@@ -160,7 +160,7 @@ version = "1.11.0"
 
 [[deps.AtmosphericModels]]
 deps = ["FFTW", "HypergeometricFunctions", "KiteUtils", "LinearAlgebra", "MeshGrid", "NPZ", "Printf", "Random", "SHA", "Scratch", "StableRNGs", "Statistics"]
-path = "/home/ufechner/repos/AtmosphericModels.jl"
+git-tree-sha1 = "542e1acd424d4263392352bb6150934b6140b419"
 uuid = "c59cac55-771d-4f45-b14d-1c681463a295"
 version = "0.3.8"
 
