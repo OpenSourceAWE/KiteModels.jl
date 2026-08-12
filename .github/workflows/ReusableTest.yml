@@ -39,7 +39,7 @@ jobs:
     continue-on-error: ${{ inputs.allow_failure }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: julia-actions/setup-julia@v3
         with:
@@ -91,7 +91,7 @@ jobs:
           coverage: ${{ inputs.run_codecov }}
       - uses: julia-actions/julia-processcoverage@v1
         if: ${{ inputs.run_codecov }}
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v7
         if: ${{ inputs.run_codecov }}
         with:
           files: lcov.info
