@@ -193,6 +193,49 @@ const SEGMENTS = load_settings("system.yaml").segments
         @test kps.last_v_reel_out == 0.0
     end
 
+    @testset "test_v_wind_vert     " begin
+        local kps = KPS3(KCU(load_settings("system.yaml")))
+        set_defaults(kps)
+        height = 100.0
+
+        # default is 0.0, reproducing today's behaviour exactly
+        @test kps.v_wind_vert == 0.0
+        KiteModels.set_v_wind_ground!(kps, height)
+        @test kps.v_wind[3] == 0.0
+        horiz_no_vert = copy(kps.v_wind[1:2])
+
+        # a nonzero v_wind_vert is added to the vertical component, not overwriting it,
+        # and leaves the horizontal components, v_wind_gnd and v_wind_tether untouched
+        kps.v_wind_vert = 1.0
+        KiteModels.set_v_wind_ground!(kps, height)
+        @test kps.v_wind[3] ≈ 1.0
+        @test kps.v_wind[1:2] ≈ horiz_no_vert
+        @test kps.v_wind_gnd[3] == 0.0
+        @test kps.v_wind_tether[3] == 0.0
+        @test upwind_dir(kps) ≈ -pi/2
+
+        # clear! resets it
+        KiteModels.clear!(kps)
+        @test kps.v_wind_vert == 0.0
+    end
+
+    @testset "test_v_wind_vert turb" begin
+        # regression: with turbulence switched on, v_wind_vert must be added to the turbulent
+        # vertical wind, not replace it (a plain assignment would silently delete it)
+        set_ = deepcopy(se())
+        set_.use_turbulence = 0.1
+        local kps = KPS3(KCU(set_))
+        height = 100.0
+
+        KiteModels.set_v_wind_ground!(kps, height)
+        v_wind_turb_only = copy(kps.v_wind)
+
+        kps.v_wind_vert = 2.0
+        KiteModels.set_v_wind_ground!(kps, height)
+        @test kps.v_wind[3] ≈ v_wind_turb_only[3] + 2.0
+        @test kps.v_wind[1:2] ≈ v_wind_turb_only[1:2]
+    end
+
     # Inputs:
     # State vector state_y   = pos1, pos2, ..., posn, vel1, vel2, ..., veln
     # Derivative   der_yd    = vel1, vel2, ..., veln, acc1, acc2, ..., accn

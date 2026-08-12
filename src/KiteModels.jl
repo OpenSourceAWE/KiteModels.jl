@@ -250,6 +250,12 @@ horizontal position of the kite and at `height`; `interpolate` is passed on to i
 function reads the ground wind speed from the settings, a `v_wind_gnd` differing from
 `s.set.v_wind` rescales the result; it has no effect while turbulence is switched on, where the
 wind field itself sets the speed.
+
+`s.v_wind_vert` (set via the `v_wind_vert` keyword of [`next_step!`](@ref), default `0.0`) is added
+to the vertical component of `s.v_wind` after it is computed, on top of any vertical turbulence
+already present — it is a mean updraft/downdraft superimposed on the wind model, not a replacement
+for it. Positive is up. `s.v_wind_gnd` and `s.v_wind_tether` are unaffected: the tether wind stays
+horizontal, and `upwind_dir` (which reads `s.v_wind_gnd`) is unaffected too.
 """
 function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2, interpolate=false)
     if height < AtmosphericModels.MIN_KITE_HEIGHT
@@ -266,6 +272,7 @@ function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=
         1.0
     end
     s.v_wind .= scale * v_wind
+    s.v_wind[3] += s.v_wind_vert
     s.v_wind_tether .= scale * v_wind_tether
     s.rho = calc_rho(s.am, height)
     nothing
@@ -695,8 +702,8 @@ end
 
 """
     next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing
-               attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq,
-               interpolate=false)
+               attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, v_wind_vert=0.0,
+               dt=1/s.set.sample_freq, interpolate=false)
 
 Calculates the next simulation step. Either `set_speed` or `set_torque` must be provided.
 
@@ -711,6 +718,9 @@ Parameters:
 - `v_wind_gnd`: wind speed at reference height in m/s
 - `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north;
                 clockwise positive. Default: -pi/2, wind from west.
+- `v_wind_vert`: constant vertical wind velocity at the kite, positive up [m/s]. Added on top of
+                whatever the wind model (laminar or turbulent) already produces; does not affect
+                `s.v_wind_gnd` or the tether wind. Default `0.0`, fully backward compatible.
 - dt:           time step in seconds
 - `interpolate`: if `true`, interpolate the turbulence between the grid points of the wind field
                 instead of using the nearest one. Removes the steps a kite flying through the
@@ -720,12 +730,13 @@ Returns:
 `Nothing`
 """
 function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing,
-                    attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq,
-                    interpolate=false)
+                    attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, v_wind_vert=0.0,
+                    dt=1/s.set.sample_freq, interpolate=false)
     KitePodModels.on_timer(s.kcu)
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
     s.sync_speed = set_speed
     s.set_torque = set_torque
+    s.v_wind_vert = v_wind_vert
     if isa(s, KPS4)
         s.set_force = set_force
         s.bearing = bearing
