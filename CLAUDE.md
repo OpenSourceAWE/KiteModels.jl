@@ -34,8 +34,9 @@ Both `KPS3` and `KPS4` are mutable structs parameterized as `{S, T, P, Q, SP}` (
 type, #points, #springs, spring type) and subtype `AbstractKiteModel` (defined in `KiteUtils`).
 `src/KiteModels.jl` is the top-level module: it declares shared constants/type aliases, re-exports
 `KitePodModels`, `WinchModels`, `AtmosphericModels` (via `@reexport`), and `include`s `KPS4.jl`,
-`KPS3.jl`, `utils.jl` in that order — there's no separate build step, editing a `src/*.jl` file and
-reloading (Revise) is enough.
+`KPS3.jl`, `utils.jl` in that order (plus `precompile.jl` at the very end, which holds the
+`@compile_workload`) — there's no separate build step, editing a `src/*.jl` file and reloading
+(Revise) is enough.
 
 Shared type aliases (`src/KiteModels.jl`): `SimFloat = Float64` for all sim scalars, `KVec3 =
 MVector{3,SimFloat}` (mutable, stack-allocated), `SVec3 = SVector{3,SimFloat}` (immutable).
@@ -60,6 +61,19 @@ All physical/numerical parameters live in YAML under `data/` (`settings.yaml`, `
 versioned variants like `settings_v9b.yaml`). Key sections: `system` (segments, sample_freq,
 sim_time), `solver` (abs_tol, rel_tol, IDA vs DFBDF), `kite`/`kps4` (mass, area, aero coefficients),
 `tether` (d_tether, e_tether, damping). `Settings` objects come from `KiteUtils`, not this package.
+
+### Wind and turbulence
+
+Wind lives in `AtmosphericModels`, not here. `set_v_wind_ground!` (`src/KiteModels.jl`, called from
+`next_step!`) branches on `set.use_turbulence`: at `0` it uses `calc_wind_factor(s.am, height)` for
+the kite and `height / 2` for the tether; otherwise it delegates to
+`calc_turbulent_wind(s.am, pos, s.t_0; upwind_dir)`, which was moved out to `AtmosphericModels` in
+Feb 2026 — don't look for the turbulence math in this repo.
+
+`get_default_turbulence()` / `set_default_turbulence(x)` are a separate, GUI-facing concern: they
+read and rewrite `gui.default_turbulence` in `data/gui.yaml` (created from `gui.yaml.default` when
+missing), which is what supplies `use_turbulence` to a project's settings. Covered by
+`test/test-default_turbulence.jl`.
 
 ### Coordinate system
 
@@ -99,6 +113,11 @@ This is a Julia package developed with a workspace: `Project.toml` declares
   ```julia
   using Pkg; Pkg.activate("docs"); include("docs/make.jl"); Pkg.activate(".")
   ```
+  `bin/build_docu` is something else: it renders only `docs/src/open_source_awe.md` (the
+  mathematical background) to PDF via `pandoc`, and needs `pandoc` installed.
+- **Cut a release**: `./bin/release` (`--dry-run` first). It takes the top section of `CHANGELOG.md`
+  as release notes and posts `@JuliaRegistrator register` on GitHub issue #9 via `gh`; it refuses to
+  run unless the working tree is clean and the branch is pushed. See the release checklist below.
 - **Formatting**: `.JuliaFormatter.toml` sets `indent = 4`, `margin = 92`. Format via JuliaFormatter,
   not by hand-editing whitespace.
 - **License linting**: `bin/reuse_lint` runs `pipx run reuse lint` (every file must carry an
@@ -116,13 +135,14 @@ This is a Julia package developed with a workspace: `Project.toml` declares
   `mass_tether_particle[i-1]`.
 - Align `=`/equation signs vertically across related lines for readability.
 - Install `Revise` into the **global** Julia environment, never as a project dependency.
-- To load settings ad hoc in a script, use `se("system_3l.yaml")` (loads relative to the active
-  project's `data/` dir).
+- To load settings ad hoc in a script, use `se("system.yaml")` (loads relative to the active
+  project's `data/` dir). Note `docs/src/advanced.md` still shows `se("system_3l.yaml")` in this
+  spot — that file was removed along with the 3-line model, so don't copy the name from there.
 
 ## Release checklist (from CONTRIBUTING.md)
 
 Before cutting a release: all tests pass; every example is reachable from the menu and runs; diff
-`create_sys_image2.jl` against `create_sys_image.jl` with `meld`; verify
-`test_installation`/`test_installation2`/`test_installation3` scripts work; diff `README.md` against
-`docs/src/index.md` with `meld` and reconcile; test install on Linux (both supported Julia versions)
-and on Windows with a fresh `.julia` folder; run `bin/reuse_lint`.
+`create_sys_image2.jl` against `create_sys_image.jl` with `meld`; verify the `test/test_installation`
+… `test_installation5` scripts work; diff `README.md` against `docs/src/index.md` with `meld` and
+reconcile; test install on Linux (every Julia version in the `julia` compat entry of `Project.toml`)
+and on Windows with a fresh `.julia` folder; run `bin/reuse_lint`. Then `./bin/release`.
