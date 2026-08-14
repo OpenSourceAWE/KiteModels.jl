@@ -46,8 +46,8 @@ KiteUtils.set_data_path("")
     end
 
     if build_is_production_build
-        include("bench3.jl")
-        include("bench4.jl")
+        Base.include(Module(), joinpath(@__DIR__, "bench3.jl"))
+        Base.include(Module(), joinpath(@__DIR__, "bench4.jl"))
     end
 end
 nothing

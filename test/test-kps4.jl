@@ -645,6 +645,67 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         end
     end
 
+    @testset "test_v_wind_vert       " begin
+        local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+        set_defaults(kps4)
+        height = 100.0
+
+        # default is 0.0, reproducing today's behaviour exactly
+        @test kps4.v_wind_vert == 0.0
+        KiteModels.set_v_wind_ground!(kps4, height)
+        @test kps4.v_wind[3] == 0.0
+        horiz_no_vert = copy(kps4.v_wind[1:2])
+
+        # a nonzero v_wind_vert is added to the vertical component, not overwriting it,
+        # and leaves the horizontal components, v_wind_gnd and v_wind_tether untouched
+        kps4.v_wind_vert = 1.0
+        KiteModels.set_v_wind_ground!(kps4, height)
+        @test kps4.v_wind[3] ≈ 1.0
+        @test kps4.v_wind[1:2] ≈ horiz_no_vert
+        @test kps4.v_wind_gnd[3] == 0.0
+        @test kps4.v_wind_tether[3] == 0.0
+        @test upwind_dir(kps4) ≈ -pi/2
+
+        # clear! resets it
+        KiteModels.clear!(kps4)
+        @test kps4.v_wind_vert == 0.0
+    end
+
+    @testset "test_v_wind_vert turb " begin
+        # regression: with turbulence switched on, v_wind_vert must be added to the turbulent
+        # vertical wind, not replace it (a plain assignment would silently delete it)
+        set_ = deepcopy(se())
+        set_.use_turbulence = 0.1
+        local kps4 = KPS4(KCU(set_))
+        height = 100.0
+
+        KiteModels.set_v_wind_ground!(kps4, height)
+        v_wind_turb_only = copy(kps4.v_wind)
+
+        kps4.v_wind_vert = 2.0
+        KiteModels.set_v_wind_ground!(kps4, height)
+        @test kps4.v_wind[3] ≈ v_wind_turb_only[3] + 2.0
+        @test kps4.v_wind[1:2] ≈ v_wind_turb_only[1:2]
+    end
+
+    @testset "test_v_wind_vert sim  " begin
+        # next_step! plumbs the v_wind_vert keyword through, the simulation stays finite,
+        # and the updraft shows up in v_wind_kite (and therefore in the logged system state)
+        local kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+        kps4_.set.kcu_diameter = 0.0
+        integrator = KiteModels.init!(kps4_; stiffness_factor=0.5, delta=0.005, prn=false)
+        dt = 1/kps4_.set.sample_freq
+        for _ in 1:5
+            next_step!(kps4_, integrator; set_speed=0, v_wind_vert=1.5, dt)
+        end
+        @test kps4_.v_wind_vert == 1.5
+        @test all(isfinite, kps4_.v_wind)
+        @test all(isfinite, kps4_.pos[end])
+        @test v_wind_kite(kps4_)[3] ≈ 1.5
+        ss = SysState(kps4_)
+        @test ss.v_wind_kite[3] ≈ 1.5
+    end
+
     @testset "Raptures" begin
         kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
         kps4_.set.kcu_diameter = 0.0

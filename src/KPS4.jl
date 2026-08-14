@@ -82,6 +82,8 @@ $(TYPEDFIELDS)
     v_wind_gnd::T =       zeros(S, 3)
     "wind vector used for the calculation of the tether drag"
     v_wind_tether::T =    zeros(S, 3)
+    "vertical wind velocity at the kite, positive up [m/s]"
+    v_wind_vert::S =      0.0
     "apparent wind vector at the kite"
     v_apparent::T =       zeros(S, 3)
     "bridle_factor = set.l_bridle/bridle_length(set)"
@@ -198,6 +200,7 @@ function clear!(s::KPS4)
     s.sync_speed = s.set.v_reel_out
     s.v_wind_gnd    .= [Float64(s.set.v_wind), 0, 0]    # wind vector at reference height
     s.v_wind_tether .= [Float64(s.set.v_wind), 0, 0]
+    s.v_wind_vert   = 0.0
     s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
     height = sin(deg2rad(s.set.elevation::Float64)) * (s.set.l_tethers[1])
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)

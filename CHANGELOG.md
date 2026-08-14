@@ -2,6 +2,17 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.17 2026-08-12
+#### Added
+- `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
+  for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
+  the model struct and added to `s.v_wind[3]` by `set_v_wind_ground!` on top of whatever the wind
+  model (laminar or turbulent) already produces, so turbulent vertical wind is not overwritten.
+  Positive is up. Only `s.v_wind` is affected — `s.v_wind_gnd` and `s.v_wind_tether` stay unchanged,
+  so `upwind_dir` and tether drag are unaffected; a future phase 2 could extend the tether. Since
+  `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
+  automatically.
+
 ### KiteModels v0.11.16 2026-08-10
 #### Added
 - `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,
