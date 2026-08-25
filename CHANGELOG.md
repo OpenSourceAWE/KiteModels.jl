@@ -2,6 +2,17 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### Unreleased
+#### Changed
+- BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
+  the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
+  and `calc_orient_quat` stay `KS`, and `update_sys_state!` converts at the boundary.
+- `roll`, `pitch` and `yaw` are unchanged; they stay `KS`, against NED.
+- `turn_rates` is `KA`, so the z component has the opposite sign to before.
+- `calc_heading(s)` passes the quaternion rather than Euler angles, skipping a
+  round trip through `quat2euler`. The angle is unchanged.
+- compat bound on KiteUtils raised to `0.13`.
+
 ### KiteModels v0.11.14 2026-06-20
 #### Added
 - Added function `reel_out_speed` to `KiteModels.jl`, `KPS3.jl`, and `KPS4.jl`
