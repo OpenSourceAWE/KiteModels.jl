@@ -7,7 +7,9 @@ SPDX-License-Identifier: MIT
 - BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
   the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
   and `calc_orient_quat` stay `KS`, and `update_sys_state!` converts at the boundary.
-- `roll`, `pitch` and `yaw` are unchanged; they stay `KS`, against NED.
+- BREAKING: `roll`, `pitch` and `yaw` are no longer written to `SysState`, which
+  dropped them in KiteUtils 0.13. `orient_euler(s)` still reports them, against
+  NED, and `euler_ks(ss.orient)` recovers them from a state or a log.
 - `turn_rates` is `KA`, so the z component has the opposite sign to before.
 - `calc_heading(s)` passes the quaternion rather than Euler angles, skipping a
   round trip through `quat2euler`. The angle is unchanged.
