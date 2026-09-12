@@ -14,7 +14,7 @@ The goal of the workshop is, that you get an overview which open source software
 If possible, try to do the following steps before attending the workshop:
 
 - Make sure you have the software "Git" installed. You can download it from the [Git website](https://git-scm.com/install/windows). During installation, select VSCode (or your preferred editor) as editor and select bash as your preferred terminal.
-- Install [Julia 1.11 and VSCode](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html). VSCode is optional, but it is nice to read the examples and the configuration files. You can also use any other IDE or editor if you prefer something else.
+- Install [Julia 1.13 and VSCode](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html). VSCode is optional, but it is nice to read the examples and the configuration files. You can also use any other IDE or editor if you prefer something else.
 
 Linux, Windows and MacOS are supported.
 

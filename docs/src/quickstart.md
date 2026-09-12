@@ -19,8 +19,8 @@ Please download and install Julia using `juliaup`. Launch the `Command Prompt` a
 
 ```bash
 winget install julia -s msstore
-juliaup add 1.11
-juliaup default 1.11
+juliaup add 1.13
+juliaup default 1.13
 juliaup update
 ```
 
@@ -50,8 +50,8 @@ curl -fsSL https://install.julialang.org | sh
 Restart your terminal, and then execute:
 
 ```bash
-juliaup add 1.11
-juliaup default 1.11
+juliaup add 1.13
+juliaup default 1.13
 juliaup update
 ```
 
@@ -79,9 +79,9 @@ Please download and install `juliaup` as explained at <https://github.com/JuliaL
 Restart your terminal, and then execute:
 
 ```bash
-juliaup add 1.11
+juliaup add 1.13
 juliaup update
-juliaup default 1.11
+juliaup default 1.13
 ```
 
 ```@raw html

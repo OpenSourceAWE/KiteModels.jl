@@ -48,7 +48,7 @@ if ! command -v juliaup &> /dev/null; then
     echo "Error: juliaup is not installed. Please install it first."
     case "$(uname -s)" in
         Linux|Darwin)
-            echo "  curl -fsSL https://install.julialang.org | sh -s -- --default-channel 1.11"
+            echo "  curl -fsSL https://install.julialang.org | sh -s -- --default-channel 1.13"
             ;;
         MINGW*|MSYS*|CYGWIN*)
             echo "  winget install --name Julia --id 9NJNWW8PVKMN -e -s msstore"
@@ -75,46 +75,36 @@ if (( _available_kb < _required_kb )); then
 fi
 unset _required_kb _available_kb _available_gb
 
-# Ask which Julia version to use
-# Default to 1.12 if it is already installed and is the current default, otherwise 1.11
-if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
-    _default_choice=2
-    _default_julia="1.12"
-else
-    _default_choice=1
-    _default_julia="1.11"
-fi
-
-if [[ $_yes_to_all == true ]]; then
-    _julia_choice=""
-    echo "Using Julia version: ${_default_julia}"
-else
+# Ask which Julia version to use. With -y there is no question: the Julia
+# already on the machine is used.
+if [[ $_yes_to_all == false ]]; then
+    if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
+        _default_choice=2
+    else
+        _default_choice=1
+    fi
     echo "Which Julia version do you want to use?"
-    echo "  1) Julia 1.11"
-    echo "  2) Julia 1.12"
+    echo "  1) Julia 1.12"
+    echo "  2) Julia 1.13"
     read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
+    case "${_julia_choice:-${_default_choice}}" in
+        1)
+            _desired_julia="1.12"
+            ;;
+        2)
+            _desired_julia="1.13"
+            ;;
+        *)
+            echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
+            exit 1
+            ;;
+    esac
+    echo "Installing and activating Julia ${_desired_julia}..."
+    juliaup add "${_desired_julia}"
+    # Select the channel for this script only; the machine-wide default is left alone.
+    export JULIAUP_CHANNEL="${_desired_julia}"
+    unset _default_choice _julia_choice _desired_julia
 fi
-
-case "${_julia_choice}" in
-    1)
-        _desired_julia="1.11"
-        ;;
-    2)
-        _desired_julia="1.12"
-        ;;
-    "")
-        _desired_julia="${_default_julia}"
-        ;;
-    *)
-        echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
-        exit 1
-        ;;
-esac
-echo "Installing and activating Julia ${_desired_julia}..."
-juliaup add "${_desired_julia}"
-juliaup default "${_desired_julia}"
-echo "Julia ${_desired_julia} is now the default."
-echo
 
 # Detect Julia version
 julia_version=$(julia --version | awk '{print($3)}')
@@ -156,13 +146,6 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     fi
 fi
 
-# Detect current git branch
-if [ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1 ; then
-    branch=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/g')
-else
-    branch=""
-fi
-
 # Delete any existing custom system image for this Julia version
 SOFILE="bin/kps-image-${julia_major}.so"
 if test -f "$SOFILE"; then
@@ -170,34 +153,23 @@ if test -f "$SOFILE"; then
     rm -f "$SOFILE"
 fi
 
-# Only accept Julia 1.11 and 1.12
-if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
-    echo "Error: Julia $julia_major is not supported. Only Julia 1.11 and 1.12 are supported."
-    echo "You can install Julia 1.11 with the following commands:"
-    echo "juliaup add 1.11"
-    echo "juliaup default 1.11"
+# Only accept Julia 1.12 and 1.13
+if [[ $julia_major != "1.12" ]] && [[ $julia_major != "1.13" ]]; then
+    echo "Error: Julia $julia_major is not supported. Only Julia 1.12 and 1.13 are supported."
+    echo "You can install Julia 1.13 and run this script on it with:"
+    echo "juliaup add 1.13"
+    echo "JULIAUP_CHANNEL=1.13 ./bin/install"
     exit 1
 fi
 
 if [[ $update == false ]]; then
-    # Copy the appropriate default manifest
-    if [[ $julia_major == "1.11" ]]; then
-        if [ -f "Manifest-v1.11.toml.default" ]; then
-            cp Manifest-v1.11.toml.default Manifest-v1.11.toml
-            echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
-        else
-            echo "Warning: Manifest-v1.11.toml.default not found"
-            exit 1
-        fi
+    # Copy the default manifest tracked for this Julia version
+    if [ -f "Manifest-v${julia_major}.toml.default" ]; then
+        cp "Manifest-v${julia_major}.toml.default" "Manifest-v${julia_major}.toml"
+        echo "Copied Manifest-v${julia_major}.toml.default to Manifest-v${julia_major}.toml"
     else
-        # Default to 1.12 for newer versions
-        if [ -f "Manifest-v1.12.toml.default" ]; then
-            cp Manifest-v1.12.toml.default Manifest-v1.12.toml
-            echo "Copied Manifest-v1.12.toml.default to Manifest-v1.12.toml"
-        else
-            echo "Warning: Manifest-v1.12.toml.default not found"
-            exit 1
-        fi
+        echo "Error: Manifest-v${julia_major}.toml.default not found"
+        exit 1
     fi
 else
     # Update mode: start from a clean state without a manifest and let Pkg.update() generate it.
@@ -310,240 +282,66 @@ run_precompile() {
     rm -f "$_plog"
 }
 
+# Resolve and instantiate a sub-project, retrying once from a clean state, and
+# record which of the two happened.
+# Usage: resolve_project examples
+resolve_project() {
+    local _proj="$1"
+    local _ec=0
+    julia --project="${_proj}" -e '
+using Pkg
+try
+    Pkg.resolve()
+    Pkg.instantiate()
+catch e
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
+    end
+    Pkg.resolve()
+    Pkg.instantiate()
+    exit(2)
+end
+' || _ec=$?
+    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("${_proj}")
+    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("${_proj}"); fi
+}
+
+# Give the manifest Pkg wrote the version-specific name the other scripts expect.
+# Usage: name_manifest_for_version examples
+name_manifest_for_version() {
+    local _proj="$1"
+    if [ -f "${_proj}/Manifest.toml" ]; then
+        mv "${_proj}/Manifest.toml" "${_proj}/Manifest-v${julia_major}.toml"
+        echo "Renamed ${_proj}/Manifest.toml to ${_proj}/Manifest-v${julia_major}.toml"
+    fi
+}
+
 echo "Precompiling main project..."
 run_precompile "--project"
 
-# Instantiate all sub-projects: examples, test, examples_3d, docs
-if [[ $julia_major == "1.11" ]]; then
-    echo "Instantiating examples and test project for Julia $julia_major..."
-    # Resolve sub-projects independently to avoid version conflicts when the main
-    # manifest contains versions newer than the local registry snapshot.
-    rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-    cp Manifest-v1.11.toml examples/Manifest-v1.11.toml
-    cp Manifest-v1.11.toml test/Manifest-v1.11.toml
-    cp Manifest-v1.11.toml examples_3d/Manifest-v1.11.toml
-    _ec=0; julia --project=examples -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.11)"); fi
-    echo "Precompiling examples project..."
-    run_precompile "--project=examples"
-    _ec=0; julia --project=test -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.11)"); fi
-    echo "Precompiling test project and running the tests..."
-    run_precompile "--project=test"
-    julia --project -e 'using Pkg; Pkg.test()'
-    _ec=0; julia --project=examples_3d -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.11)"); fi
-    echo "Precompiling examples_3d project..."
-    run_precompile "--project=examples_3d"
+echo "Julia $julia_major: instantiating all sub-projects..."
+# Resolve sub-projects independently to avoid version conflicts when the main
+# manifest contains versions newer than the local registry snapshot.
+rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
+for _project in examples test examples_3d; do
+    resolve_project "${_project}"
+    echo "Precompiling ${_project} project..."
+    run_precompile "--project=${_project}"
+done
 
-    # Rename the manifest file to version-specific name
-    if [ -f "examples/Manifest.toml" ]; then
-        mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
-        echo "Renamed examples/Manifest.toml to examples/Manifest-v${julia_major}.toml"
-    fi
-    if [ -f "test/Manifest.toml" ]; then
-        mv test/Manifest.toml test/Manifest-v${julia_major}.toml
-        echo "Renamed test/Manifest.toml to test/Manifest-v${julia_major}.toml"
-    fi
-    if [ -f "examples_3d/Manifest.toml" ]; then
-        mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
-        echo "Renamed examples_3d/Manifest.toml to examples_3d/Manifest-v${julia_major}.toml"
-    fi
-    # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
-    rm -f docs/Manifest*.toml
-    _ec=0; julia --project=docs -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.11)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.11)"); fi
-    echo "Precompiling docs project..."
-    run_precompile "--project=docs"
-    if [ -f "docs/Manifest.toml" ]; then
-        mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
-        echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
-    fi
-else
-    echo "Julia $julia_major: instantiating all sub-projects..."
-    # Resolve sub-projects independently to avoid version conflicts when the main
-    # manifest contains versions newer than the local registry snapshot.
-    rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-    _ec=0; julia --project=examples -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.12)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.12)"); fi
-    echo "Precompiling examples project..."
-    run_precompile "--project=examples"
-    _ec=0; julia --project=test -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.12)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.12)"); fi
-    echo "Precompiling test project and running the tests..."
-    run_precompile "--project=test"
-    julia --project -e 'using Pkg; Pkg.test()'
-    echo "Precompiling examples_3d project..."
-    _ec=0; julia --project=examples_3d -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.12)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.12)"); fi
-    run_precompile "--project=examples_3d"
-    # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
-    rm -f docs/Manifest*.toml
-    _ec=0; julia --project=docs -e '
-using Pkg
-try
-    Pkg.resolve()
-    Pkg.instantiate()
-catch e
-    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-    proj_dir = dirname(Base.active_project())
-    for f in readdir(proj_dir)
-        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-            rm(joinpath(proj_dir, f), force=true)
-        end
-    end
-    Pkg.resolve()
-    Pkg.instantiate()
-    exit(2)
-end
-' || _ec=$?
-    if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.12)")
-    elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("docs (1.12)"); fi
-    echo "Precompiling docs project..."
-    run_precompile "--project=docs"
-    if [ -f "examples/Manifest.toml" ]; then
-        mv examples/Manifest.toml examples/Manifest-v${julia_major}.toml
-        echo "Renamed examples/Manifest.toml to examples/Manifest-v${julia_major}.toml"
-    fi
-    if [ -f "test/Manifest.toml" ]; then
-        mv test/Manifest.toml test/Manifest-v${julia_major}.toml
-        echo "Renamed test/Manifest.toml to test/Manifest-v${julia_major}.toml"
-    fi
-    if [ -f "examples_3d/Manifest.toml" ]; then
-        mv examples_3d/Manifest.toml examples_3d/Manifest-v${julia_major}.toml
-        echo "Renamed examples_3d/Manifest.toml to examples_3d/Manifest-v${julia_major}.toml"
-    fi
-    if [ -f "docs/Manifest.toml" ]; then
-        mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
-        echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
-    fi
-fi
+# Docs resolves independently (different dep tree; seeding from main causes missing extensions)
+rm -f docs/Manifest*.toml
+resolve_project docs
+echo "Precompiling docs project..."
+run_precompile "--project=docs"
+
+for _project in examples test examples_3d docs; do
+    name_manifest_for_version "${_project}"
+done
 julia --project=examples -e 'using MakieControlPlots, DSP' || true
 julia --project=examples_3d -e 'using MakieControlPlots' || true
 julia --project=examples_3d -e 'using KiteViewers' || true
@@ -569,8 +367,6 @@ else
         done
     fi
 fi
-
-run_precompile "--project=examples"
 
 # Handle .JETLSConfig.toml configuration file
 _jetls_warning=0
@@ -598,37 +394,6 @@ echo "cd .."
 echo "bin/run_julia"
 echo "and then get the menu with the examples by typing:"
 echo "menu()"
-
-# Add alias to shell configuration file
-if [[ "$(uname -s)" == "Linux" && -f ~/.bashrc ]]; then
-    if ! grep -q "alias jl='bin/run_julia'" ~/.bashrc; then
-        echo "alias jl='bin/run_julia'" >> ~/.bashrc
-        echo
-        echo "Added alias 'jl' to ~/.bashrc"
-        echo "Run 'source ~/.bashrc' or restart your terminal to use it"
-    fi
-elif [[ "$(uname -s)" == "Darwin" ]]; then
-    # On macOS, check for zsh (default since Catalina) or bash configuration files
-    _config_file=""
-    if [[ -f ~/.zshrc ]]; then
-        _config_file=~/.zshrc
-    elif [[ -f ~/.bash_profile ]]; then
-        _config_file=~/.bash_profile
-    elif [[ -f ~/.bashrc ]]; then
-        _config_file=~/.bashrc
-    fi
-    
-    if [[ -n "$_config_file" ]]; then
-        if ! grep -q "alias jl='bin/run_julia'" "$_config_file"; then
-            echo "alias jl='bin/run_julia'" >> "$_config_file"
-            echo
-            echo "Added alias 'jl' to $_config_file"
-            echo "Run 'source $_config_file' or restart your terminal to use it"
-        fi
-    fi
-    unset _config_file
-fi
-
 echo
 
 # Warn if .JETLSConfig.toml already existed

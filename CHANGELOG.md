@@ -13,6 +13,15 @@ SPDX-License-Identifier: MIT
   `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
   automatically.
 
+#### Changed
+- Julia 1.13 is supported and tested. `Test.yml` runs 1.12 and 1.13 instead of 1.11, `[compat]`
+  `julia` reads `"1.11, 1.12, 1.13"`, and `Manifest-v1.13.toml.default` replaces
+  `Manifest-v1.11.toml.default`; the 1.12 default is unchanged.
+- `bin/install`, `bin/update_default_manifest` and `bin/create_sys_image` offer Julia 1.12 and 1.13
+  and select that channel for themselves instead of changing the machine-wide default Julia.
+  `bin/install -y` now uses the Julia already on the machine, and no longer runs the test suite or
+  appends a `jl` alias to the shell profile.
+
 ### KiteModels v0.11.16 2026-08-10
 #### Added
 - `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,

@@ -16,7 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.11'
+          - '1.12'
+          - '1.13'
           - '1'
         os:
           - ubuntu-latest
@@ -88,7 +89,8 @@ jobs:
       fail-fast: false
       matrix:
         julia_version:
-          - "1.11"
+          - "1.12"
+          - "1.13"
         julia_arch:
           - x64
         os:
