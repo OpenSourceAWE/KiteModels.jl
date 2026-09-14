@@ -68,10 +68,7 @@ if ! command -v julia &> /dev/null; then
     juliaup default 1.11
 fi
 
-# Instantiate packages first so artifacts are available for LD_PRELOAD setup
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
-
-. ./bin/setup_env
 
 # Run Pkg.precompile() and fail if either Julia exits non-zero or the output
 # contains package-level precompile failure markers.

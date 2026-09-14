@@ -1048,7 +1048,7 @@ end
 """
     copy_bin()
 
-Copy the scripts create_sys_image, run_julia and setup_env to the folder "bin"
+Copy the scripts create_sys_image and run_julia to the folder "bin"
 (it will be created if it doesn't exist).
 """
 function copy_bin(; overwrite=true)
@@ -1066,11 +1066,6 @@ function copy_bin(; overwrite=true)
     if overwrite || !isfile(dst)
         cp(joinpath(src_path, "run_julia"), dst, force=true)
         chmod(dst, 0o774)
-    end
-    dst = joinpath(PATH, "setup_env")
-    if overwrite || !isfile(dst)
-        cp(joinpath(src_path, "setup_env"), dst, force=true)
-        chmod(dst, 0o664)
     end
     PATH = "test"
     if ! isdir(PATH)

@@ -51,12 +51,7 @@ else
     echo "Using existing manifest file!"
 fi
 echo "Instantiating packages..."
-# Instantiate packages first so artifacts are available for LD_PRELOAD setup
 julia --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
-
-echo ". ./bin/setup_env"
-# Load shared Julia environment setup (LD_PRELOAD, LD_LIBRARY_PATH, julia wrapper).
-. ./bin/setup_env
 
 # Run Pkg.precompile() and fail if either Julia exits non-zero or the output
 # contains package-level precompile failure markers.

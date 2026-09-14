@@ -76,8 +76,12 @@ fi
 unset _required_kb _available_kb _available_gb
 
 # Ask which Julia version to use
-# Default to 1.12 if it is already installed and is the current default, otherwise 1.11
-if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
+# Default to the newest of 1.13/1.12 if it is already installed and is the current default,
+# otherwise fall back to 1.11
+if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
+    _default_choice=3
+    _default_julia="1.13"
+elif juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
     _default_choice=2
     _default_julia="1.12"
 else
@@ -92,7 +96,8 @@ else
     echo "Which Julia version do you want to use?"
     echo "  1) Julia 1.11"
     echo "  2) Julia 1.12"
-    read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
+    echo "  3) Julia 1.13"
+    read -rp "Enter 1, 2 or 3 [default: ${_default_choice}]: " _julia_choice
 fi
 
 case "${_julia_choice}" in
@@ -102,11 +107,14 @@ case "${_julia_choice}" in
     2)
         _desired_julia="1.12"
         ;;
+    3)
+        _desired_julia="1.13"
+        ;;
     "")
         _desired_julia="${_default_julia}"
         ;;
     *)
-        echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
+        echo "Invalid choice: '${_julia_choice}'. Please enter 1, 2 or 3."
         exit 1
         ;;
 esac
@@ -127,8 +135,6 @@ echo "Detected Julia version: $julia_version (major: $julia_major)"
 
 export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 
-. ./bin/setup_env
-
 echo "Ensuring Revise is installed in the global Julia environment..."
 _revise_code='
 using Pkg
@@ -138,15 +144,8 @@ if Base.find_package("Revise") === nothing
 end
 '
 
-set +e
 julia --startup-file=no -e "$_revise_code"
-_revise_rc=$?
-set -e
-if [[ $_revise_rc -ne 0 ]]; then
-    echo "First attempt failed. Retrying Revise installation without LD_PRELOAD/LD_LIBRARY_PATH overrides..." >&2
-    env -u LD_PRELOAD -u LD_LIBRARY_PATH command julia --startup-file=no -e "$_revise_code"
-fi
-unset _revise_code _revise_rc
+unset _revise_code
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
     # Avoid Tk backend issues on macOS (e.g. non-responsive close button in ControlPlots windows).
@@ -170,9 +169,9 @@ if test -f "$SOFILE"; then
     rm -f "$SOFILE"
 fi
 
-# Only accept Julia 1.11 and 1.12
-if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]]; then
-    echo "Error: Julia $julia_major is not supported. Only Julia 1.11 and 1.12 are supported."
+# Only accept Julia 1.11, 1.12 and 1.13
+if [[ $julia_major != "1.11" ]] && [[ $julia_major != "1.12" ]] && [[ $julia_major != "1.13" ]]; then
+    echo "Error: Julia $julia_major is not supported. Only Julia 1.11, 1.12 and 1.13 are supported."
     echo "You can install Julia 1.11 with the following commands:"
     echo "juliaup add 1.11"
     echo "juliaup default 1.11"
@@ -181,23 +180,12 @@ fi
 
 if [[ $update == false ]]; then
     # Copy the appropriate default manifest
-    if [[ $julia_major == "1.11" ]]; then
-        if [ -f "Manifest-v1.11.toml.default" ]; then
-            cp Manifest-v1.11.toml.default Manifest-v1.11.toml
-            echo "Copied Manifest-v1.11.toml.default to Manifest-v1.11.toml"
-        else
-            echo "Warning: Manifest-v1.11.toml.default not found"
-            exit 1
-        fi
+    if [ -f "Manifest-v${julia_major}.toml.default" ]; then
+        cp "Manifest-v${julia_major}.toml.default" "Manifest-v${julia_major}.toml"
+        echo "Copied Manifest-v${julia_major}.toml.default to Manifest-v${julia_major}.toml"
     else
-        # Default to 1.12 for newer versions
-        if [ -f "Manifest-v1.12.toml.default" ]; then
-            cp Manifest-v1.12.toml.default Manifest-v1.12.toml
-            echo "Copied Manifest-v1.12.toml.default to Manifest-v1.12.toml"
-        else
-            echo "Warning: Manifest-v1.12.toml.default not found"
-            exit 1
-        fi
+        echo "Warning: Manifest-v${julia_major}.toml.default not found"
+        exit 1
     fi
 else
     # Update mode: start from a clean state without a manifest and let Pkg.update() generate it.
