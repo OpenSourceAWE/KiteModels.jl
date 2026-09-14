@@ -145,26 +145,12 @@ if test -f "kps-image-${julia_major}.so"; then
     mv kps-image-${julia_major}.so kps-image-${julia_major}.so.bak
 fi
 
-if [[ $julia_major == "1.10" ]]; then
-    rm -f data/model_1.10_*.bin.default
-    rm -f data/model_1.10_*.bin
-elif [[ $julia_major == "1.11" ]]; then
-    rm -f data/model_1.11_*.bin.default
-    rm -f data/model_1.11_*.bin
+if [ -f "Manifest-v${julia_major}.toml.default" ]; then
+    cp "Manifest-v${julia_major}.toml.default" "Manifest-v${julia_major}.toml"
+    echo "Using Manifest-v${julia_major}.toml.default ..."
 else
-    rm -f data/model_1.12_*.bin.default
-    rm -f data/model_1.12_*.bin
-fi
-
-if [[ $julia_major == "1.10" ]]; then
-    cp Manifest-v1.10.toml.default Manifest-v1.10.toml
-    echo "Using Manifest-v1.10.toml.default ..."        
-elif [[ $julia_major == "1.11" ]]; then
-    cp Manifest-v1.11.toml.default Manifest-v1.11.toml
-    echo "Using Manifest-v1.11.toml.default ..."
-else
-    cp Manifest-v1.12.toml.default Manifest-v1.12.toml
-    echo "Using Manifest-v1.12.toml.default ..."
+    echo "Error: Manifest-v${julia_major}.toml.default not found"
+    exit 1
 fi
 
 # Seed sub-project manifests from main manifest and resolve
