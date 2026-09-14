@@ -86,8 +86,8 @@ This is a Julia package developed with a workspace: `Project.toml` declares
 `[workspace] projects = ["examples", "examples_3d", "docs", "test"]`, each with its own
 `Project.toml`/manifest.
 
-- **Install/setup**: `cd bin && ./install` (installs Julia via juliaup, sets up `Revise` globally,
-  runs `setup_env`). `./install --update` refreshes an existing setup.
+- **Install/setup**: `cd bin && ./install` (installs Julia via juliaup, sets up `Revise` globally).
+  `./install --update` refreshes an existing setup.
 - **Launch a dev REPL**: `./bin/run_julia` (activates the right project, forwards script args).
 - **Build a system image** (much faster startup/time-to-first-plot): `cd bin && ./create_sys_image`
   (can take ~30 min); relaunch via `./bin/run_julia` afterward.

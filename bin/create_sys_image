@@ -67,10 +67,7 @@ if ! command -v julia &> /dev/null; then
     exit 1
 fi
 
-# Instantiate packages first so artifacts are available for LD_PRELOAD setup
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"
-
-. ./bin/setup_env
 
 # Run Pkg.precompile() and fail if either Julia exits non-zero or the output
 # contains package-level precompile failure markers.
@@ -147,11 +144,13 @@ if test -f "kps-image-${julia_major}.so"; then
     mv kps-image-${julia_major}.so kps-image-${julia_major}.so.bak
 fi
 
-rm -f "data/model_${julia_major}_"*.bin.default
-rm -f "data/model_${julia_major}_"*.bin
-
-cp "Manifest-v${julia_major}.toml.default" "Manifest-v${julia_major}.toml"
-echo "Using Manifest-v${julia_major}.toml.default ..."
+if [ -f "Manifest-v${julia_major}.toml.default" ]; then
+    cp "Manifest-v${julia_major}.toml.default" "Manifest-v${julia_major}.toml"
+    echo "Using Manifest-v${julia_major}.toml.default ..."
+else
+    echo "Error: Manifest-v${julia_major}.toml.default not found"
+    exit 1
+fi
 
 # Seed sub-project manifests from main manifest and resolve
 rm -f examples/Manifest*.toml examples_3d/Manifest*.toml test/Manifest*.toml
