@@ -22,7 +22,7 @@ The models have the following subcomponents, implemented in separate packages:
 - KitePodModel from  [KitePodModels](https://github.com/aenarete/KitePodModels.jl)
 
 This package is part of Julia Kite Power Tools, which consists of the following packages:
-<p align="center"><img src="https://github.com/aenarete/WinchModels.jl/blob/main/docs/kite_power_tools.png" alt="Julia Kite Power Tools package overview" width="500" /></p>
+<p align="center"><img src="https://github.com/OpenSourceAWE/KiteUtils.jl/raw/main/docs/src/kite_power_tools.png" alt="Julia Kite Power Tools package overview" width="500" /></p>
 
 ## News
 
