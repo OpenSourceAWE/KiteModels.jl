@@ -56,10 +56,9 @@ end
     @test ss.v_wind_gnd ≈ kps4.v_wind_gnd
     @test ss.v_wind_kite ≈ kps4.v_wind
     @test ss.v_wind_200m ≈ kps4.v_wind_gnd * calc_wind_factor(kps4.am, 200.0)
-    # the winch quantities are scalars on a single-tether model, in slot 1 of a 4-tether vector
-    @test ss.winch_force ≈ [winch_force(kps4), 0, 0, 0]
-    @test ss.l_tether ≈ [kps4.l_tether, 0, 0, 0]
-    @test ss.v_reelout ≈ [kps4.v_reel_out, 0, 0, 0]
+    @test ss.winch_force ≈ [winch_force(kps4)]
+    @test ss.l_tether ≈ [kps4.l_tether]
+    @test ss.v_reelout ≈ [kps4.v_reel_out]
 end
 
 @testset "update_sys_state! zoom" begin
@@ -75,7 +74,7 @@ end
     ss = SysState(kps4)
     next_step!(kps4, integrator; set_speed=0.5, dt=DT)
     update_sys_state!(ss, kps4)
-    @test ss.set_speed ≈ [0.5, 0, 0, 0]
+    @test ss.set_speed ≈ [0.5]
     # a set value of `nothing` is logged as NaN, not as zero
     @test isnan(ss.set_torque[1])
     @test isnan(ss.set_force[1])
@@ -89,8 +88,8 @@ end
     kps4.attractor  = SVector(0.1, 0.7)
     update_sys_state!(ss, kps4)
     @test isnan(ss.set_speed[1])
-    @test ss.set_torque ≈ [-20.0, 0, 0, 0]
-    @test ss.set_force ≈ [1200.0, 0, 0, 0]
+    @test ss.set_torque ≈ [-20.0]
+    @test ss.set_force ≈ [1200.0]
     @test ss.bearing ≈ 0.3
     @test ss.attractor ≈ [0.1, 0.7]
 end
@@ -131,10 +130,10 @@ end
     @test ss.elevation ≈ calc_elevation(kps3)
     @test ss.azimuth ≈ calc_azimuth(kps3)
     @test ss.heading ≈ calc_heading(kps3)
-    @test ss.l_tether ≈ [kps3.l_tether, 0, 0, 0]
+    @test ss.l_tether ≈ [kps3.l_tether]
     # set_force, bearing and attractor are KPS4 only and keep their defaults here
     @test ss.bearing == 0
-    @test ss.set_force ≈ [0, 0, 0, 0]
+    @test ss.set_force ≈ [0]
     @test ss.attractor ≈ [0, 0]
 
     azimuth_0, heading_0, time_0 = ss.azimuth, ss.heading, ss.time

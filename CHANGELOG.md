@@ -3,6 +3,10 @@ SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
 ### KiteModels v0.11.17 2026-08-12
+#### Changed
+- BREAKING: requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+  so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
+  value instead of four.
 #### Added
 - `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
   for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
