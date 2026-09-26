@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 -->
 ### KiteModels v0.11.17 2026-08-12
 #### Changed
-- BREAKING: requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+- Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
   so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
   value instead of four.
 #### Added
