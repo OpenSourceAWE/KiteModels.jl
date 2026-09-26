@@ -12,6 +12,6 @@ fi
 
 bin/install --update
 
-julia_major=$(julia --version | awk '{print($3)}' | cut -d. -f1,2)
+julia_major=$(bin/julia_major)
 cp "Manifest-v${julia_major}.toml" "Manifest-v${julia_major}.toml.default"
 echo "Updated Manifest-v${julia_major}.toml.default !"
