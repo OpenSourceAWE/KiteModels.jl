@@ -109,7 +109,7 @@ If you now launch Julia with `./bin/run_julia` and then run the above example ag
 
 ## Installation from git
 
-Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 and 1.12 are also supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
+Install [Julia 1.12](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.13 is also supported. On Linux, make sure that Python3 and Matplotlib are installed:
 
 ```bash
 sudo apt install python3-matplotlib
