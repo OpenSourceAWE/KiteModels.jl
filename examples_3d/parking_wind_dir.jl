@@ -77,6 +77,7 @@ SHOW_KITE         = true
 # For position and velocity vectors of the model the ENU (East North Up) 
 UPWIND_DIR        = -pi/2 # the direction the wind is coming from.
 UPWIND_DIR2       = -pi/2+deg2rad(90)     # Zero is at north; clockwise positive
+INTERPOLATE       = true  # interpolate the turbulence between the grid points of the wind field
 # end of user parameter section #
 
 viewer::Viewer3D = Viewer3D(SHOW_KITE, "WinchON")
@@ -137,7 +138,8 @@ function sim_parking(integrator)
             UPWIND_DIR_[i] = upwind_dir
             av_upwind_dir = upwind_dir
         end
-        t_sim = @elapsed KiteModels.next_step!(kps4, integrator; set_speed=v_ro, dt, upwind_dir=av_upwind_dir)
+        t_sim = @elapsed KiteModels.next_step!(kps4, integrator; set_speed=v_ro, dt, upwind_dir=av_upwind_dir,
+                                               interpolate=INTERPOLATE)
         AV_UPWIND_DIR[i] = av_upwind_dir
         V_WIND_KITE[i] = norm(v_wind_kite(kps4))
         if t_sim < 0.3*dt

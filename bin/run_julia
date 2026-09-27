@@ -16,27 +16,10 @@ if [[ "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ]]; then
     fi
 fi
 
-. ./bin/setup_env
-
-USE_KAIMON=false
-
 julia_version=$(julia --version | awk '{print($3)}')
-julia_major=${julia_version:0:3} 
+julia_major=${julia_version:0:3}
 if [[ $julia_major == "1.1" ]]; then
-    julia_major=${julia_version:0:4} 
-fi
-
-# Kaimon integration requires Julia >= 1.12
-if [[ $julia_major != "1.11" ]]; then
-    if command -v ss &> /dev/null; then
-        if ss -ltn '( sport = :2828 )' | grep -q ':2828'; then
-            USE_KAIMON=true
-        fi
-    elif command -v lsof &> /dev/null; then
-        if lsof -nP -iTCP:2828 -sTCP:LISTEN &> /dev/null; then
-            USE_KAIMON=true
-        fi
-    fi
+    julia_major=${julia_version:0:4}
 fi
 
 if [[ $HOSTNAME == "ufryzen" || $HOSTNAME == "framework" ]]; then
@@ -50,11 +33,7 @@ fi
 # Determine system image filename
 SOFILE="bin/kps-image-${julia_major}.so"
 
-julia_init='using Revise; '
-if [[ "$USE_KAIMON" == "true" ]]; then
-    julia_init+='using Kaimon; Gate.serve(); '
-fi
-julia_init+='using KiteModels; function menu(); include("examples/menu.jl"); end'
+julia_init='using Revise; using KiteModels; function menu(); include("examples/menu.jl"); end'
 
 # Build launch arguments once for primary and fallback execution paths.
 JULIA_ARGS=("+${julia_major}" -t "auto" $GCT --project -i -e "$julia_init" "$@")
@@ -63,12 +42,4 @@ if test -f "$SOFILE"; then
     JULIA_ARGS=("+${julia_major}" -J "$SOFILE" -t "auto" $GCT --project -i -e "$julia_init" "$@")
 fi
 
-# Run Julia with setup_env overrides first, then retry once with a clean loader env.
-set +e
 julia "${JULIA_ARGS[@]}"
-_jl_rc=$?
-set -e
-if [[ $_jl_rc -ne 0 ]]; then
-    echo "Julia launcher exited with code ${_jl_rc}. Retrying once without LD_PRELOAD/LD_LIBRARY_PATH overrides..." >&2
-    env -u LD_PRELOAD -u LD_LIBRARY_PATH command julia "${JULIA_ARGS[@]}"
-fi

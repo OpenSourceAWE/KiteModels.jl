@@ -2,18 +2,66 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### Unreleased
+### KiteModels v0.11.17 2026-08-12
 #### Changed
-- BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
-  the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
-  and `calc_orient_quat` stay `KS`, and `update_sys_state!` converts at the boundary.
-- BREAKING: `roll`, `pitch` and `yaw` are no longer written to `SysState`, which
-  dropped them in KiteUtils 0.13. `orient_euler(s)` still reports them, against
-  NED, and `euler_ks(ss.orient)` recovers them from a state or a log.
-- `turn_rates` is `KA`, so the z component has the opposite sign to before.
-- `calc_heading(s)` passes the quaternion rather than Euler angles, skipping a
-  round trip through `quat2euler`. The angle is unchanged.
-- compat bound on KiteUtils raised to `0.13`.
+- Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+  so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
+  value instead of four.
+#### Added
+- `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
+  for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
+  the model struct and added to `s.v_wind[3]` by `set_v_wind_ground!` on top of whatever the wind
+  model (laminar or turbulent) already produces, so turbulent vertical wind is not overwritten.
+  Positive is up. Only `s.v_wind` is affected — `s.v_wind_gnd` and `s.v_wind_tether` stay unchanged,
+  so `upwind_dir` and tether drag are unaffected; a future phase 2 could extend the tether. Since
+  `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
+  automatically.
+
+### KiteModels v0.11.16 2026-08-10
+#### Added
+- `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,
+  the previous behaviour), which is passed on to `calc_turbulent_wind`: the turbulence is then
+  interpolated trilinearly between the grid points of the wind field instead of being read at the
+  nearest one, so the kite no longer flies through steps in the wind. Without turbulence it has no
+  effect. `examples_3d/parking_wind_dir.jl` switches it on via its `INTERPOLATE` parameter.
+- `test/test-update-sys-state.jl` covers `update_sys_state!` for both `KPS3` and `KPS4`: every field
+  against the getter it comes from, the `zoom` scaling, `nothing` set values logging as `NaN`, the
+  turn rate around the body z-axis, and the shortest-angle difference that keeps `heading_rate` and
+  `azimuth_rate` free of spikes at the wrap boundary.
+
+#### Changed
+- `calc_turbulent_wind` no longer duplicates the wind field lookup: it forwards to
+  `AtmosphericModels.calc_turbulent_wind`, which the two fixes below had brought it in line with
+  anyway. The results are bit-identical, the signature `(am, pos, upwind_dir, t)` is unchanged, and
+  the new keyword argument `interpolate` is passed through, so the turbulence can now be
+  interpolated between grid points instead of being read at the nearest one.
+- `set_v_wind_ground!` had a second copy of the mean wind profile for the case
+  `use_turbulence == 0`. It now takes both the mean and the turbulent wind from
+  `calc_turbulent_wind`, so the height profile has one implementation. The turbulent branch
+  used to evaluate the wind field at `pos_kite(s)[3]` and ignore the `height` argument; it now
+  uses `height`, which every caller in this package passes as `calc_height(s)` anyway.
+
+#### Fixed
+- `calc_turbulent_wind` scaled the sampled turbulence with `rel_turbo(am)` only. As of
+  `AtmosphericModels` 0.3.8 the stored wind field has the reference intensity instead of being
+  pre-scaled by `use_turbulence`, so the factor is now applied here; without it, every simulation
+  would have flown at full Cabauw turbulence regardless of the setting. `AtmosphericModels` compat
+  raised to `0.3.8` accordingly — with an older version the field is pre-scaled and the factor
+  would be applied twice.
+- `calc_turbulent_wind` took the `rel_turbs` correction for `set.v_wind` (`rel_turbo(am)`) while
+  the wind field itself may have been loaded for a different ground wind speed. It now reads
+  `am.wf.v_wind_gnd`, the speed the loaded field was generated for, so the two can no longer
+  disagree.
+
+### KiteModels v0.11.15 2026-07-24
+#### Added
+- Added `CLAUDE.md` with guidance for Claude Code when working in this repository
+- Added `bin/release` script for creating a new release
+
+#### Changed
+- `KPS4.wm` field type widened from `Union{AsyncMachine, TorqueControlledMachine}` to `WinchModels.AbstractWinchModel`, allowing other `WinchModels` subtypes
+- `bin/create_sys_image` now prints a success message when the system image is created
+- `bin/run_julia` no longer probes for and loads Kaimon
 
 ### KiteModels v0.11.14 2026-06-20
 #### Added

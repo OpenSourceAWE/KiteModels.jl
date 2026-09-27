@@ -18,14 +18,19 @@ STEPS = 600*3
 const PLOT = true
 PRINT = false
 STATISTIC = false
-ALPHA_ZERO = 8.8 
+ALPHA_ZERO = 8.8
+AREA = 17.5 # projected kite area [m²], matched to the V3Kite VSM wing area
 const FRONT_VIEW = false
 ZOOM = true
 # end of user parameter section #
 
 set.alpha_zero = ALPHA_ZERO
+set.area = AREA
 set.version = 2
 set.winch_model = "TorqueControlledMachine"
+
+particles = set.segments + 5
+logger = Logger(particles, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
@@ -69,7 +74,8 @@ function simulate(integrator, steps, plot=false)
         v_wind_kite[i] = norm(KiteModels.v_wind_kite(kps4))
         next_step!(kps4, integrator; set_torque, dt)
         iter += kps4.iter
-        
+        log!(logger, SysState(kps4))
+
         if plot
             reltime = i*dt-dt
             if mod(i, 5) == 1
@@ -117,6 +123,8 @@ println("Number of states: $(states(kps4))")
 println("Kite mass: $(set.mass) kg")
 println("KCU mass:  $(set.kcu_mass) kg")
 println("Tether diameter: $(set.d_tether) mm")
+
+save_log(logger, "reel_out_4p_torque_control")
 # savefig("docs/src/reelout_force_4p.png")
 
 # Solver: DFBDF, reltol=0.000001

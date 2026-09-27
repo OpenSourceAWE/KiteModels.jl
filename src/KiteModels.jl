@@ -212,7 +212,7 @@ Return the vector of the wind speed at the height of the kite.
 function v_wind_kite(s::AKM) s.v_wind end
 
 """
-    calc_turbulent_wind(am, pos, upwind_dir, t)
+    calc_turbulent_wind(am, pos, upwind_dir, t; interpolate=false)
 
 Calculate the wind velocity vectors at the kite and at the mid-tether point.
 
@@ -220,117 +220,61 @@ When `am.set.use_turbulence == 0.0`, returns the mean wind based on a log/power-
 height profile. When `use_turbulence != 0.0`, returns the fully turbulent wind vectors
 looked up from the pre-computed wind field via `get_wind`.
 
+Forwards to `AtmosphericModels.calc_turbulent_wind`, which takes `upwind_dir` as a keyword
+argument; the positional argument order used here is kept for backwards compatibility.
+
 Parameters:
-- `am`:         atmospheric model (settings are read from `am.set`)
-- `pos`:        3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
-- `upwind_dir`: upwind direction in radians; zero is north, clockwise positive
-- `t`:          current simulation time [s]
+- `am`:          atmospheric model (settings are read from `am.set`)
+- `pos`:         3D position of the kite [m]; `pos[3]` is used as height (clamped to 6 m minimum)
+- `upwind_dir`:  upwind direction in radians; zero is north, clockwise positive
+- `t`:           current simulation time [s]
+- `interpolate`: if `true`, interpolate the turbulence trilinearly between the surrounding grid
+                 points instead of using the nearest one
 
 Returns a tuple `(v_wind, v_wind_tether)` where:
 - `v_wind`:        wind velocity vector at kite height [m/s]
 - `v_wind_tether`: wind velocity vector at half the kite height [m/s]
 """
-function calc_turbulent_wind(am, pos, upwind_dir, t)
-    wind_dir = -upwind_dir - pi/2
-    set = am.set
-    use_turbulence = set.use_turbulence
-    height = max(pos[3], 6.0)
-    v_wind_gnd = set.v_wind
-    # get_wind returns (v_x, v_y, v_z) in wind frame (x = along-wind, y = cross-wind)
-    # rotate into simulation frame
-    function rotate_wind(wx, wy, wz)
-        SVec3(wx * cos(wind_dir) - wy * sin(wind_dir),
-              wx * sin(wind_dir) + wy * cos(wind_dir),
-              wz)
-    end
-    # Sample the turbulent wind field with a robust axis mapping:
-    # advect along the longer horizontal field dimension, independent of upstream array layout.
-    function sample_wind(wx_pos, wy_pos, wz_pos)
-        wf = am.wf
-        @assert wf !== nothing "Wind field is not initialized"
-        zq = max(wz_pos, 10.0)
-        rel_turb = rel_turbo(am)
-
-        along = wx_pos * cos(wind_dir) + wy_pos * sin(wind_dir)
-        cross = -wx_pos * sin(wind_dir) + wy_pos * cos(wind_dir)
-        v_wind_height = am.set.v_wind * calc_wind_factor(am, zq, am.set.profile_law)
-
-        n1 = size(wf.u, 1)
-        n2 = size(wf.u, 2)
-        dim1_is_long = n1 >= n2
-        nlong = dim1_is_long ? n1 : n2
-        nshort = dim1_is_long ? n2 : n1
-
-        along_idx = (along + t * v_wind_height) / am.set.grid_step
-        while along_idx > nlong - 1
-            along_idx -= nlong - 1
-        end
-        while along_idx < 0
-            along_idx += nlong - 1
-        end
-        along_idx = Int(round(along_idx)) + 1
-
-        cross_idx = cross / am.set.grid_step
-        while cross_idx > nshort - 1
-            cross_idx -= nshort - 1
-        end
-        while cross_idx < 0
-            cross_idx += nshort - 1
-        end
-        cross_idx = Int(round(cross_idx)) + 1
-
-        z1 = zq / am.set.height_step
-        if z1 > size(wf.u, 3) - 1
-            z1 = size(wf.u, 3) - 1
-        elseif z1 < 0
-            z1 = 0
-        end
-        z1 = Int(round(z1)) + 1
-
-        i = dim1_is_long ? along_idx : cross_idx
-        j = dim1_is_long ? cross_idx : along_idx
-        return wf.u[i, j, z1] * rel_turb + v_wind_height,
-               wf.v[i, j, z1] * rel_turb,
-               wf.w[i, j, z1] * rel_turb
-    end
-    mean_wind = SVec3(v_wind_gnd * calc_wind_factor(am, height) * cos(wind_dir),
-                      v_wind_gnd * calc_wind_factor(am, height) * sin(wind_dir),
-                      0.0)
-    mean_wind_tether = SVec3(v_wind_gnd * calc_wind_factor(am, height / 2.0) * cos(wind_dir),
-                             v_wind_gnd * calc_wind_factor(am, height / 2.0) * sin(wind_dir),
-                             0.0)
-    if use_turbulence == 0.0
-        return mean_wind, mean_wind_tether
-    end
-    wx, wy, wz = sample_wind(pos[1], pos[2], height)
-    v_wind = rotate_wind(wx, wy, wz)
-    wx, wy, wz = sample_wind(0.5 * pos[1], 0.5 * pos[2], max(0.5 * height, 5.0))
-    v_wind_tether = rotate_wind(wx, wy, wz)
-    return v_wind, v_wind_tether
+function calc_turbulent_wind(am, pos, upwind_dir, t; interpolate=false)
+    AtmosphericModels.calc_turbulent_wind(am, pos, t; upwind_dir, interpolate)
 end
 
 """
-    set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
+    set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2, interpolate=false)
 
 Set the vector of the wind-velocity at the height of the kite. As parameter the height,
 the ground wind speed [m/s] and the upwind direction [radians] are needed.
 Is called by the function next_step!.
+
+Both the mean and the turbulent wind come from [`calc_turbulent_wind`](@ref), evaluated at the
+horizontal position of the kite and at `height`; `interpolate` is passed on to it. Since that
+function reads the ground wind speed from the settings, a `v_wind_gnd` differing from
+`s.set.v_wind` rescales the result; it has no effect while turbulence is switched on, where the
+wind field itself sets the speed.
+
+`s.v_wind_vert` (set via the `v_wind_vert` keyword of [`next_step!`](@ref), default `0.0`) is added
+to the vertical component of `s.v_wind` after it is computed, on top of any vertical turbulence
+already present — it is a mean updraft/downdraft superimposed on the wind model, not a replacement
+for it. Positive is up. `s.v_wind_gnd` and `s.v_wind_tether` are unaffected: the tether wind stays
+horizontal, and `upwind_dir` (which reads `s.v_wind_gnd`) is unaffected too.
 """
-function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2)
-    if height < 6.0
-        height = 6.0
+function set_v_wind_ground!(s::AKM, height, v_wind_gnd=s.set.v_wind; upwind_dir=-pi/2, interpolate=false)
+    if height < AtmosphericModels.MIN_KITE_HEIGHT
+        height = AtmosphericModels.MIN_KITE_HEIGHT
     end
     wind_dir = -upwind_dir - pi/2
     s.v_wind_gnd .= [v_wind_gnd * cos(wind_dir), v_wind_gnd * sin(wind_dir), 0.0]
-    if s.set.use_turbulence != 0.0
-        pos = pos_kite(s)
-        v_wind, v_wind_tether = calc_turbulent_wind(s.am, pos, upwind_dir, s.t_0)
-        s.v_wind .= v_wind
-        s.v_wind_tether .= v_wind_tether
+    pos = pos_kite(s)
+    v_wind, v_wind_tether = calc_turbulent_wind(s.am, SVec3(pos[1], pos[2], height), upwind_dir, s.t_0;
+                                                interpolate)
+    scale = if s.set.use_turbulence == 0.0 && v_wind_gnd != s.set.v_wind
+        v_wind_gnd / s.set.v_wind
     else
-        s.v_wind .= v_wind_gnd * calc_wind_factor(s.am, height) .* [cos(wind_dir), sin(wind_dir), 0]
-        s.v_wind_tether .= v_wind_gnd * calc_wind_factor(s.am, height / 2.0) .* [cos(wind_dir), sin(wind_dir), 0]
+        1.0
     end
+    s.v_wind .= scale * v_wind
+    s.v_wind[3] += s.v_wind_vert
+    s.v_wind_tether .= scale * v_wind_tether
     s.rho = calc_rho(s.am, height)
     nothing
 end
@@ -598,7 +542,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
     ss.azimuth_rate = d_az / dt
     ss.azimuth = new_azimuth
-    ss.winch_force .= [winch_force(s); 0; 0; 0]
+    ss.winch_force[1] = winch_force(s)
     new_heading = calc_heading(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
@@ -606,8 +550,8 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.heading = new_heading
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
-    ss.l_tether .= [s.l_tether; 0; 0; 0]
-    ss.v_reelout .= [s.v_reel_out; 0; 0; 0]
+    ss.l_tether[1] = s.l_tether
+    ss.v_reelout[1] = s.v_reel_out
     ss.depower = s.depower
     ss.steering = s.steering/s.set.cs_4p
     ss.kcu_steering = s.kcu_steering/s.set.cs_4p
@@ -617,11 +561,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     if isa(s, KPS4)
         ss.alpha3 = deg2rad(s.alpha_3)
         ss.alpha4 = deg2rad(s.alpha_4)
-        if isnothing(s.set_force)
-            ss.set_force .= [NaN, 0, 0, 0]
-        else
-            ss.set_force .= [s.set_force, 0, 0, 0]
-        end
+        ss.set_force[1] = something(s.set_force, NaN)
         if isnothing(s.bearing)
             ss.bearing = NaN
         else
@@ -634,16 +574,8 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         end
     end
     ss.set_steering = s.kcu.set_steering
-    if isnothing(s.set_torque)
-        ss.set_torque .= [NaN, 0, 0, 0]
-    else
-        ss.set_torque .= [s.set_torque, 0, 0, 0]
-    end
-    if isnothing(s.sync_speed)
-        ss.set_speed .= [NaN, 0, 0, 0]
-    else
-        ss.set_speed .= [s.sync_speed, 0, 0, 0]
-    end
+    ss.set_torque[1] = something(s.set_torque, NaN)
+    ss.set_speed[1] = something(s.sync_speed, NaN)
     # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
     # psi_m = psi - phi_dot * cos(theta)
     # This removes the effect of roll on the heading measurement
@@ -667,7 +599,7 @@ system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
 """
 function SysState(s::AKM, zoom=1.0)
-    ss = SysState{length(s.pos)}()
+    ss = SysState(length(s.pos))
     update_sys_state!(ss, s, zoom)
     ss
 end
@@ -765,7 +697,8 @@ end
 
 """
     next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing
-               attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq)
+               attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, v_wind_vert=0.0,
+               dt=1/s.set.sample_freq, interpolate=false)
 
 Calculates the next simulation step. Either `set_speed` or `set_torque` must be provided.
 
@@ -780,24 +713,32 @@ Parameters:
 - `v_wind_gnd`: wind speed at reference height in m/s
 - `upwind_dir`: upwind direction in radians, the direction the wind is coming from. Zero is at north;
                 clockwise positive. Default: -pi/2, wind from west.
+- `v_wind_vert`: constant vertical wind velocity at the kite, positive up [m/s]. Added on top of
+                whatever the wind model (laminar or turbulent) already produces; does not affect
+                `s.v_wind_gnd` or the tether wind. Default `0.0`, fully backward compatible.
 - dt:           time step in seconds
+- `interpolate`: if `true`, interpolate the turbulence between the grid points of the wind field
+                instead of using the nearest one. Removes the steps a kite flying through the
+                field sees; without turbulence it makes no difference.
 
 Returns:
 `Nothing`
 """
 function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing,
-                    attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, dt=1/s.set.sample_freq)
+                    attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, v_wind_vert=0.0,
+                    dt=1/s.set.sample_freq, interpolate=false)
     KitePodModels.on_timer(s.kcu)
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
     s.sync_speed = set_speed
     s.set_torque = set_torque
+    s.v_wind_vert = v_wind_vert
     if isa(s, KPS4)
         s.set_force = set_force
         s.bearing = bearing
         s.attractor = attractor
     end
     s.t_0 = integrator.t
-    set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir)
+    set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
     s.iter = 0
     if s.set.solver == "IDA"
         Sundials.step!(integrator, dt, true)
@@ -1102,7 +1043,7 @@ end
 """
     copy_bin()
 
-Copy the scripts create_sys_image, run_julia and setup_env to the folder "bin"
+Copy the scripts create_sys_image and run_julia to the folder "bin"
 (it will be created if it doesn't exist).
 """
 function copy_bin(; overwrite=true)
@@ -1120,11 +1061,6 @@ function copy_bin(; overwrite=true)
     if overwrite || !isfile(dst)
         cp(joinpath(src_path, "run_julia"), dst, force=true)
         chmod(dst, 0o774)
-    end
-    dst = joinpath(PATH, "setup_env")
-    if overwrite || !isfile(dst)
-        cp(joinpath(src_path, "setup_env"), dst, force=true)
-        chmod(dst, 0o664)
     end
     PATH = "test"
     if ! isdir(PATH)

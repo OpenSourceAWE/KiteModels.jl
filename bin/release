@@ -1,0 +1,142 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: 2026 Uwe Fechner
+# SPDX-License-Identifier: MIT
+
+set -euo pipefail
+
+_dry_run=false
+_assume_yes=false
+_sha=""
+
+print_usage() {
+    echo "Usage:"
+    echo "  ./bin/release            Register the current HEAD with JuliaRegistrator"
+    echo "  ./bin/release --dry-run  Print the version, commit and release notes, then exit"
+    echo "  ./bin/release --yes      Skip the confirmation prompt"
+    echo "  ./bin/release --sha SHA  Register a specific commit instead of HEAD"
+    echo "  ./bin/release -h"
+    echo
+    echo "Extracts the top section of CHANGELOG.md as release notes and posts a"
+    echo "'@JuliaRegistrator register' comment on the GitHub issue #9 via the GitHub API."
+    echo "The working tree must be clean and the current branch fully pushed to its"
+    echo "upstream before this will run."
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help) print_usage; exit 0 ;;
+        -n|--dry-run) _dry_run=true; shift ;;
+        -y|--yes) _assume_yes=true; shift ;;
+        --sha) _sha="${2:?--sha needs an argument}"; shift 2 ;;
+        *) echo "Unknown option: $1" >&2; print_usage >&2; exit 1 ;;
+    esac
+done
+
+if [[ $(basename "$(pwd)") == "bin" ]]; then
+    cd ..
+fi
+
+for cmd in git gh awk; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Required command not found: $cmd" >&2
+        exit 1
+    fi
+done
+
+if ! gh auth status >/dev/null 2>&1; then
+    echo "gh is not authenticated. Run 'gh auth login' first." >&2
+    exit 1
+fi
+
+_version=$(awk -F'"' '/^version[[:space:]]*=/ {print $2; exit}' Project.toml)
+if [[ -z "$_version" ]]; then
+    echo "Could not read version from Project.toml" >&2
+    exit 1
+fi
+
+_changelog_version=$(awk '/^### / {sub(/^### /, ""); print $2; exit}' CHANGELOG.md)
+if [[ "$_changelog_version" != "v$_version" ]]; then
+    echo "Version mismatch: Project.toml is $_version but CHANGELOG top is" \
+         "$_changelog_version (expected v$_version)." >&2
+    echo "Update CHANGELOG.md so its first '### ' header matches the package version." >&2
+    exit 1
+fi
+
+_notes=$(awk '
+    /^### / { n++; if (n == 1) next }
+    n == 1 { print }
+' CHANGELOG.md | awk '
+    { lines[NR] = $0 }
+    END {
+        start = 1; while (start <= NR && lines[start] ~ /^[[:space:]]*$/) start++
+        end = NR; while (end >= start && lines[end] ~ /^[[:space:]]*$/) end--
+        for (i = start; i <= end; i++) print lines[i]
+    }
+')
+
+if [[ -z "$_notes" ]]; then
+    echo "No release notes found under the '### KiteModels v$_version' section." >&2
+    exit 1
+fi
+
+if [[ -z "$_sha" ]]; then
+    _sha=$(git rev-parse HEAD)
+fi
+
+if [[ -n "$(git status --porcelain)" ]]; then
+    echo "Working tree has uncommitted changes. Commit or stash them first." >&2
+    exit 1
+fi
+
+_upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null) || {
+    echo "Current branch has no upstream tracking branch configured." >&2
+    exit 1
+}
+
+git fetch --quiet
+
+if [[ -n "$(git log "${_upstream}..HEAD" --oneline)" ]]; then
+    echo "Local branch has commits not pushed to $_upstream. Push them first:" >&2
+    echo "  git push" >&2
+    exit 1
+fi
+
+_repo=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
+if ! gh api "repos/$_repo/commits/$_sha" >/dev/null 2>&1; then
+    echo "Commit $_sha was not found on $_repo. Push it first:" >&2
+    echo "  git push" >&2
+    exit 1
+fi
+
+_body=$(printf '@JuliaRegistrator register\n\nRelease notes:\n\n%s\n' "$_notes")
+
+echo "Repository:   $_repo"
+echo "Version:      v$_version"
+echo "Commit:       $_sha"
+echo
+echo "Release notes:"
+echo "--------------------------------------------------------------------------"
+echo "$_notes"
+echo "--------------------------------------------------------------------------"
+
+if [[ "$_dry_run" == true ]]; then
+    echo
+    echo "Dry run: no comment posted."
+    exit 0
+fi
+
+if [[ "$_assume_yes" != true ]]; then
+    echo
+    read -r -p "Post this comment and trigger JuliaRegistrator? [y/N] " _reply
+    if [[ ! "$_reply" =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
+fi
+
+_url=$(gh api "repos/$_repo/issues/9/comments" -f body="$_body" -q .html_url)
+
+echo
+echo "Posted: $_url"
+echo "JuliaRegistrator will open a PR to the General registry shortly."
