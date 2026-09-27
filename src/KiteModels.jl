@@ -21,7 +21,6 @@ import Sundials
 using Pkg, Reexport
 import KiteUtils: init!, next_step!, update_sys_state!
 import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
-import KiteUtils: KS, KA, convert_body, convert_orientation
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
@@ -330,9 +329,9 @@ function calc_orient_quat(s::AKM; viewer=false, one_point=false)
         rotation = rot(pos_kite_, pos_before, -x)
     else
         x, y, z = kite_ref_frame(s; one_point) # in ENU reference
-        x = enu2ned(x)
-        y = enu2ned(y)
-        z = enu2ned(z)
+        x = fromENU2NED(x)
+        y = fromENU2NED(y)
+        z = fromENU2NED(z)
 
         # reference frame for the orientation: NED (north, east, down)
         ax = @SVector [1, 0, 0]
@@ -401,7 +400,7 @@ end
 Determine the heading angle of the kite in radian.
 """
 function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_point=false, respos=true)
-    orientation = calc_orient_quat(s; one_point)
+    attitude = fromKS2KA(calc_orient_quat(s; one_point))
     elevation = calc_elevation(s)
     # use azimuth in wind reference frame
     if neg_azimuth
@@ -409,7 +408,7 @@ function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_
     else
         azimuth = calc_azimuth(s)
     end
-    calc_heading(orientation, elevation, azimuth; frame=KS, upwind_dir=upwind_dir_, respos)
+    calc_heading(attitude, elevation, azimuth; upwind_dir=upwind_dir_, respos)
 end
 
 """
@@ -535,7 +534,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Z[i] = pos[i][3] * zoom
     end
     # KiteModels works in KS internally; SysState is KA, so the boundary is here.
-    ss.orient .= convert_orientation(calc_orient_quat(s); from=KS, to=KA)
+    ss.orient .= fromKS2KA(calc_orient_quat(s))
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
@@ -580,7 +579,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # psi_m = psi - phi_dot * cos(theta)
     # This removes the effect of roll on the heading measurement
     body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
-    ss.turn_rates .= convert_body(SVec3(0, 0, body_rate); from=KS, to=KA)
+    ss.turn_rates .= fromKS2KA_body(SVec3(0, 0, body_rate))
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd

@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "068969a070b877bcfba45d0237bc7e757f7a854c"
+project_hash = "7fa68248091909e6b258f24b10b79a5fa3ba472d"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5970c86505ae9c07bf5bc521ef2bbbb3849e8b7b"
@@ -1363,13 +1363,15 @@ version = "0.4.2"
 
 [[deps.KiteUtils]]
 deps = ["Arrow", "CSV", "DocStringExtensions", "LinearAlgebra", "OrderedCollections", "Parameters", "Parsers", "Pkg", "PrecompileTools", "RecursiveArrayTools", "ReferenceFrameRotations", "Rotations", "StaticArrays", "StructArrays", "StructTypes", "YAML"]
-git-tree-sha1 = "fbeb8355b4797ffc263320be2dc74dcdbe9310fc"
+git-tree-sha1 = "85b4f730bf098b5afc796daa11dd8fde66a1db2c"
 uuid = "90980105-b163-44e5-ba9f-8b1c83bb0533"
-version = "0.12.2"
+version = "0.13.1"
 
 [[deps.KiteViewers]]
 deps = ["FileIO", "GLMakie", "GeometryBasics", "Joysticks", "KiteUtils", "LinearAlgebra", "Parameters", "Pkg", "PrecompileTools", "Printf", "Reexport", "Rotations", "StaticArrays", "StructArrays", "Timers"]
-git-tree-sha1 = "ba3472753e0fda3b2436936ad12c763c9fd660b7"
+git-tree-sha1 = "503f9eaaaae53811443a59a88f5bfd472bd6a66c"
+repo-rev = "agent/54-update-kiteutils"
+repo-url = "https://github.com/OpenSourceAWE/KiteViewers.jl"
 uuid = "2e593061-95e7-45e4-95f4-df0491f2e601"
 version = "0.6.0"
 
@@ -3045,9 +3047,9 @@ version = "0.1.3"
 
 [[deps.WinchModels]]
 deps = ["DiscretePIDs", "KiteUtils", "Parameters"]
-git-tree-sha1 = "37639f176a3de26105bfdc0c0ce2233a3893160b"
+git-tree-sha1 = "f05155fcc1f1daa48442277021464b24988970a5"
 uuid = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
-version = "0.3.10"
+version = "0.3.11"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
