@@ -317,8 +317,7 @@ end
 """
     calc_orient_quat(s::AKM; viewer=false, one_point=false)
 
-Orientation of the kite as a quaternion in the `KS` convention, the frame the model
-itself works in. `SysState` stores `KA`; `update_sys_state!` converts.
+Orientation of the kite as a quaternion in the `KS` convention (against NED).
 """
 function calc_orient_quat(s::AKM; viewer=false, one_point=false)
     if viewer
@@ -533,7 +532,6 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
-    # KiteModels works in KS internally; SysState is KA, so the boundary is here.
     ss.orient .= fromKS2KA(calc_orient_quat(s))
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
