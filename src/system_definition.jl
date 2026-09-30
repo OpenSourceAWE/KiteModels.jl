@@ -31,13 +31,12 @@ segments between them, and the kite and KCU mass on the last point. Call it afte
 for the initial pose.
 """
 function system_definition(s::KPS3)
-    tether_segments = s.set.segments
     extra_masses = zeros(length(s.pos))
     extra_masses[end] = s.set.mass + s.set.kcu_mass
     segments = [Segment(; name=string(i), points=(i, i + 1), l0=s.segment_length,
                         diameter=s.set.d_tether / 1000, density=s.set.rho_tether,
                         unit_stiffness=s.axial_stiffness * s.segment_length)
-                for i in 1:tether_segments]
+                for i in 1:s.set.segments]
     return system_definition(s, segments, extra_masses)
 end
 
