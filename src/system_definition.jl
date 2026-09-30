@@ -5,8 +5,8 @@
     system_definition(s::KPS4)
 
 The `SystemDefinition` of the four-point model: its points where they are now, and as
-segments the tether and bridle springs it integrates. Call it after `init!` for the
-initial pose.
+segments the tether and bridle springs it integrates, at full stiffness. The bridle
+segments are massless. Call it after `init!` for the initial pose.
 """
 function system_definition(s::KPS4)
     tether_segments = s.set.segments
@@ -15,20 +15,21 @@ function system_definition(s::KPS4)
     extra_masses[(tether_segments + 2):end] .= s.masses[(tether_segments + 2):end]
     bridle_segments = length(s.springs) - tether_segments
     diameters = [fill(s.set.d_tether, tether_segments); fill(s.set.d_line, bridle_segments)]
+    densities = [fill(s.set.rho_tether, tether_segments); zeros(bridle_segments)]
     segments = [Segment(; name=string(i), points=(Int(spring.p1), Int(spring.p2)),
                         l0=spring.length, diameter=diameters[i] / 1000,
-                        density=s.set.rho_tether,
+                        density=densities[i],
                         unit_stiffness=spring.axial_stiffness * spring.length)
                 for (i, spring) in enumerate(s.springs)]
-    return system_definition(s, segments, extra_masses)
+    return assemble_system_definition(s, segments, extra_masses)
 end
 
 """
     system_definition(s::KPS3)
 
 The `SystemDefinition` of the one-point model: its points where they are now, the tether
-segments between them, and the kite and KCU mass on the last point. Call it after `init!`
-for the initial pose.
+segments between them at full stiffness, and the kite and KCU mass on the last point. Call
+it after `init!` for the initial pose.
 """
 function system_definition(s::KPS3)
     extra_masses = zeros(length(s.pos))
@@ -37,16 +38,16 @@ function system_definition(s::KPS3)
                         diameter=s.set.d_tether / 1000, density=s.set.rho_tether,
                         unit_stiffness=s.axial_stiffness * s.segment_length)
                 for i in 1:s.set.segments]
-    return system_definition(s, segments, extra_masses)
+    return assemble_system_definition(s, segments, extra_masses)
 end
 
 """
-    system_definition(s::AbstractKiteModel, segments, extra_masses)
+    assemble_system_definition(s::AbstractKiteModel, segments, extra_masses)
 
 The `SystemDefinition` of `s` with its `segments`, the first `s.set.segments` of which are
 the tether from the winch at point 1 to point `s.set.segments + 1`.
 """
-function system_definition(s::AbstractKiteModel, segments, extra_masses)
+function assemble_system_definition(s::AbstractKiteModel, segments, extra_masses)
     n_points = length(s.pos)
     tether_segments = s.set.segments
     metadata = Metadata(string(nameof(typeof(s))), "", "", "1.0.0", "structure_schema.yml",

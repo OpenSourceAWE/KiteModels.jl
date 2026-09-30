@@ -63,9 +63,7 @@ SysState
 
 ## System definition
 
-A `SystemDefinition` from [KiteGeometry](https://github.com/OpenSourceAWE/KiteGeometry.jl)
-describes the points, segments, tether and winch of a model, so a log can be drawn by
-anything that reads a definition. Build it after `init!` and pass it to `save_log`:
+A `SystemDefinition` from [KiteGeometry](https://github.com/OpenSourceAWE/KiteGeometry.jl) describes the points, segments, tether and winch of a model, so a log can be drawn by anything that reads a definition. Build it after `init!` and pass it to `save_log`:
 
 ```julia
 integrator = init!(s)
@@ -109,4 +107,5 @@ calc_particle_forces!
 inner_loop!
 loop!
 make_jac
+assemble_system_definition
 ```

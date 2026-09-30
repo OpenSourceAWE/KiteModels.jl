@@ -15,20 +15,22 @@ segment_points(definition) = [segment.points for segment in definition.segments]
 
 @testset "KPS4 definition holds the points and springs the model integrates" begin
     kps4 = KPS4(load_settings("system.yaml"))
-    integrator = init!(kps4; delta=0.001, prn=false)
+    init!(kps4; delta=0.001, prn=false)
     definition = system_definition(kps4)
     segments = kps4.set.segments
     @test definition.metadata.n_points == length(kps4.pos) == segments + 5
+    @test segment_points(definition) == [(spring.p1, spring.p2) for spring in kps4.springs]
     @test [point.pos_ENU for point in definition.points] == kps4.pos
     @test [segment.l0 for segment in definition.segments] ==
           [spring.length for spring in kps4.springs]
     @test only(definition.tethers).segments == 1:segments
     @test only(definition.tethers).end_point == segments + 1
     @test only(definition.winches).winch_point == 1
+    @test [segment.unit_stiffness for segment in definition.segments] ≈
+          [spring.axial_stiffness * spring.length for spring in kps4.springs]
     @test sum(point.extra_mass for point in definition.points) ≈
           kps4.set.mass + kps4.set.kcu_mass
-    next_step!(kps4, integrator; set_speed=0, dt=1 / kps4.set.sample_freq)
-    @test segment_points(definition) == [(spring.p1, spring.p2) for spring in kps4.springs]
+    @test all(segment.density == 0 for segment in definition.segments[(segments + 1):end])
 end
 
 @testset "KPS3 definition is one tether from the winch to the kite" begin
