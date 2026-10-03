@@ -84,10 +84,12 @@ frame (so it stays correct across wind direction changes during flight).
 
 This is a Julia package developed with a workspace: `Project.toml` declares
 `[workspace] projects = ["examples", "examples_3d", "docs", "test"]`, each with its own
-`Project.toml`/manifest.
+`Project.toml`, all sharing the root `Manifest-v<major>.toml`.
 
-- **Install/setup**: `cd bin && ./install` (installs Julia via juliaup, sets up `Revise` globally).
-  `./install --update` refreshes an existing setup.
+- **Install/setup**: `./bin/install` copies `Manifest-v<major>.toml.default`, instantiates and
+  precompiles with the Julia on the PATH (`JULIAUP_CHANNEL=1.12 ./bin/install` picks another);
+  `--update` runs `Pkg.update` on the live manifest instead. Revise goes in the global environment
+  by hand.
 - **Launch a dev REPL**: `./bin/run_julia` (activates the right project, forwards script args).
 - **Build a system image** (much faster startup/time-to-first-plot): `cd bin && ./create_sys_image`
   (can take ~30 min); relaunch via `./bin/run_julia` afterward.

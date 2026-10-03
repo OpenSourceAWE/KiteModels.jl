@@ -2,63 +2,16 @@
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
+# Updates all packages with the Julia on the PATH and writes the result to
+# Manifest-v<major>.toml.default. Choose another Julia with e.g.
+# JULIAUP_CHANNEL=1.12 ./update_default_manifest
+
 if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
 
-# Ask which Julia version to use
-# Default to 1.12 if it is already installed and is the current default, otherwise 1.11
-if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
-    _default_choice=2
-    _default_julia="1.12"
-else
-    _default_choice=1
-    _default_julia="1.11"
-fi
+bin/install --update
 
-echo "Which Julia version do you want to update the manifest for?"
-echo "  1) Julia 1.11"
-echo "  2) Julia 1.12"
-read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
-
-case "${_julia_choice}" in
-    1)
-        _desired_julia="1.11"
-        ;;
-    2)
-        _desired_julia="1.12"
-        ;;
-    "")
-        _desired_julia="${_default_julia}"
-        ;;
-    *)
-        echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
-        exit 1
-        ;;
-esac
-echo "Using Julia version: ${_desired_julia}"
-
-# Temporarily switch to the chosen Julia version
-juliaup default "${_desired_julia}"
-echo "Switched to Julia ${_desired_julia}."
-echo
-
-cd bin
-./install --update -y
-
-julia_version=$(julia --version | awk '{print($3)}')
-julia_major=${julia_version:0:3}
-if [[ $julia_major == "1.1" ]]; then
-    julia_major=${julia_version:0:4} 
-fi
-
-cd ..
-if [[ $julia_major == "1.11" ]]; then
-    cp examples/Manifest-v1.11.toml Manifest-v1.11.toml.default
-    rm -rf ~/.julia/compiled/v1.11/KiteModels/
-    echo "Updated Manifest-v1.11.toml.default !"
-else
-    cp Manifest-v1.12.toml Manifest-v1.12.toml.default
-    rm -rf ~/.julia/compiled/v1.12/KiteModels/
-    echo "Updated Manifest-v1.12.toml.default !"
-fi
+julia_major=$(bin/julia_major)
+cp "Manifest-v${julia_major}.toml" "Manifest-v${julia_major}.toml.default"
+echo "Updated Manifest-v${julia_major}.toml.default !"

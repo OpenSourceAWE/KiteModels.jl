@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+# SPDX-FileCopyrightText: 2026 Bart van de Lint
+# SPDX-License-Identifier: MIT
+
+# Prints the major.minor version of the Julia on the PATH, e.g. 1.12
+julia_version=$(julia --version)
+echo "${julia_version##* }" | cut -d. -f1,2
