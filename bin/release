@@ -54,16 +54,16 @@ if [[ -z "$_version" ]]; then
     exit 1
 fi
 
-_changelog_version=$(awk '/^### / {sub(/^### /, ""); print $2; exit}' CHANGELOG.md)
+_changelog_version=$(awk '/^## / {sub(/^## /, ""); print $2; exit}' CHANGELOG.md)
 if [[ "$_changelog_version" != "v$_version" ]]; then
     echo "Version mismatch: Project.toml is $_version but CHANGELOG top is" \
          "$_changelog_version (expected v$_version)." >&2
-    echo "Update CHANGELOG.md so its first '### ' header matches the package version." >&2
+    echo "Update CHANGELOG.md so its first '## ' header matches the package version." >&2
     exit 1
 fi
 
 _notes=$(awk '
-    /^### / { n++; if (n == 1) next }
+    /^## / { n++; if (n == 1) next }
     n == 1 { print }
 ' CHANGELOG.md | awk '
     { lines[NR] = $0 }
@@ -75,7 +75,7 @@ _notes=$(awk '
 ')
 
 if [[ -z "$_notes" ]]; then
-    echo "No release notes found under the '### KiteModels v$_version' section." >&2
+    echo "No release notes found under the '## KiteModels v$_version' section." >&2
     exit 1
 fi
 

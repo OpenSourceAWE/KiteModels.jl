@@ -2,8 +2,8 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.17 2026-08-12
-#### Added
+## KiteModels v0.11.17 2026-08-12
+### Added
 - `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
   for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
   the model struct and added to `s.v_wind[3]` by `set_v_wind_ground!` on top of whatever the wind
@@ -13,8 +13,8 @@ SPDX-License-Identifier: MIT
   `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
   automatically.
 
-### KiteModels v0.11.16 2026-08-10
-#### Added
+## KiteModels v0.11.16 2026-08-10
+### Added
 - `next_step!` and `set_v_wind_ground!` accept the keyword argument `interpolate` (default `false`,
   the previous behaviour), which is passed on to `calc_turbulent_wind`: the turbulence is then
   interpolated trilinearly between the grid points of the wind field instead of being read at the
@@ -25,7 +25,7 @@ SPDX-License-Identifier: MIT
   turn rate around the body z-axis, and the shortest-angle difference that keeps `heading_rate` and
   `azimuth_rate` free of spikes at the wrap boundary.
 
-#### Changed
+### Changed
 - `calc_turbulent_wind` no longer duplicates the wind field lookup: it forwards to
   `AtmosphericModels.calc_turbulent_wind`, which the two fixes below had brought it in line with
   anyway. The results are bit-identical, the signature `(am, pos, upwind_dir, t)` is unchanged, and
@@ -37,7 +37,7 @@ SPDX-License-Identifier: MIT
   used to evaluate the wind field at `pos_kite(s)[3]` and ignore the `height` argument; it now
   uses `height`, which every caller in this package passes as `calc_height(s)` anyway.
 
-#### Fixed
+### Fixed
 - `calc_turbulent_wind` scaled the sampled turbulence with `rel_turbo(am)` only. As of
   `AtmosphericModels` 0.3.8 the stored wind field has the reference intensity instead of being
   pre-scaled by `use_turbulence`, so the factor is now applied here; without it, every simulation
@@ -49,22 +49,22 @@ SPDX-License-Identifier: MIT
   `am.wf.v_wind_gnd`, the speed the loaded field was generated for, so the two can no longer
   disagree.
 
-### KiteModels v0.11.15 2026-07-24
-#### Added
+## KiteModels v0.11.15 2026-07-24
+### Added
 - Added `CLAUDE.md` with guidance for Claude Code when working in this repository
 - Added `bin/release` script for creating a new release
 
-#### Changed
+### Changed
 - `KPS4.wm` field type widened from `Union{AsyncMachine, TorqueControlledMachine}` to `WinchModels.AbstractWinchModel`, allowing other `WinchModels` subtypes
 - `bin/create_sys_image` now prints a success message when the system image is created
 - `bin/run_julia` no longer probes for and loads Kaimon
 
-### KiteModels v0.11.14 2026-06-20
-#### Added
+## KiteModels v0.11.14 2026-06-20
+### Added
 - Added function `reel_out_speed` to `KiteModels.jl`, `KPS3.jl`, and `KPS4.jl`
 - Added `output/` directory to `.gitignore`
 
-#### Changed
+### Changed
 - Switched from `ControlPlots` to `MakieControlPlots` across all examples, tests, docs, and scripts (#295)
 - Removed `bin/install_controlplots`
 - Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behavior
@@ -76,14 +76,14 @@ SPDX-License-Identifier: MIT
 - Removed `TestEnv` references from remaining `mwes` scripts
 - Bumped `MakieControlPlots` to version 0.1.4 to fix a bug with `plot2d` and missing parameter support
 
-#### Fixed
+### Fixed
 - Fixed plotting issue in examples after migration to `MakieControlPlots`
 - Fixed jetls warnings: sorted `using` imports alphabetically in `auto_parking_4p.jl`, `parking_wind_dir.jl`, and `plot_turbulence.jl`
 - Fixed jetls warning: removed unused `y_label` assignment in `reel_out_1p.jl`
 - Fixed jetls warning: removed redundant `last_heading` initialization in `steering_test_1p.jl` and `steering_test_4p.jl`
 
-### KiteModels v0.11.13 2026-05-14
-#### Added
+## KiteModels v0.11.13 2026-05-14
+### Added
 - Use PythonCall (#286): updated to ControlPlots 0.3, which uses PythonCall instead of PyCall
 - Documented turbulence in the documentation (`docs/src/projects.md`)
 - Forward script arguments to Julia in `bin/run_julia`
@@ -94,7 +94,7 @@ SPDX-License-Identifier: MIT
 - Run tests also on Julia 1.11 in `bin/install`
 - Suppress verbose CondaPkg logs in `bin/setup_env`
 
-#### Changed
+### Changed
 - Use `-t auto` in `bin/run_julia` to allow multithreading in the REPL
 - Improved `examples_3d/parking_wind_dir.jl` example
 - Improved plots in `examples_3d/parking_wind_dir.jl` and `examples_3d/plot_turbulence.jl`
@@ -103,37 +103,37 @@ SPDX-License-Identifier: MIT
 - Improved comments throughout the codebase
 - Improved messages in `bin/install`
 
-#### Fixed
+### Fixed
 - Fixed Windows compatibility in `bin/setup_env`
 - Fixed bug in `examples/rotations.jl`
 - Fixed `Pkg.test()` call for Julia 1.11 in `bin/install`
 
-### KiteModels v0.11.12 2026-05-08
-#### Fixed
+## KiteModels v0.11.12 2026-05-08
+### Fixed
 - fixed `insert_yaml_scalar_in_section` function to properly handle YAML sections at end of file, avoiding duplicate keys when setting `default_turbulence`
 
-### KiteModels v0.11.11 2026-05-06
-#### Added
+## KiteModels v0.11.11 2026-05-06
+### Added
 - `calc_heading_rate` and `calc_azimuth_rate` in `update_sys_state!` using shortest-angle difference to avoid wrap-boundary spikes
 - `calc_body_rate` (turn rate around z body axis) using the Erhard and Strauch (2013) formula
 - `set_default_turbulence` and `get_default_turbulence` functions for managing turbulence settings via `data/gui.yaml`
 
-#### Changed
+### Changed
 - switched `AtmosphericModels` from tracking the `main` branch to using the latest released version from the registry
 - updated default manifests
 - improved parking controller robustness
 - updated examples to use the default turbulence setting
 
-### KiteModels v0.11.10 2026-05-03
-#### Added
+## KiteModels v0.11.10 2026-05-03
+### Added
 - `run_julia` now supports optional Kaimon startup when available (Julia >= 1.12)
 
-#### Changed
+### Changed
 - updated manifests and project constraints to keep environments in sync
 - use the latest released `AtmosphericModels` version from the registry
 - `create_sys_image` and `install` now always use a branch-independent system image filename (`kps-image-<julia_major>.so`)
 
-#### Fixed
+### Fixed
 - fixed handling of `upwind_dir` propagation to wind calculation
 - fixed `calc_turbulent_wind` and improved controller robustness
 - improved Julia 1.11 compatibility in startup/install tooling
@@ -141,11 +141,11 @@ SPDX-License-Identifier: MIT
 - improved Linux OpenSSL runtime handling to avoid `libssl`/`libcrypto` symbol mismatches
 - fixed failure modes in `install` and startup scripts for more reliable launcher behavior
 
-### KiteModels v0.11.9 2026-04-29
-#### Changed
+## KiteModels v0.11.9 2026-04-29
+### Changed
 - the `init!` function now supports a `steady_state` keyword argument (default `true`); when set to `false`, the steady state finder is skipped
 
-### KiteModels v0.11.8 2026-04-26
+## KiteModels v0.11.8 2026-04-26
 ### Added
 - the function `calc_turbulent_wind`
 - the example `plot_turbulence.jl`
@@ -155,52 +155,52 @@ SPDX-License-Identifier: MIT
 - the function `set_v_wind_ground!` now calls `calc_turbulent_wind`
 - the example `parking_wind_dir.jl` now uses turbulence and prints the turbulence intensity
 
-#### Fixed
+### Fixed
 - modify the script `setup_env` to fix issue with Julia 1.12.6
 - the front view of the examples `initial_reel_out_4p.jl` and `initial_reel_out_4p_torque_control.jl` is now working
 
-### KiteModels v0.11.7 2026-04-01
-#### Changes
+## KiteModels v0.11.7 2026-04-01
+### Changed
 - fix the first line of the Bash test scripts in the tests folder
 - use `install` before `create_sys_image` in the test scripts
 - refactoring: added the script `setup_env` that is sourced by the other scripts in the bin folder
 
-#### Fixed
+### Fixed
 - added memory check to `create_sys_image2` and use only one thread on systems with 26GB or less RAM
 
-### KiteModels v0.11.6 2026-03-21
-#### Added
+## KiteModels v0.11.6 2026-03-21
+### Added
 - the functions `copy_examples_3d()` and `install_examples_3d()`
 - add the functions `states(kps)` to determine the number of states of a model
 - add parameter `-y` `--yes` to install script
 
-#### Changed
+### Changed
 - add parameter `--update` to `install` script and remove it from `create_sys_image` script
 
 ### Fixed
 - the `create_sys_image2` script now includes `KiteViewers` only if needed for the 3d examples
 
-### KiteModels v0.11.5 2026-03-17
-#### Fixed
+## KiteModels v0.11.5 2026-03-17
+### Fixed
 - fixed citation metadata in CITATION.cff
 
-### KiteModels v0.11.4 2026-03-11
-#### Changed
+## KiteModels v0.11.4 2026-03-11
+### Changed
 - all files in `src` and all files in the `examples` now free of warnings
 - the install script now keeps the currently active Julia version
 - fixed all JETLS warnings in the src folder and the examples
 
-#### Added
+### Added
 - the script bin/jetls which checks the syntax of the src files
 - the script bin/jetls_examples which checks the syntax in the examples
 
-### KiteModels v0.11.3 2026-03-04
-#### Changed
+## KiteModels v0.11.3 2026-03-04
+### Changed
 - bumped KiteUtils to 0.11.3
 - add parameter `dtmax` to the solver settings to improve stability
 
-### KiteModels v0.11.2 2026-03-03
-#### Changed
+## KiteModels v0.11.2 2026-03-03
+### Changed
 - fixed most JETLS warnings, only two left
 - fixed many warnings in the examples
 - suppressed some more warnings in `.JETLSConfig.toml.default`
@@ -208,8 +208,8 @@ SPDX-License-Identifier: MIT
 - deleted unused code
 - moved the initialization functions from init.jl to KPS4.jl and renamed `init.jl` to `utils.jl`
 
-### KiteModels v0.11.1 2026-03-02
-#### Changed
+## KiteModels v0.11.1 2026-03-02
+### Changed
 - first version with good support for MacOS
 - the install script now installs qtagg for MacOS
 - bumped ControlPlots to 0.2.13 for MacOS support. Plots are blocking now.
@@ -222,16 +222,16 @@ SPDX-License-Identifier: MIT
 - examples_3d is a workspaces now
 - improved `create_sys_image` and `install` scripts
 
-#### Fixed
+### Fixed
 - examples_3d/parking_4p.jl is working now
 - examples_3d/show_kite.jl is working now
 
-#### Added
+### Added
 - example `auto_parking.jl`
 - example `parking_wind_dir.jl`
 
-### KiteModels v0.11.0 2026-02-20
-#### Changed
+## KiteModels v0.11.0 2026-02-20
+### Changed
 - remove SymbolicAWEModels
 - fix warnings and spelling errors
 - improve find_steady_state!, print warning if the solver fails
@@ -242,19 +242,19 @@ SPDX-License-Identifier: MIT
 - all markdown files are now checked with `markdownlint`
 - no more global variables in the main test scripts
 
-#### Fixed
+### Fixed
 - all examples and tests that call `find_steady_state!` succeed now without warning
 - other fixes of examples
 - dead or wrong links in README.md and the documentation
 - many JETLS warnings, only two left
 
-#### Added
+### Added
 - configuration files from `BestieTemplate.jl`
 - installer script `bin/install`
 - a warning if `find_steady_state!` does not succeed
 
-### KiteModels v0.10.0 2026-02-06
-#### Changed
+## KiteModels v0.10.0 2026-02-06
+### Changed
 - Support Julia 1.12
 - Bump KitePodModels to 0.4.0
 - Bump KiteUtils to 0.11.1
@@ -262,29 +262,29 @@ SPDX-License-Identifier: MIT
 - Breaking: rename `force` to `winch_force` when SysState is referred to
 - Make tests more robust by deleting unused files from the temporary directory and by increasing tolerances
 
-#### Added
+### Added
 - the configuration file `.JETLSConfig.toml`
 - the script `reuse_lint` to check the licenses
 
-### KiteModels v0.9.0 2025-07-14
-#### Changed
+## KiteModels v0.9.0 2025-07-14
+### Changed
 - BREAKING: rename `init_sim!` to `init!`
 - removed the parameter `upwind_dir!` from `init!`; use set.upwind_dir instead. Careful: This is in degrees.
 - the function `init!` accepts (and ignores) the parameters `delta` and `stiffness_factor` if applied to a SymbolicAWEModel
 - bump `KiteUtils.jl` to v0.10.15
 - bump `AtmosphericModels` to v0.3.0, the first version that supports turbulent wind fields
 
-#### Added
+### Added
 - add the test script test_interface.jl
 - add the field `integrator` to KPS4 and KPS3 structs
 
-### KiteModels v0.8.1 2025-06-20
-#### Changed
+## KiteModels v0.8.1 2025-06-20
+### Changed
 - renamed POWER to POWER_LINE and STEERING to STEERING_LINE
 - improved documentation, fixed example
 
-### KiteModels v0.8.0 2025-06-19
-#### Added
+## KiteModels v0.8.0 2025-06-19
+### Added
 - add a tutorial for custom system structures
 - add documentation for `SystemStructure` components [#229](https://github.com/ufechner7/KiteModels.jl/pull/229)
 - add the `Transform` struct which defines initial orientation of the `SystemStructure` [#214](https://github.com/ufechner7/KiteModels.jl/pull/214)
@@ -292,15 +292,15 @@ SPDX-License-Identifier: MIT
 - make model initialization faster [#222](https://github.com/ufechner7/KiteModels.jl/pull/222)
 - implement missing methods for the `SymbolicAWEModel` [#198](https://github.com/ufechner7/KiteModels.jl/pull/198)
 
-#### Changed
+### Changed
 - fixed the performance regression when using the `KPS4` model with a winch model of type  `AsyncMachine`
 - improved the script `create_sys_image`; it is now also available if you install the package without using git
 - make model initialization faster [#222](https://github.com/ufechner7/KiteModels.jl/pull/222)
 - make next_step! return nothing [#213](https://github.com/ufechner7/KiteModels.jl/pull/213)
 - Change the names of `RamAirKite` to `SymbolicAWESystem` and `PointMassSystem` to `SystemStructure` [#208](https://github.com/ufechner7/KiteModels.jl/pull/208)
 
-### KiteModels v0.7.4 2025-06-08
-#### Added
+## KiteModels v0.7.4 2025-06-08
+### Added
 - added licenses to each file, the command `pipx run reuse lint` succeeds now
 - add the command above to the CI scripts
 - the script `create_xz_file`
@@ -309,45 +309,45 @@ SPDX-License-Identifier: MIT
 - the example `lin_ram_model.jl` to show how to linearize a model
 - add the page `Examples SymbolicAWEModel` do the documentation
 
-#### Changed
+### Changed
 - the example `ram_air_kite.jl` can now be run like this `SIMPLE=true; include("examples/ram_air_kite.jl")`
 - the package `Rotations` is no longer re-exported
 - improved documentation
 
-#### Fixed
+### Fixed
 - small fixes of the SymbolicAWEModel model
 
-### KiteModels v0.7.3 2025-05-05
-#### Fixed
+## KiteModels v0.7.3 2025-05-05
+### Fixed
 - fix function update_sys_state!()
 
-### KiteModels v0.7.2 2025-05-05
-#### Changed
+## KiteModels v0.7.2 2025-05-05
+### Changed
 - bump KiteUtils to v0.10.5, which provides much more fields for in the SysState
 
-### KiteModels v0.7.1 2025-04-28
-#### Changed
+## KiteModels v0.7.1 2025-04-28
+### Changed
 - fixed or documented issues found by `Aqua.jl`
 - made `DSP` a test dependency
 - remove package `OrdinaryDiffEqSDIRK`
 - improve documentation for `SymbolicAWEModel`
 
-#### Added
+### Added
 - the examples `calc_spectrum.jl` and `plot_spectrum.jl` to the menu
 - the quality insurance package `Aqua.jl`
 - added the script `update_default_manifest`
 - calculate `side_slip` angle in radian
 
-### KiteModels v0.7.0 2025-04-20
-#### Fixed
+## KiteModels v0.7.0 2025-04-20
+### Fixed
 - fixed broken installation by freezing NLSolversBase to `~7.8.3` in Project.toml
 
-#### Added
+### Added
 - added `mwe_26.jl` for debugging the initial state solver
 - the example `ram_air_kite.jl`
 - the struct `SystemStructure` for easy definition of the kite power system
 
-#### Changed
+### Changed
 - BREAKING: the model KPS_3L was renamed to SymbolicAWEModel
 - the SymbolicAWEModel model is using the **VortexStepMethod** with a deforming wing now
 - bump KiteUtils to `v0.10`
@@ -355,30 +355,30 @@ SPDX-License-Identifier: MIT
 - bump VortexStepMethod to `1.2.5`
 - the file CONTRIBUTING.md was updated
 
-### KiteModels v0.6.17 2025-02-11
-#### Changed
+## KiteModels v0.6.17 2025-02-11
+### Changed
 - always use the brake if the `set_speed` is zero; this fixes the example `steering_test_4p.jl`
 
-### KiteModels v0.6.16 2025-02-06
-#### Changed
+## KiteModels v0.6.16 2025-02-06
+### Changed
 - `initial_reel_out_4p.jl` shows a simulation that starts with an initial reel-out speed > 0
 - `initial_reel_out_4p_torque_control` runs a simulation with a torque controlled winch and an initial reel-out speed > 0
 
-#### Fixed
+### Fixed
 - initial reel-out speed handled correctly
 
-### KiteModels v0.6.15 2025-02-03
+## KiteModels v0.6.15 2025-02-03
 - log kcu_steering in SysState (output of KCU without applying corrections)
 - fix tests for Julia 1.11.3
 - cleanup `run_julia`
 - add function `calculate_rotational_inertia!()`
 - add example `calculate_rotational_inertia.jl` and add it to the menu
 
-### KiteModels v0.6.14 2025-01-16
-#### Fixed
+## KiteModels v0.6.14 2025-01-16
+### Fixed
 - crash due to a new version of `DierckX_jll`
 
-#### Changed
+### Changed
 - bump versions in Project.toml
 - add upwind_dir to `settings.yaml` file, remove `v_wind_ref` vector
 - add `p_speed`, `i_speed` and `max_acc` to winch settings
@@ -386,18 +386,18 @@ SPDX-License-Identifier: MIT
 - added package `ADTypes` to provide `AutoFiniteDiff()`
 - cleanup code
 
-### KiteModels v0.6.13 2024-12-06
-#### Changed
+## KiteModels v0.6.13 2024-12-06
+### Changed
 - update the fields `set_steering`, `bearing` and `attractor` of the `SysState` struct
   in the function `update_sys_state!`
 - add the parameters `bearing` and `attractor` to the function `next_step!` for logging
 
-#### Fixed
+### Fixed
 - fix #88: the function `init_sim!()` has the new parameter `upwind_dir` to define the
   initial wind direction
 
-### KiteModels v0.6.12 2024-12-01
-#### Changed
+## KiteModels v0.6.12 2024-12-01
+### Changed
 - update the fields `set_torque`, `set_force`, `set_speed`, `alpha3`, `alpha4`, `roll`, `pitch`, `yaw`
   of the `SysState` struct in the function `update_sys_state!`
 - add the parameter `set_force` to the function `next_step!` for logging
@@ -408,30 +408,30 @@ SPDX-License-Identifier: MIT
 - improve examples
 - add the packages `JLD2` and `Colors` to the system image
 
-#### Added
+### Added
 - add examples `calc_spectrum.jl` and `plot_spectrum` to plot the eigenfrequencies of the system
 - the script `calculate_rotational_inertia.jl` for calculating the inertia matrix of the kite
 - function `menu2()` which displays a menu with scripts for model verification
 
-### KiteModels v0.6.11 2024-11-09
-#### Fixed
+## KiteModels v0.6.11 2024-11-09
+### Fixed
 - fixed bug in spring_forces(), it used 4000N hardcoded max force
 
-#### Changed
+### Changed
 - bump KiteUtils to 0.9.0
 - the fields AoA, CL2, CD2 and the vectors v_wind_gnd, v_wind_200m and v_wind_kite are now updated
   when converting KPS3 or KPS4 to SysState
 
-#### Added
+### Added
 - add example test_steady_state.jl
 
-### KiteModels v0.6.10 2024-11-01
+## KiteModels v0.6.10 2024-11-01
 - fixed the installation of the examples
 - updated the documentation
 - the package Rotations is now re-exported by KiteModels
 - reduce number of dependencies of the examples
 
-### KiteModels v0.6.9 2024-11-01
+## KiteModels v0.6.9 2024-11-01
 - added tests for calc_azimuth(s::AKM), the azimuth in wind reference frame
 - re-enable logging of the angles of attack of the three plates
 - `steering_test_4p.jl` now calculates both `c1` and `c2` of the turn-rate law
@@ -439,8 +439,8 @@ SPDX-License-Identifier: MIT
   to save time during development
 - the script `menu2.jl` for model verification was added
 
-### KiteModels v0.6.8 - 2024-10-23
-#### Changed
+## KiteModels v0.6.8 2024-10-23
+### Changed
 - the sign of the steering signal was changed. Now, a positive steering signal causes a positive turn rate.
   The turn rate is the derivative of the heading angle.
 - all orientation tests pass now (calculation of roll, pitch, yaw, azimuth_north, elevation, heading)
@@ -449,26 +449,26 @@ SPDX-License-Identifier: MIT
 - the logged steering signal is now divided by `set.cs_4p`, because the new version of KitePodModels.jl multiplies the steering value with this constant
 - update documentation regarding `steering` and `heading`
 
-### KiteModels v0.6.7 - 2024-10-20
-#### Changed
+## KiteModels v0.6.7 2024-10-20
+### Changed
 - renamed test_init.jl to test_init_4p.jl
 - by default, `azimuth` in wind reference frame is now used
 - the orientation is now represented in NED reference frame
 - the method `calc_heading` has two new, optional parameters: neg_azimuth=false, one_point=false
 - the definition of heading and azimuth has changed, which will require adaptions in the controller
 
-#### Added
+### Added
 - example `plot_side_cl.jl`
 - example `plot_cl_cd_plate.jl`
 - example `steering_test.jl`
 - example `test_init_1p.jl`
 - the test script `test_orientation.jl` was contributed by Daan van Wolffelaar; currently, some of these tests are still broken (error of about 2%)
 
-#### Fixed
+### Fixed
 - many of the examples; all examples of `menu.jl` now work
 
-### KiteModels v0.6.6 - 2024-09-03
-#### Changed
+## KiteModels v0.6.6 2024-09-03
+### Changed
 - the method `next_step!` uses now `upwind_dir` as parameter and not longer `wind_dir`
 - install `matplotlib` if it is not already installed after user confirmation in a Julia specific environment
 - replaced OrdinaryDiffEq with the three packages OrdinaryDiffEqCore, OrdinaryDiffEqBDF
@@ -479,8 +479,8 @@ This ensures that the settings are always freshly loaded from the file when the 
 to the settings become immediately effective.
 - the SymbolicAWEModel model was replaced by the pure ModelingToolkit (MTK) based version. This allows not only a much faster simulation, but the results are also much more accurate.
 
-### KiteModels v0.6.5 - 2024-08-12
-#### Changed
+## KiteModels v0.6.5 2024-08-12
+### Changed
 - bump KiteUtils to 0.7.7
 - add new examples to menu
 - major change to the function that finds the initial equilibrium; the function `init_sim!` has the new
@@ -488,7 +488,7 @@ to the settings become immediately effective.
 - better error message if `init_sim!`, but no exception any more. I just returns `nothing`.
 - remove dependency StatProfilerHTML
 
-#### Added
+### Added
 - add KCU drag, based on kcu_diameter and cd_kcu
 - add function bridle_length (not exported)
 - unit tests for the KPS3_3L model, based on ModelingToolkit
@@ -496,81 +496,81 @@ to the settings become immediately effective.
 - script `examples/plot_cl_cd_plate.jl`
 - script `torque_controlled_mtk.jl`
 
-#### Fixed
+### Fixed
 - correct tether drag based on l_bridle; if the kite has more than 7 bridle lines l_bridle must be larger than bridle_length(se)
 
-### KiteModels v0.6.4 - 2024-08-12
-#### Added
+## KiteModels v0.6.4 2024-08-12
+### Added
 - a new kite model, KPS3_3L was contributed by Bart van de Lint. It uses three lines to the ground and three winches for steering a ram-air foil kite.
 - caching for the initial equilibrium
 - function `KiteModels.install_examples()` that copies the examples, the data folder and installs the required extra packages
 - log alpha2, alpha3, alpha4; they must never become negative
 
-#### Fixed
+### Fixed
 - the calculation of the call-backs per time step was fixed in all examples and the tests
 
-### KiteModels v0.6.3 - 2024-08-06
-#### Changed
+## KiteModels v0.6.3 2024-08-06
+### Changed
 - the function `copy_examples()` copies now all examples
 - updated the documentation
 - improved the scripts in the bin folder, not relevant for most users
 
-### KiteModels v0.6.2 - 2024-08-06
-#### Changed
+## KiteModels v0.6.2 2024-08-06
+### Changed
 - renamed the example `simulate.jl` to `simulate_simple.jl`
 - renamed the example `simulate_ii.jl` to `simulate_steering.jl`
 - add the script `menu.jl` that provides a menu with all the examples
 - bump ControlPlots to 0.1.4
 - bump KiteUtils to 0.7.4
 
-### KiteModels v0.6.1 - 2024-07-25
-#### Changed
+## KiteModels v0.6.1 2024-07-25
+### Changed
 - bump WinchModels to 0.3.2
 - bump KitePodModels to 0.3.3
 - fix example `reel_out_4p_torque_control.jl`
 
-### KiteModels v0.6.0 - 2024-07-25
-#### Changed
+## KiteModels v0.6.0 2024-07-25
+### Changed
 - use a new version of `WinchModels.jl` which provides an additional, torque-controlled winch
 - add many new winch parameters to `settings.jl`
 - BREAKING change: rename `v_ro` to `set_speed` in function step()
 
-### KiteModels v0.5.16 - 2024-06-25
-#### Changed
+## KiteModels v0.5.16 2024-06-25
+### Changed
 - bump KiteUtils to version 0.6.16
 - bump ControlPlots to version 0.0.12
 
-### KiteModels v0.5.15 - 2024-06-18
-#### Changed
+## KiteModels v0.5.15 2024-06-18
+### Changed
 - bump KiteUtils to version 0.6.12
 - drop support for Julia 1.9
 
-### KiteModels v0.5.14 - 2024-05-05
-#### Changed
+## KiteModels v0.5.14 2024-05-05
+### Changed
 - replace Plots with ControlPlots in the examples
 
-### KiteModels v0.5.13 - 2024-04-14
-#### Changed
+## KiteModels v0.5.13 2024-04-14
+### Changed
 - use `rel_compr_stiffness` and `rel_damping` from settings.yaml
 
-### KiteModels v0.5.12 - 2024-04-14
-#### Changed
+## KiteModels v0.5.12 2024-04-14
+### Changed
 - update KiteUtils to v0.6.7
 - update Documenter to v1.0
 
-#### Added
+### Added
 - add type `SymbolicAWEModel`, which is now only a copy of `KPS4`, but shall implement a kite with the steering
   lines going to the ground
 
-### KiteModels v0.5.11 - 2024-04-04
-#### Added
+## KiteModels v0.5.11 2024-04-04
+### Added
 - document the support for the `DImplicitEuler` solver, which is not very accurate,
   but because it is well known it can serve as a reference
 - support changing `max_order` for the `DFBDF`
 - further reduced the memory usage
 
-### KiteModels v0.5.10 - 2024-04-03
-#### Added
+## KiteModels v0.5.10 2024-04-03
+### Added
 - it is now possible (and suggested) to use the DAE solver DFBDF.
 
 This requires adding the following line to the settings.yaml file:
@@ -579,16 +579,16 @@ This requires adding the following line to the settings.yaml file:
 
 The new solver is much faster (4x average, 1.8x worst case), has a lot less memory allocations (~ 50%) and is also much more stable in highly dynamic situations.
 
-### KiteModels v0.5.8 - 2024-04-01
-#### Added
+## KiteModels v0.5.8 2024-04-01
+### Added
 - new, non-allocating function `update_sys_state!(ss::SysState, s::AKM, zoom=1.0)`
 
-### KiteModels v0.5.7 - 2024-04-01
-#### Changed
+## KiteModels v0.5.7 2024-04-01
+### Changed
 - improved performance by 10% by implementing custom `norm()` function for 3D vectors
 
-### KiteModels v0.5.6 - 2024-03-30
-#### Fixed
+## KiteModels v0.5.6 2024-03-30
+### Fixed
 - fix the method `clear!(s::KPS4)` which failed for models with less than 6 tether segments
 
 Simulations should work fine now for one to about 28 tether segments (no hard upper limit, but things become slow and the visualization ugly if you have too many segments).
