@@ -154,9 +154,9 @@ version = "1.11.0"
 
 [[deps.AtmosphericModels]]
 deps = ["FFTW", "HypergeometricFunctions", "KiteUtils", "LinearAlgebra", "MeshGrid", "NPZ", "Printf", "Random", "SHA", "Scratch", "StableRNGs", "Statistics"]
-git-tree-sha1 = "542e1acd424d4263392352bb6150934b6140b419"
+git-tree-sha1 = "ce1c9e44453df1b092c08234acaf933b02fccc7c"
 uuid = "c59cac55-771d-4f45-b14d-1c681463a295"
-version = "0.3.8"
+version = "0.3.10"
 
 [[deps.Automa]]
 deps = ["PrecompileTools", "TranscodingStreams"]
@@ -1272,19 +1272,19 @@ version = "0.6.12"
 deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
 path = ".."
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.11.16"
+version = "0.11.17"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
-git-tree-sha1 = "57f6f71a75d2d26f199a64c03a03796139c540f4"
+git-tree-sha1 = "a54b0d8d4e011b2c8e6135322b1e57d2f2d250be"
 uuid = "9de5dc81-f971-414a-927b-652b2f41c539"
-version = "0.4.0"
+version = "0.4.2"
 
 [[deps.KiteUtils]]
 deps = ["Arrow", "CSV", "DocStringExtensions", "LinearAlgebra", "OrderedCollections", "Parameters", "Parsers", "Pkg", "PrecompileTools", "RecursiveArrayTools", "ReferenceFrameRotations", "Rotations", "StaticArrays", "StructArrays", "StructTypes", "YAML"]
-git-tree-sha1 = "0d7307b9656072383b235e7b4e6ca546bc3fd7ae"
+git-tree-sha1 = "fbeb8355b4797ffc263320be2dc74dcdbe9310fc"
 uuid = "90980105-b163-44e5-ba9f-8b1c83bb0533"
-version = "0.11.13"
+version = "0.12.2"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
@@ -2893,9 +2893,9 @@ version = "0.1.3"
 
 [[deps.WinchModels]]
 deps = ["DiscretePIDs", "KiteUtils", "Parameters"]
-git-tree-sha1 = "f069217475c08e9dffc2a26457556efcc8e236f3"
+git-tree-sha1 = "37639f176a3de26105bfdc0c0ce2233a3893160b"
 uuid = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
-version = "0.3.9"
+version = "0.3.10"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
