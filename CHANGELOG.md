@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.17 2026-08-12
+### KiteModels v0.11.17 2026-10-09
 #### Added
 - `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
   for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
@@ -12,6 +12,27 @@ SPDX-License-Identifier: MIT
   so `upwind_dir` and tether drag are unaffected; a future phase 2 could extend the tether. Since
   `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
   automatically.
+- Support for Julia 1.13: `julia` compat entry extended to `1.11, 1.12, 1.13` (also in the `docs`,
+  `examples` and `examples_3d` projects), new default manifest `Manifest-v1.13.toml.default` (with
+  some packages downgraded to reduce the size of the system image), and `bin/install` offers
+  Julia 1.13 as a third choice (the default if it is already the active juliaup channel).
+
+#### Changed
+- `Parameters` compat widened to `0.12, 0.13`.
+- `bin/install` and `bin/create_sys_image` pick the default manifest generically as
+  `Manifest-v<julia_major>.toml.default` and fail if it is missing; `bin/create_sys_image` no longer
+  deletes the obsolete `data/model_*.bin` files, and `bin/create_sys_image2` also backs up
+  `Manifest-v1.13.toml` when updating.
+- README and documentation: links to `WinchModels`, `KitePodModels` and `AtmosphericModels` point to
+  the OpenSourceAWE organisation, the package diagram is taken from `KiteUtils.jl`, Julia 1.12 is
+  the recommended version, and the reference to the meta-package `KiteSimulators` was dropped.
+
+#### Removed
+- `bin/setup_env` (the `LD_PRELOAD`/`LD_LIBRARY_PATH` workaround) and `bin/jetls_with_env`, which
+  depended on it. `bin/install`, `bin/run_julia`, `bin/create_sys_image` and `bin/create_sys_image2`
+  no longer source it, and the retry without these overrides is gone. `copy_bin()` no longer copies
+  `setup_env`.
+- Obsolete `data/model*.bin` / `data/prob*.bin` entries from `.gitignore`.
 
 ### KiteModels v0.11.16 2026-08-10
 #### Added
