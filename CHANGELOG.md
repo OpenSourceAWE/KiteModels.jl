@@ -18,6 +18,9 @@ SPDX-License-Identifier: MIT
   Julia 1.13 as a third choice (the default if it is already the active juliaup channel).
 
 #### Changed
+- Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+  so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
+  value instead of four.
 - `Parameters` compat widened to `0.12, 0.13`.
 - `bin/install` and `bin/create_sys_image` pick the default manifest generically as
   `Manifest-v<julia_major>.toml.default` and fail if it is missing; `bin/create_sys_image` no longer

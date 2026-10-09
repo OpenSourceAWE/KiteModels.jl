@@ -2,7 +2,7 @@
 
 julia_version = "1.13.0"
 manifest_format = "2.1"
-project_hash = "8216fc8ce970c819a040617fca2b12c5a7abb01e"
+project_hash = "6de6b155cdb5306e95f6473c3831e0dad053db33"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5970c86505ae9c07bf5bc521ef2bbbb3849e8b7b"
@@ -174,10 +174,10 @@ version = "1.11.0"
 
 [[deps.AtmosphericModels]]
 deps = ["FFTW", "HypergeometricFunctions", "KiteUtils", "LinearAlgebra", "MeshGrid", "NPZ", "Printf", "Random", "SHA", "Scratch", "StableRNGs", "Statistics"]
-git-tree-sha1 = "542e1acd424d4263392352bb6150934b6140b419"
+git-tree-sha1 = "0721e5ef33dd16ab35d124df3c75017b8e80a41f"
 registries = "General"
 uuid = "c59cac55-771d-4f45-b14d-1c681463a295"
-version = "0.3.8"
+version = "0.3.11"
 
 [[deps.Automa]]
 deps = ["PrecompileTools", "TranscodingStreams"]
@@ -1516,24 +1516,25 @@ version = "0.11.17"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
-git-tree-sha1 = "57f6f71a75d2d26f199a64c03a03796139c540f4"
+git-tree-sha1 = "a54b0d8d4e011b2c8e6135322b1e57d2f2d250be"
 registries = "General"
 uuid = "9de5dc81-f971-414a-927b-652b2f41c539"
-version = "0.4.0"
+version = "0.4.2"
 
 [[deps.KiteUtils]]
 deps = ["Arrow", "CSV", "DocStringExtensions", "LinearAlgebra", "OrderedCollections", "Parameters", "Parsers", "Pkg", "PrecompileTools", "RecursiveArrayTools", "ReferenceFrameRotations", "Rotations", "StaticArrays", "StructArrays", "StructTypes", "YAML"]
-git-tree-sha1 = "0d7307b9656072383b235e7b4e6ca546bc3fd7ae"
+git-tree-sha1 = "85b4f730bf098b5afc796daa11dd8fde66a1db2c"
 registries = "General"
 uuid = "90980105-b163-44e5-ba9f-8b1c83bb0533"
-version = "0.11.13"
+version = "0.13.1"
 
 [[deps.KiteViewers]]
 deps = ["FileIO", "GLMakie", "GeometryBasics", "Joysticks", "KiteUtils", "LinearAlgebra", "Parameters", "Pkg", "PrecompileTools", "Printf", "Reexport", "Rotations", "StaticArrays", "StructArrays", "Timers"]
-git-tree-sha1 = "cae633ece41d23e572fd5bce01440cee7912d45a"
-registries = "General"
+git-tree-sha1 = "503f9eaaaae53811443a59a88f5bfd472bd6a66c"
+repo-rev = "agent/54-update-kiteutils"
+repo-url = "https://github.com/OpenSourceAWE/KiteViewers.jl"
 uuid = "2e593061-95e7-45e4-95f4-df0491f2e601"
-version = "0.5.2"
+version = "0.6.0"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
@@ -3385,10 +3386,10 @@ version = "0.1.3"
 
 [[deps.WinchModels]]
 deps = ["DiscretePIDs", "KiteUtils", "Parameters"]
-git-tree-sha1 = "f069217475c08e9dffc2a26457556efcc8e236f3"
+git-tree-sha1 = "f05155fcc1f1daa48442277021464b24988970a5"
 registries = "General"
 uuid = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
-version = "0.3.9"
+version = "0.3.11"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]

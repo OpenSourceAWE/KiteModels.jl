@@ -146,13 +146,12 @@ function sim_parking(integrator)
             t_gc_tot += @elapsed GC.gc(false)
         end
         update_sys_state!(sys_state, kps4)
-        sys_state.orient .= calc_orient_quat(kps4)
         T[i] = dt * i
         AZIMUTH[i] = sys_state.azimuth
         AZIMUTH_EAST[i] = calc_azimuth_east(kps4)
         HEADING[i] = wrap2pi(sys_state.heading)
         HEADING_RATE[i] = sys_state.heading_rate
-        BODY_RATE[i] = sys_state.turn_rates[3]
+        BODY_RATE[i] = fromKA2KS_body(sys_state.turn_rates)[3]
         if mod(i, TIME_LAPSE_RATIO) == 0
             if KiteUtils.PROJECT == "system.yaml"
                 KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)

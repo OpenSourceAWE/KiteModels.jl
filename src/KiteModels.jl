@@ -314,6 +314,11 @@ function orient_euler(s::AKM; one_point=false)
     SVector(roll, pitch, yaw)
 end
 
+"""
+    calc_orient_quat(s::AKM; viewer=false, one_point=false)
+
+Orientation of the kite as a quaternion in the `KS` convention (against NED).
+"""
 function calc_orient_quat(s::AKM; viewer=false, one_point=false)
     if viewer
         x, _, z = kite_ref_frame(s)
@@ -323,9 +328,9 @@ function calc_orient_quat(s::AKM; viewer=false, one_point=false)
         rotation = rot(pos_kite_, pos_before, -x)
     else
         x, y, z = kite_ref_frame(s; one_point) # in ENU reference
-        x = enu2ned(x)
-        y = enu2ned(y)
-        z = enu2ned(z)
+        x = fromENU2NED(x)
+        y = fromENU2NED(y)
+        z = fromENU2NED(z)
 
         # reference frame for the orientation: NED (north, east, down)
         ax = @SVector [1, 0, 0]
@@ -394,7 +399,7 @@ end
 Determine the heading angle of the kite in radian.
 """
 function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_point=false, respos=true)
-    orientation = orient_euler(s; one_point)
+    attitude = fromKS2KA(calc_orient_quat(s; one_point))
     elevation = calc_elevation(s)
     # use azimuth in wind reference frame
     if neg_azimuth
@@ -402,7 +407,7 @@ function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_
     else
         azimuth = calc_azimuth(s)
     end
-    calc_heading(orientation, elevation, azimuth; upwind_dir=upwind_dir_, respos)
+    calc_heading(attitude, elevation, azimuth; upwind_dir=upwind_dir_, respos)
 end
 
 """
@@ -527,14 +532,14 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
-    ss.orient .= calc_orient_quat(s)
+    ss.orient .= fromKS2KA(calc_orient_quat(s))
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
     ss.azimuth_rate = d_az / dt
     ss.azimuth = new_azimuth
-    ss.winch_force .= [winch_force(s); 0; 0; 0]
+    ss.winch_force[1] = winch_force(s)
     new_heading = calc_heading(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
@@ -542,8 +547,8 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.heading = new_heading
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
-    ss.l_tether .= [s.l_tether; 0; 0; 0]
-    ss.v_reelout .= [s.v_reel_out; 0; 0; 0]
+    ss.l_tether[1] = s.l_tether
+    ss.v_reelout[1] = s.v_reel_out
     ss.depower = s.depower
     ss.steering = s.steering/s.set.cs_4p
     ss.kcu_steering = s.kcu_steering/s.set.cs_4p
@@ -553,11 +558,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     if isa(s, KPS4)
         ss.alpha3 = deg2rad(s.alpha_3)
         ss.alpha4 = deg2rad(s.alpha_4)
-        if isnothing(s.set_force)
-            ss.set_force .= [NaN, 0, 0, 0]
-        else
-            ss.set_force .= [s.set_force, 0, 0, 0]
-        end
+        ss.set_force[1] = something(s.set_force, NaN)
         if isnothing(s.bearing)
             ss.bearing = NaN
         else
@@ -570,22 +571,13 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         end
     end
     ss.set_steering = s.kcu.set_steering
-    if isnothing(s.set_torque)
-        ss.set_torque .= [NaN, 0, 0, 0]
-    else
-        ss.set_torque .= [s.set_torque, 0, 0, 0]
-    end
-    if isnothing(s.sync_speed)
-        ss.set_speed .= [NaN, 0, 0, 0]
-    else
-        ss.set_speed .= [s.sync_speed, 0, 0, 0]
-    end
-    ss.roll, ss.pitch, ss.yaw = orient_euler(s)
+    ss.set_torque[1] = something(s.set_torque, NaN)
+    ss.set_speed[1] = something(s.sync_speed, NaN)
     # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
     # psi_m = psi - phi_dot * cos(theta)
     # This removes the effect of roll on the heading measurement
     body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
-    ss.turn_rates .= [0, 0, body_rate]
+    ss.turn_rates .= fromKS2KA_body(SVec3(0, 0, body_rate))
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -604,7 +596,7 @@ system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
 """
 function SysState(s::AKM, zoom=1.0)
-    ss = SysState{length(s.pos)}()
+    ss = SysState(length(s.pos))
     update_sys_state!(ss, s, zoom)
     ss
 end
