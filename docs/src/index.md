@@ -200,4 +200,4 @@ The one point and four point kite models are described in detail in [Dynamic Mod
 - the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/OpenSourceAWE/KiteViewers.jl)
 - the [VortexStepMethod](https://github.com/OpenSourceAWE/VortexStepMethod.jl)
 
-Authors: Uwe Fechner (<uwe.fechner.msc@gmail.com>), Bart van de Lint (<bart@vandelint.net>)
+Authors: Uwe Fechner ([uwe.fechner.msc@gmail.com](mailto:uwe.fechner.msc@gmail.com)), Bart van de Lint ([bart@vandelint.net](mailto:bart@vandelint.net))
