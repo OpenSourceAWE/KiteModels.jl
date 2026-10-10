@@ -12,6 +12,11 @@ SPDX-License-Identifier: MIT
   KiteControllers.jl run away on Julia 1.13. The simulation results change slightly.
 #### Changed
 - requires WinchModels 0.3.12 (for `update_winch_state!` and `calc_acceleration(...; update_state)`)
+- support Julia 1.12 and 1.13 only, as WinchModels 0.3.12 and KiteUtils do: `julia` compat
+  `"1.12, 1.13"`, `Manifest-v1.11.toml.default` is removed, `bin/install`,
+  `bin/update_default_manifest` and `bin/create_sys_image` no longer offer Julia 1.11, CI tests
+  Julia 1.12 instead of 1.11, and the docs no longer mention Julia 1.11
+- the default manifests for Julia 1.12 and 1.13 use WinchModels 0.3.12
 
 ### KiteModels v0.11.18 2026-10-10
 #### Changed

@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.13.0"
+julia_version = "1.13.1"
 manifest_format = "2.1"
-project_hash = "8216fc8ce970c819a040617fca2b12c5a7abb01e"
+project_hash = "f8b0f821fe4582a1e16d8efad9295a469ad2e37e"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5970c86505ae9c07bf5bc521ef2bbbb3849e8b7b"
@@ -1512,7 +1512,7 @@ version = "0.6.12"
 deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
 path = "."
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.11.17"
+version = "0.11.19"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
@@ -1616,7 +1616,7 @@ version = "1.9.1+0"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl", "OpenSSL_jll", "Zlib_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.103+0"
+version = "1.11.104+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -3385,10 +3385,10 @@ version = "0.1.3"
 
 [[deps.WinchModels]]
 deps = ["DiscretePIDs", "KiteUtils", "Parameters"]
-git-tree-sha1 = "f069217475c08e9dffc2a26457556efcc8e236f3"
+git-tree-sha1 = "efd2e268a682a1d8619eb41e9655d9639b0d5d6c"
 registries = "General"
 uuid = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
-version = "0.3.9"
+version = "0.3.12"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
