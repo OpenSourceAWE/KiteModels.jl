@@ -390,27 +390,55 @@ const SEGMENTS = load_settings("system.yaml").segments
         local kps = KPS3(KCU(load_settings("system.yaml")))
         init_392(kps)
         KiteModels.set_depower_steering!(kps, 0.25, 0.0)
-        try
-            res1, res2 = find_steady_state!(kps; delta = 1e-6, prn = false)
-            @test norm(res2) < 1e-5                            # velocity and acceleration must be near zero
-            pre_tension = KiteModels.calc_pre_tension(kps)
-            @test pre_tension > 1.0001
-            @test pre_tension < 1.01
-            @test unstretched_length(kps) ≈ 392.0                        # initial, unstretched tether length
-            @test tether_length(kps) ≈ 392.1861381318156 rtol = 1e-5     # real, stretched tether length
-            @test winch_force(kps) ≈ 276.25751212763817 rtol = 3e-2      # initial force at the winch [N]
-            lift, drag = lift_drag(kps)
-            @test lift ≈ 443.63277537186394 rtol=2e-2                # initial lift force of the kite [N]
-            @test drag ≈ 94.25218065939362 rtol=2e-2               # initial drag force of the kite [N]
-            @test lift_over_drag(kps) ≈ 4.706870146326417 rtol=2e-3     # initial lift-over-drag
-            @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
-        catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
-                @warn "Steady state solver failed to converge. Skipping test."
-                @test_broken false  # Mark as known issue (CI flake only)
-            else
-                rethrow(e)
-            end
+        # the solver must converge without warning; the kite is placed at the elevation from the settings
+        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; delta = 1e-6, prn = false)
+        @test rad2deg(calc_elevation(kps)) ≈ 70.0 atol=1e-6
+        # the tether particles are in equilibrium (x and z components of their accelerations)
+        res = zeros(length(res1))
+        KiteModels.residual!(res, res2, res1, kps)
+        segments = kps.set.segments
+        for i in 1:segments-1
+            j = 3*(i-1) + 3*segments
+            @test abs(res[j+1]) < 1e-5
+            @test abs(res[j+3]) < 1e-5
+        end
+        @test abs(res[3*(segments-1) + 3*segments + 1]) < 1e-5     # horizontal balance of the kite
+        @test norm(res2) < 1e-5                            # velocity and acceleration must be near zero
+        pre_tension = KiteModels.calc_pre_tension(kps)
+        @test pre_tension > 1.0001
+        @test pre_tension < 1.01
+        @test unstretched_length(kps) ≈ 392.0                        # initial, unstretched tether length
+        @test tether_length(kps) ≈ 392.2025410439266 rtol = 1e-5     # real, stretched tether length
+        @test winch_force(kps) ≈ 301.23463553992514 rtol = 3e-2      # initial force at the winch [N]
+        lift, drag = lift_drag(kps)
+        @test lift ≈ 327.30289678275346 rtol=2e-2                # initial lift force of the kite [N]
+        @test drag ≈ 73.01286087237223 rtol=2e-2                 # initial drag force of the kite [N]
+        @test lift_over_drag(kps) ≈ 4.482811560485004 rtol=2e-3      # initial lift-over-drag
+        @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
+    end
+
+    @testset "test_find_steady_state upwind_dir = $(round(rad2deg(upwind_dir)))°" for upwind_dir in (-π/2, 0.0, π/4, π)
+        local kps = KPS3(KCU(load_settings("system.yaml")))
+        init_392(kps)
+        KiteModels.set_depower_steering!(kps, 0.25, 0.0)
+        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; delta = 1e-6, upwind_dir)
+        @test rad2deg(calc_elevation(kps)) ≈ 70.0 atol=1e-6
+        @test winch_force(kps) ≈ 301.23463553992514 rtol = 1e-4   # independent of the wind direction
+        # the tether lies in the vertical plane of the wind direction; take the components of the
+        # accelerations in this plane (horizontal and vertical) and normal to it
+        turnangle = upwind_dir + π/2
+        in_plane(x, y) = cos(turnangle) * x - sin(turnangle) * y
+        normal(x, y)   = sin(turnangle) * x + cos(turnangle) * y
+        segments = kps.set.segments
+        j = 3*(segments-1)
+        @test abs(normal(res1[j+1], res1[j+2])) < 1e-3          # kite position in the plane
+        @test in_plane(res1[j+1], res1[j+2]) > 0                 # downwind of the ground station
+        res = zeros(length(res1))
+        KiteModels.residual!(res, res2, res1, kps)
+        for i in 1:segments
+            j = 3*(i-1) + 3*segments
+            @test abs(in_plane(res[j+1], res[j+2])) < 1e-5       # horizontal balance in the plane
+            i < segments && @test abs(res[j+3]) < 1e-5            # vertical balance of the tether particles
         end
     end
 

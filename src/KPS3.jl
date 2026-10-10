@@ -531,46 +531,86 @@ function spring_forces(s::KPS3)
     forces
 end
 
-function find_steady_state_inner(s::KPS3, X, prn=false; delta=0.0, upwind_dir=nothing)
+# Convert the unknowns of the steady state solver, the angle offsets of the tether segments from the
+# elevation angle [rad] (first half) and their relative stretches [-] (second half), to the offsets of
+# the particle positions from the straight, unstretched tether in x and z direction, as used by init.
+function steady_state_offsets(s::KPS3, p)
+    segments = s.set.segments
+    l0 = s.set.l_tether / segments
+    elevation = deg2rad(s.set.elevation)
+    X = zeros(SimFloat, 2segments)
+    x, z = 0.0, 0.0
+    for i in 1:segments
+        angle = elevation + p[i]
+        len = l0 * (1 + p[segments+i])
+        x += len * cos(angle)
+        z += len * sin(angle)
+        X[i]          = x - i * l0 * cos(elevation)
+        X[segments+i] = z - i * l0 * sin(elevation)
+    end
+    X
+end
+
+function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=nothing, warn=true)
     res = zeros(MVector{6*s.set.segments+2, SimFloat})
+    segments = s.set.segments
+    # init turns the tether into the wind direction; turn the residuals and positions back
+    turnangle = something(upwind_dir, -pi/2) + pi/2
+    horizontal(x, y) = cos(turnangle) * x - sin(turnangle) * y
 
     # helper function for the steady state finder
+    # Equations: the horizontal and vertical force balance of the tether particles, the horizontal
+    # force balance of the kite and its elevation angle. The kite can only be fully balanced at its
+    # natural elevation, so the elevation from the settings is prescribed instead of its vertical
+    # force balance.
     function test_initial_condition!(F, x::Vector)
-        y0, yd0 = init(s, x; delta, upwind_dir)
+        y0, yd0 = init(s, steady_state_offsets(s, x); delta, upwind_dir)
         residual!(res, yd0, y0, s)
-        for i in 1:s.set.segments
-            F[i]                = res[1 + 3*(i-1) + 3*s.set.segments]
-            F[i+s.set.segments] = res[3 + 3*(i-1) + 3*s.set.segments]
+        for i in 1:segments
+            j = 3*(i-1) + 3*segments
+            F[i]          = horizontal(res[j+1], res[j+2])
+            F[i+segments] = res[j+3]
         end
-        return nothing 
+        # replace the vertical force balance of the kite by the elevation angle, scaled to meters
+        j = 3*(segments-1)
+        x_kite = horizontal(y0[j+1], y0[j+2])
+        z_kite = y0[j+3]
+        F[2segments] = (atan(z_kite, x_kite) - deg2rad(s.set.elevation)) * hypot(x_kite, z_kite)
+        return nothing
     end
 
     if prn println("\nStarted function test_nlsolve...") end
-    jac! = make_jac(test_initial_condition!, length(X))
-    results = nlsolve(test_initial_condition!, jac!, X, xtol=1e-6, ftol=1e-6, autoscale=true, iterations=1000)
+    jac! = make_jac(test_initial_condition!, length(p))
+    results = nlsolve(test_initial_condition!, jac!, p, xtol=1e-10, ftol=1e-6, autoscale=true, iterations=1000)
     if prn println("\nresult: $results") end
-    if !converged(results)
+    if !results.f_converged && warn
         @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations))"
         # Check if the solution contains finite values
         if !all(isfinite, results.zero)
             error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
         end
     end
-    results.zero
+    results.zero, results.f_converged
  end
 
 """
-    find_steady_state!(s::KPS3; prn=false, delta = 0.0, stiffness_factor=0.035, upwind_dir=-pi/2)
+    find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
+
+The tether particles are in equilibrium. The kite is placed at the elevation angle from the
+settings, so only its horizontal force balance is solved for; the kite can only be fully balanced
+at its natural elevation.
 """
 function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
     set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    zero = zeros(SimFloat, 2*s.set.segments)
+    # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
+    p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
     s.stiffness_factor=stiffness_factor
-    zero = find_steady_state_inner(s, zero, prn; delta, upwind_dir)
+    p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false)
     s.stiffness_factor=1.0
-    zero = find_steady_state_inner(s, zero, prn; delta, upwind_dir)
-    init(s, zero; delta=delta, upwind_dir)
+    # if the solution with the reduced stiffness failed, start again from the straight tether
+    p, _ = find_steady_state_inner(s, converged ? p : p0, prn; delta, upwind_dir)
+    init(s, steady_state_offsets(s, p); delta=delta, upwind_dir)
 end
