@@ -5,12 +5,24 @@ SPDX-License-Identifier: MIT
 ### KiteModels v0.11.19 - unreleased
 #### Fixed
 - The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
-  in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake state
-  after construction, so that repeated calls of `init!` give the same result) instead of on every call of the residual function. Before,
-  it depended on the number of residual evaluations of the DAE solver, so tiny numerical
-  differences (e.g. between Julia versions) could switch the brake at a different moment. With a
-  winch `v_min` of 0.15 m/s this made the reel-out speed of the hydra20 simulations of
-  KiteControllers.jl run away on Julia 1.13. The simulation results change slightly.
+  in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake
+  state after construction, so that repeated calls of `init!` give the same result) instead of on
+  every call of the residual function. Before, it depended on the number of residual evaluations
+  of the DAE solver, so tiny numerical differences (e.g. between Julia versions) could switch the
+  brake at a different moment. With a winch `v_min` of 0.15 m/s this made the reel-out speed of the
+  hydra20 simulations of KiteControllers.jl run away on Julia 1.13. The simulation results change
+  slightly.
+- `find_steady_state!` (KPS3) now finds a real equilibrium. Before, `nlsolve` usually stopped
+  because its steps became tiny, with the accelerations of the tether particles still at about
+  25 m/s², and on some machines it printed `find_steady_state!: solver did not converge!`. The
+  unknowns are now the angles and relative stretches of the tether segments instead of the offsets
+  of the particle positions, the solver starts from a slightly stretched tether (the spring force
+  has a kink at zero stretch), and, as for KPS4, the elevation of the kite is prescribed instead of
+  its vertical force balance, so `calc_elevation(s)` returns `set.elevation`. The tether particles
+  and the horizontal force balance of the kite are now solved to `ftol = 1e-6`; a warning is only
+  printed if this fails. The horizontal residuals are taken in the plane of the tether, so the
+  result no longer depends on `upwind_dir`. The initial state changes: for example, with a 392 m
+  tether the kite starts at 70° instead of 64.3°.
 #### Changed
 - requires WinchModels 0.3.12 (for `update_winch_state!` and `calc_acceleration(...; update_state)`)
 - support Julia 1.12 and 1.13 only, as WinchModels 0.3.12 and KiteUtils do: `julia` compat
