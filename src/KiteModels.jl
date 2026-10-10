@@ -622,6 +622,19 @@ function calc_pre_tension(s::AKM)
     return res + 1.0
 end
 
+# KPS3 always uses the brake of the winch, KPS4 for the AsyncMachine or if the set speed is zero
+function use_brake(s::AKM)
+    s isa KPS4 || return true
+    s.wm isa AsyncMachine || (!isnothing(s.sync_speed) && s.sync_speed == 0.0)
+end
+
+# reset the state of the winch (brake, rate limited set speed) to the initial set speed
+function init_winch_state!(s::AKM)
+    isnothing(s.wm) && return nothing
+    isnothing(s.sync_speed) || (s.wm.last_set_speed = s.sync_speed)
+    update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+end
+
 """
     init!(s::AKM; stiffness_factor=0.5, delta=0.005,
                       prn=false, steady_state=true) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
@@ -643,19 +656,6 @@ Parameters:
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-# KPS3 always uses the brake of the winch, KPS4 for the AsyncMachine or if the set speed is zero
-function use_brake(s::AKM)
-    s isa KPS4 || return true
-    s.wm isa AsyncMachine || (!isnothing(s.sync_speed) && s.sync_speed == 0.0)
-end
-
-# reset the state of the winch (brake, rate limited set speed) to the initial set speed
-function init_winch_state!(s::AKM)
-    isnothing(s.wm) && return nothing
-    isnothing(s.sync_speed) || (s.wm.last_set_speed = s.sync_speed)
-    update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
-end
-
 function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     clear!(s)
     init_winch_state!(s)
