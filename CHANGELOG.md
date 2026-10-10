@@ -5,7 +5,8 @@ SPDX-License-Identifier: MIT
 ### KiteModels v0.11.19 - unreleased
 #### Fixed
 - The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
-  in `next_step!` (and reset in `init!`) instead of on every call of the residual function. Before,
+  in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake state
+  after construction, so that repeated calls of `init!` give the same result) instead of on every call of the residual function. Before,
   it depended on the number of residual evaluations of the DAE solver, so tiny numerical
   differences (e.g. between Julia versions) could switch the brake at a different moment. With a
   winch `v_min` of 0.15 m/s this made the reel-out speed of the hydra20 simulations of

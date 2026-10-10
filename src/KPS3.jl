@@ -152,6 +152,7 @@ function clear!(s::KPS3)
     s.t_0 = 0.0                              # relative start time of the current time interval
     s.v_reel_out = 0.0
     s.last_v_reel_out = 0.0
+    s.sync_speed = s.set.v_reel_out
     s.v_wind_gnd    .= [Float64(s.set.v_wind), 0, 0]    # wind vector at reference height
     s.v_wind_tether .= [Float64(s.set.v_wind), 0, 0]
     s.v_wind_vert   = 0.0

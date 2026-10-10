@@ -628,10 +628,13 @@ function use_brake(s::AKM)
     s.wm isa AsyncMachine || (!isnothing(s.sync_speed) && s.sync_speed == 0.0)
 end
 
-# reset the state of the winch (brake, rate limited set speed) to the initial set speed
+# reset the state of the winch (brake, rate limited set speed) to the state after construction
+# and the initial set speed, so that repeated calls of init! give the same result
 function init_winch_state!(s::AKM)
     isnothing(s.wm) && return nothing
-    isnothing(s.sync_speed) || (s.wm.last_set_speed = s.sync_speed)
+    s.sync_speed = s.set.v_reel_out
+    s.wm.brake = true
+    s.wm.last_set_speed = s.sync_speed
     update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
 end
 
