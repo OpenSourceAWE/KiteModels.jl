@@ -47,8 +47,8 @@ end
             # stalled far away from the solution has a (nearly) unstretched tether
             pre_tension = KiteModels.calc_pre_tension(kps4)
             @test 1.0002 < pre_tension < 1.01
-            # the steady state is not unique, so only check that the kite is above the ground
-            @test 0 < rad2deg(calc_elevation(kps4)) < 90
+            # the elevation of the kite is prescribed by the settings
+            @test rad2deg(calc_elevation(kps4)) ≈ elevation atol=1e-6
 
             kps4 = robustness_kps4(v_wind, elevation, l_tether)
             integrator = @test_logs min_level=Base.CoreLogging.Warn KiteModels.init!(kps4; delta, stiffness_factor)
