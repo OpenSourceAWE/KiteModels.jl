@@ -417,6 +417,31 @@ const SEGMENTS = load_settings("system.yaml").segments
         @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
     end
 
+    @testset "test_find_steady_state upwind_dir = $(round(rad2deg(upwind_dir)))°" for upwind_dir in (-π/2, 0.0, π/4, π)
+        local kps = KPS3(KCU(load_settings("system.yaml")))
+        init_392(kps)
+        KiteModels.set_depower_steering!(kps, 0.25, 0.0)
+        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; delta = 1e-6, upwind_dir)
+        @test rad2deg(calc_elevation(kps)) ≈ 70.0 atol=1e-6
+        @test winch_force(kps) ≈ 301.23463553992514 rtol = 1e-4   # independent of the wind direction
+        # the tether lies in the vertical plane of the wind direction; take the components of the
+        # accelerations in this plane (horizontal and vertical) and normal to it
+        turnangle = upwind_dir + π/2
+        in_plane(x, y) = cos(turnangle) * x - sin(turnangle) * y
+        normal(x, y)   = sin(turnangle) * x + cos(turnangle) * y
+        segments = kps.set.segments
+        j = 3*(segments-1)
+        @test abs(normal(res1[j+1], res1[j+2])) < 1e-3          # kite position in the plane
+        @test in_plane(res1[j+1], res1[j+2]) > 0                 # downwind of the ground station
+        res = zeros(length(res1))
+        KiteModels.residual!(res, res2, res1, kps)
+        for i in 1:segments
+            j = 3*(i-1) + 3*segments
+            @test abs(in_plane(res[j+1], res[j+2])) < 1e-5       # horizontal balance in the plane
+            i < segments && @test abs(res[j+3]) < 1e-5            # vertical balance of the tether particles
+        end
+    end
+
     function run_benchmarks()
         global height
         println("\ncalc_rho:")
