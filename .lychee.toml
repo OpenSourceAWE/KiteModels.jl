@@ -1,3 +1,7 @@
+# doi.org redirects to zenodo.org, which often needs about 20 s to answer (default timeout: 20 s)
+timeout = 60
+max_retries = 3
+
 exclude = [
   "@ref",
   "@cite",
