@@ -32,6 +32,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [sources]
 KiteModels = {path = ".."}
@@ -51,3 +52,4 @@ NonlinearSolve = "4.11"
 OrdinaryDiffEqNonlinearSolve = "1.6.1"
 StatsBase = "0.34"
 Test = "1"
+YAML = "0.4.12"
