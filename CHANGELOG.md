@@ -2,6 +2,23 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+## Unreleased
+### Fixed
+- `find_steady_state!` (KPS4) is more robust: if the first `nlsolve` attempt fails or returns
+  a result with a large residual, it is retried without autoscaling and then by continuation
+  (solving for an easier `stiffness_factor`/`delta` first and stepping towards the requested values).
+  Before, convergence depended on tiny floating-point differences, so e.g. the `hydra20_426`
+  project of KiteControllers.jl failed to initialise on Julia 1.13 while it worked on Julia 1.12.
+  Results of cases that already converged on the first attempt are unchanged.
+- a residual entry that is not used as equation could keep the value `1e6` after an infeasible
+  solver step; it is now reset on every evaluation
+- the warning "Warning in test_initial_condition!" for infeasible solver steps is now a debug message
+- `find_steady_state!` now also warns if the solver stopped because the steps became small while the
+  residual norm is still above `1e-3`; before, such a result was accepted silently. The warning now
+  includes the residual norm.
+### Added
+- test `test/test-steady-state-robustness.jl` for cases where a single solver attempt does not converge
+
 ## KiteModels v0.11.17 09-10-2026
 ### Added
 - `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
