@@ -37,8 +37,7 @@ end
     local kps4
     kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4.set.kcu_diameter = 0.0
-    init_150(kps4)  
-    kps4.set.elevation = 60.0
+    init_150(kps4)  # elevation 70°, close to the equilibrium of ≈68°; at 60° find_steady_state! does not converge
     kps4.set.alpha_zero = 0.0
     STEPS = 500
     kps4.set.depower = 23.6
