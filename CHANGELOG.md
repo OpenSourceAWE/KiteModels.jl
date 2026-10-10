@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.19 - unreleased
+### KiteModels v0.11.19 2026-10-10
 #### Fixed
 - The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
   in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake
@@ -29,7 +29,8 @@ SPDX-License-Identifier: MIT
   `"1.12, 1.13"`, `Manifest-v1.11.toml.default` is removed, `bin/install`,
   `bin/update_default_manifest` and `bin/create_sys_image` no longer offer Julia 1.11, CI tests
   Julia 1.12 instead of 1.11, and the docs no longer mention Julia 1.11
-- the default manifests for Julia 1.12 and 1.13 use WinchModels 0.3.12
+- the default manifests for Julia 1.12 and 1.13 use WinchModels 0.3.12 and the latest versions of
+  the other dependencies
 
 ### KiteModels v0.11.18 2026-10-10
 #### Changed
