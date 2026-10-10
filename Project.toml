@@ -1,6 +1,6 @@
 name = "KiteModels"
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.11.18"
+version = "0.11.19"
 authors = ["Uwe Fechner <fechner@aenarete.eu> and contributors"]
 
 [workspace]
@@ -64,5 +64,5 @@ StaticArrays = "1.9.7"
 Statistics = "1"
 Sundials = "4.24, 5.1"
 Suppressor = "0.2.8"
-WinchModels = "0.3.9"
-julia = "1.11, 1.12, 1.13"
+WinchModels = "0.3.12"
+julia = "1.12, 1.13"

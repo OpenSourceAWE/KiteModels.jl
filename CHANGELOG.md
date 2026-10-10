@@ -2,6 +2,23 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.19 - unreleased
+#### Fixed
+- The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
+  in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake state
+  after construction, so that repeated calls of `init!` give the same result) instead of on every call of the residual function. Before,
+  it depended on the number of residual evaluations of the DAE solver, so tiny numerical
+  differences (e.g. between Julia versions) could switch the brake at a different moment. With a
+  winch `v_min` of 0.15 m/s this made the reel-out speed of the hydra20 simulations of
+  KiteControllers.jl run away on Julia 1.13. The simulation results change slightly.
+#### Changed
+- requires WinchModels 0.3.12 (for `update_winch_state!` and `calc_acceleration(...; update_state)`)
+- support Julia 1.12 and 1.13 only, as WinchModels 0.3.12 and KiteUtils do: `julia` compat
+  `"1.12, 1.13"`, `Manifest-v1.11.toml.default` is removed, `bin/install`,
+  `bin/update_default_manifest` and `bin/create_sys_image` no longer offer Julia 1.11, CI tests
+  Julia 1.12 instead of 1.11, and the docs no longer mention Julia 1.11
+- the default manifests for Julia 1.12 and 1.13 use WinchModels 0.3.12
+
 ### KiteModels v0.11.18 2026-10-10
 #### Changed
 - The system of equations of `find_steady_state!` (KPS4) is now square and well-posed. Before, one

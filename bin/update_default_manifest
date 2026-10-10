@@ -7,26 +7,26 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
 fi
 
 # Ask which Julia version to use
-# Default to 1.12 if it is already installed and is the current default, otherwise 1.11
-if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.12'; then
+# Default to 1.13 if it is already installed and is the current default, otherwise 1.12
+if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
     _default_choice=2
-    _default_julia="1.12"
+    _default_julia="1.13"
 else
     _default_choice=1
-    _default_julia="1.11"
+    _default_julia="1.12"
 fi
 
 echo "Which Julia version do you want to update the manifest for?"
-echo "  1) Julia 1.11"
-echo "  2) Julia 1.12"
+echo "  1) Julia 1.12"
+echo "  2) Julia 1.13"
 read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
 
 case "${_julia_choice}" in
     1)
-        _desired_julia="1.11"
+        _desired_julia="1.12"
         ;;
     2)
-        _desired_julia="1.12"
+        _desired_julia="1.13"
         ;;
     "")
         _desired_julia="${_default_julia}"
@@ -53,12 +53,6 @@ if [[ $julia_major == "1.1" ]]; then
 fi
 
 cd ..
-if [[ $julia_major == "1.11" ]]; then
-    cp examples/Manifest-v1.11.toml Manifest-v1.11.toml.default
-    rm -rf ~/.julia/compiled/v1.11/KiteModels/
-    echo "Updated Manifest-v1.11.toml.default !"
-else
-    cp Manifest-v1.12.toml Manifest-v1.12.toml.default
-    rm -rf ~/.julia/compiled/v1.12/KiteModels/
-    echo "Updated Manifest-v1.12.toml.default !"
-fi
+cp Manifest-v${julia_major}.toml Manifest-v${julia_major}.toml.default
+rm -rf ~/.julia/compiled/v${julia_major}/KiteModels/
+echo "Updated Manifest-v${julia_major}.toml.default !"
