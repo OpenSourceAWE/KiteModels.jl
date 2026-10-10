@@ -712,6 +712,12 @@ end
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 
+The forces on the tether particles, the KCU and the kite particles are balanced (without
+gravity), except for the z component of the kite points C and D: instead, the elevation
+of the kite (`pos_kite`, point B) is kept at `s.set.elevation`, because the kite can only
+be fully balanced at its natural elevation. Therefore `calc_elevation(s)` returns
+`s.set.elevation` after the steady state was found.
+
 The nonlinear solver is sensitive to the starting point, so small floating-point
 differences (e.g. between Julia versions) can decide whether it converges. If the
 first attempt fails, it is repeated without autoscaling and then by continuation:
@@ -736,26 +742,27 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
             F .= 1.0e6
             return nothing
         end
-        # this entry is not used as equation; reset it in case it was filled with 1e6 above
-        F[s.set.segments+KITE_PARTICLES] = 0.0
-        for i in 1:s.set.segments+KITE_PARTICLES-1
-            if i != s.set.segments+KITE_PARTICLES-1
-                j = i
-            else
-                j = i + 1
-            end
-            # copy the x-component of the residual res2 (acceleration)
-            F[i]                               = res[1 + 3*(j-1) + 3*(s.set.segments+KITE_PARTICLES)]
-            # copy the z-component of the residual res2
-            F[i+s.set.segments+KITE_PARTICLES] = res[3 + 3*(j-1) + 3*(s.set.segments+KITE_PARTICLES)]
+        # The unknowns x are the x and z offsets of the particles 2..segments+1 (tether and KCU),
+        # p8, p9 and C, an unused entry and the y position of C; D is the mirror image of C.
+        # One equation per unknown: the x and z residuals of the accelerations of the particles
+        # 2..segments+1, p8 and p9, the symmetric part of the x residual of C and D, the elevation
+        # of the kite, the unused entry and the antisymmetric part of the y residual of C and D.
+        # The kite can only be fully balanced at its natural elevation, therefore the elevation
+        # of the kite is prescribed instead of the z residual of C and D.
+        segments = s.set.segments
+        n_free = segments + KITE_PARTICLES - 1            # number of x (and of z) unknowns
+        acc(i, k) = res[k + 3*(i-2) + 3*(segments+KITE_PARTICLES)]  # residual of particle i, component k
+        for (n, i) in enumerate(2:segments+3)
+            F[n]          = acc(i, 1)
+            F[n + n_free] = acc(i, 3)
         end
-        # copy the acceleration of point KCU in x direction
-        i = s.set.segments+1
-        F[end-1]                               = res[1 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
-        # copy the acceleration of point C in y direction
-        i = s.set.segments+3
-        x = res[1 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
-        F[end]                                 = res[2 + 3*(i-1) + 3*(s.set.segments+KITE_PARTICLES)]
+        C, D = segments+4, segments+5
+        F[n_free]   = 0.5 * (acc(C, 1) + acc(D, 1))
+        # position of the kite as returned by pos_kite (point B = p9 = particle segments+3)
+        kite = SVector(y0[3*segments+4], y0[3*segments+5], y0[3*segments+6])
+        F[2*n_free] = calc_elevation(kite) - deg2rad(s.set.elevation)
+        F[end-1]    = x[end-1]
+        F[end]      = 0.5 * (acc(C, 2) - acc(D, 2))
         return nothing
     end
     if prn println("\nStarted function test_nlsolve...") end

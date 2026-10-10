@@ -2,14 +2,22 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-## Unreleased
+## KiteModels v0.11.18 10-10-2026
+### Changed
+- The system of equations of `find_steady_state!` (KPS4) is now square and well-posed. Before, one
+  unknown had no effect, one equation was missing (its entry stayed `0`), and the x equation of the
+  point p8 was used twice, so the elevation of the kite could drift from `set.elevation` by several
+  degrees, depending on rounding. Now the elevation of the kite (`pos_kite`, so that
+  `calc_elevation(s)` returns `set.elevation`) is prescribed instead of the z balance of the kite
+  points C and D (the kite can only be fully balanced at its natural elevation), C and D enter as
+  symmetric (x) and antisymmetric (y) combination, and the unused unknown is fixed to zero. The
+  initial state of the simulation changes slightly.
 ### Fixed
 - `find_steady_state!` (KPS4) is more robust: if the first `nlsolve` attempt fails or returns
   a result with a large residual, it is retried without autoscaling and then by continuation
   (solving for an easier `stiffness_factor`/`delta` first and stepping towards the requested values).
   Before, convergence depended on tiny floating-point differences, so e.g. the `hydra20_426`
   project of KiteControllers.jl failed to initialise on Julia 1.13 while it worked on Julia 1.12.
-  Results of cases that already converged on the first attempt are unchanged.
 - a residual entry that is not used as equation could keep the value `1e6` after an infeasible
   solver step; it is now reset on every evaluation
 - the warning "Warning in test_initial_condition!" for infeasible solver steps is now a debug message
