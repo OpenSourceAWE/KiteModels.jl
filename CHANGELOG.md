@@ -12,9 +12,13 @@ SPDX-License-Identifier: MIT
   fully balanced trim exists at low elevations with the kite in deep stall. Solutions with an angle
   of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and
   if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at
-  lower elevations, in steps of 5°. The default `trim=false` keeps the previous behaviour.
+  lower elevations, in steps of 10°, with a cheaper solve (no perturbation, no last-resort
+  continuation). If no trim with attached flow is found, an error is thrown instead of returning a
+  deep stall or non-converged state; with `system.yaml` and the Maasvlakte wind profile at 4 m/s
+  this takes 7 s (KPS3) and 11 s (KPS4). The default `trim=false` keeps the previous behaviour.
 - `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The initial state is then an
-  equilibrium of the simulation, so the elevation stays constant.
+  equilibrium of the simulation, so the elevation stays constant. If no trim with attached flow
+  is found, `init!` returns `nothing`.
 - `find_steady_state!` with `trim=false` (KPS3 and KPS4) logs a warning if the kite is in deep
   stall (angle of attack beyond the angle of maximum lift). This happens if the prescribed elevation
   is far below the natural elevation (with `system.yaml`: below about 65° for KPS3 and 45° for

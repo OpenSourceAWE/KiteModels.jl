@@ -143,6 +143,17 @@ end
     @test s.alpha_2 < s.set.alpha_cl[argmax(s.set.cl_list)]
 end
 
+@testset "no trim with attached flow, $Model" for Model in (KPS3, KPS4)
+    # at 4 m/s, Maasvlakte has only 5.2 m/s at the height of the kite, so no trim with attached
+    # flow exists: find_steady_state! throws an error and init! returns nothing instead of
+    # initializing from a deep stall or non-converged state
+    s = Model(KCU(profile_settings("Maasvlakte", 4.0)))
+    KiteModels.clear!(s)
+    @test_throws r"no trimmed steady state with attached flow" find_steady_state!(s; trim=true)
+    s = Model(KCU(profile_settings("Maasvlakte", 4.0)))
+    @test isnothing(init!(s; trim=true))
+end
+
 @testset "reel-out speed in the steady state, $Model" for Model in (KPS3, KPS4)
     # reeling out reduces the apparent wind speed, so the natural elevation decreases, and the
     # initial state contains the reel-out speed

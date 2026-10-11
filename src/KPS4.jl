@@ -725,7 +725,8 @@ elevation where its lift matches gravity (its natural elevation), starting the s
 elevation, but often not from far below it.
 Trimmed steady states with an angle of attack beyond the angle of maximum lift (deep
 stall) are rejected. If no valid trim is found from the start elevation, the solver is
-restarted at higher and then at lower elevations than `s.set.elevation`, in steps of 5°.
+restarted at higher and then at lower elevations than `s.set.elevation`, in steps of 10°.
+If this fails too, an error is thrown, and `init!` returns `nothing`.
 
 The steady state is always solved for the full tether stiffness (`s.stiffness_factor` is 1.0
 afterwards). The nonlinear solver is sensitive to the starting point, so small floating-point
@@ -741,11 +742,12 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
                             trim=false)
     warn_delta_deprecated(delta, :find_steady_state!)
     warn_stiffness_factor_deprecated(stiffness_factor, :find_steady_state!)
-    # solve without perturbation of the initial state, with a perturbation only as fallback
-    function solve()
+    # solve without perturbation of the initial state, with a perturbation only as fallback; the
+    # restarts at other elevations use a cheaper solve, so that failing to find a trim is fast
+    function solve(; restart=false)
         local r, conv
-        for delta in STEADY_STATE_DELTAS
-            r, conv = solve_steady_state!(s; prn, delta, trim)
+        for delta in (restart ? (0.0,) : STEADY_STATE_DELTAS)
+            r, conv = solve_steady_state!(s; prn, delta, trim, continuation=!restart)
             conv && break
         end
         r, conv
@@ -775,10 +777,11 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
         if trim && (stalled || !converged)
             # Restart from other elevations: the solver converges from above the natural
             # elevation, but diverges or finds a deep stall trim from far below it.
-            starts = [el_set .+ (5.0:5.0:85.0); el_set .- (5.0:5.0:85.0)]
+            starts = [el_set .+ (TRIM_RESTART_STEP:TRIM_RESTART_STEP:85.0);
+                      el_set .- (TRIM_RESTART_STEP:TRIM_RESTART_STEP:85.0)]
             for el in filter(el -> 5.0 <= el <= 89.0 && el != el_start, starts)
                 s.set.elevation = el
-                r, conv = solve()
+                r, conv = solve(restart=true)
                 conv || continue
                 y, yd = steady_state(r.zero)
                 if s.alpha_2 <= alpha_stall
@@ -788,11 +791,10 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
                     break
                 end
             end
-            if stalled
-                s.set.elevation = el_start
-                y00, yd00 = steady_state(results.zero)
-                @warn "find_steady_state!: only a trimmed steady state in deep stall was found " *
-                      "(angle of attack $(round(s.alpha_2, digits=1))°)"
+            # no valid trim found: a deep stall or non-converged state is not a valid initial state
+            if stalled || !converged
+                error("find_steady_state!: no trimmed steady state with attached flow was found; " *
+                      "the solver did not converge, or the kite can only be balanced in deep stall")
             end
         end
         if !converged
@@ -832,7 +834,7 @@ const STIFFNESS_SCHEDULES = ((0.1, 1.0), (0.1, 0.3, 1.0), (0.3, 1.0))
 
 # Solve for the offsets of the steady state for the full tether stiffness, see
 # find_steady_state!. Returns the result of nlsolve and whether it is usable.
-function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false)
+function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false, continuation=true)
     stiffness_factor = 1.0
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
@@ -918,7 +920,7 @@ function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false)
             end
             !isnothing(r) && prn && println("find_steady_state!: converged with the stiffness schedule $schedule")
         end
-        if isnothing(r)
+        if isnothing(r) && continuation
             # continuation: solve an easier problem, then step towards the full stiffness
             starts = [(sf0, delta) for sf0 in (0.1, 0.2, 0.3, 0.05) if sf0 != stiffness_factor]
             if delta != 0.001

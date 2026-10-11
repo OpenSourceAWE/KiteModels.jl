@@ -87,6 +87,10 @@ const STEADY_STATE_DELTAS = (0.0, 0.001)
 # but often diverges or finds a deep stall trim from far below it.
 const TRIM_START_ELEVATION = 80.0
 
+# If no trim with attached flow is found from the start elevation, the steady state solvers
+# restart at higher and lower elevations, in steps of TRIM_RESTART_STEP [°]
+const TRIM_RESTART_STEP = 10.0
+
 function warn_delta_deprecated(delta, f)
     isnothing(delta) || Base.depwarn("The keyword argument `delta` of `$f` is deprecated and " *
         "ignored: the steady state is solved without perturbation (with a small perturbation " *
@@ -678,8 +682,8 @@ Parameters:
   set up a consistent state or when the steady-state solver is known to struggle (e.g.
   unusual wind conditions). Returns `nothing` if steady-state solving fails.
 - trim: if `true`, the steady state is found at the natural elevation of the kite, where its
-  lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. Ignored if
-  `steady_state` is `false`.
+  lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. If no trim
+  with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: the initial
 state is always an equilibrium for the full tether stiffness.
@@ -702,6 +706,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
         catch e
             if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
                 println("ERROR: Failure to find initial steady state in find_steady_state! function!")
+                e isa ErrorException && println(e.msg)
                 return nothing
             else
                 rethrow(e)

@@ -619,7 +619,8 @@ If `trim` is `true`, the vertical force balance of the kite is solved for too an
 is free: the kite is placed at the elevation where its lift matches gravity (its natural
 elevation), starting the search at `s.set.elevation`. Trimmed steady states with an angle of
 attack beyond the angle of maximum lift (deep stall) are rejected. If no valid trim is found from
-`s.set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 5°.
+`s.set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 10°.
+If this fails too, an error is thrown, and `init!` returns `nothing`.
 
 The steady state is always solved for the full tether stiffness; a solution for a reduced
 stiffness is only used as start value. The keyword arguments `delta` and `stiffness_factor`
@@ -632,10 +633,11 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver
-    # converged and whether the kite is in deep stall.
-    function solve(warn)
+    # converged and whether the kite is in deep stall. The restarts at other elevations use only
+    # the unperturbed start value, so that failing to find a trim is fast.
+    function solve(warn; restart=false)
         local p, converged
-        for delta in STEADY_STATE_DELTAS
+        for delta in (restart ? (0.0,) : STEADY_STATE_DELTAS)
             set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
             # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
             p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
@@ -666,10 +668,11 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
     try
         # Restart from other elevations: from far below the natural elevation the solver can
         # find a deep stall trim.
-        starts = [el_set .+ (5.0:5.0:85.0); el_set .- (5.0:5.0:85.0)]
+        starts = [el_set .+ (TRIM_RESTART_STEP:TRIM_RESTART_STEP:85.0);
+                  el_set .- (TRIM_RESTART_STEP:TRIM_RESTART_STEP:85.0)]
         for el in filter(el -> 5.0 <= el <= 89.0, starts)
             s.set.elevation = el
-            y, yd, conv, st = solve(false)
+            y, yd, conv, st = solve(false; restart=true)
             if conv && !st
                 prn && println("find_steady_state!: trimmed steady state found, starting at $el°")
                 return y, yd
@@ -678,9 +681,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
     finally
         s.set.elevation = el_set
     end
-    # no valid trim found, return the result from el_set again
-    y0, yd0, _, stalled = solve(true)
-    stalled && @warn "find_steady_state!: only a trimmed steady state in deep stall was found " *
-                     "(angle of attack $(round(s.alpha_2, digits=1))°)"
-    y0, yd0
+    # no valid trim found: a deep stall or non-converged state is not a valid initial state
+    error("find_steady_state!: no trimmed steady state with attached flow was found; the " *
+          "solver did not converge, or the kite can only be balanced in deep stall")
 end
