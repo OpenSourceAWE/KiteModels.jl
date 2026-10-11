@@ -479,6 +479,11 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=
         vel[i+1] .= SVec3(DELTA, DELTA, DELTA)
         acc[i+1] .= SVec3(DELTA, DELTA, DELTA)
     end
+    # reeling out: the velocity of each particle points along its tether segment and grows linearly
+    # from zero at the winch to v_reel_out at the kite
+    for i in 1:s.set.segments
+        vel[i+1] .+= normalize(pos[i+1] - pos[i]) * (s.set.v_reel_out * i / s.set.segments)
+    end
     for i in eachindex(pos)
         @inbounds s.pos[i] .= pos[i]
     end
@@ -502,10 +507,10 @@ end
 # same as above, but returns a tuple of two one dimensional arrays
 function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=nothing)
     res1_, res2_ = init_inner(s, X; delta, upwind_dir=something(upwind_dir, -pi/2))
-    res1 = vcat(reduce(vcat, res1_), [s.l_tether, 0])
+    res1 = vcat(reduce(vcat, res1_), [s.l_tether, s.set.v_reel_out])
     res2 = vcat(reduce(vcat, res2_), [0, 0])
     if !isnothing(upwind_dir)
-        n = 6 * s.set.segments  # only rotate the 3D vector part; the last 2 scalars (l_tether, 0) must not be touched
+        n = 6 * s.set.segments  # only rotate the 3D vector part; the last 2 scalars (l_tether, v_reel_out) must not be touched
         res1 = vcat(turn(res1[1:n], upwind_dir), res1[n+1:end])
         res2 = vcat(turn(res2[1:n], upwind_dir), res2[n+1:end])
         # Keep s.pos consistent with the rotated state vectors so callers that

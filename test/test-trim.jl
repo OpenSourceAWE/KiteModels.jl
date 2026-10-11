@@ -142,4 +142,19 @@ end
     @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(s; trim=true)
     @test s.alpha_2 < s.set.alpha_cl[argmax(s.set.cl_list)]
 end
+
+@testset "reel-out speed in the steady state, $Model" for Model in (KPS3, KPS4)
+    # reeling out reduces the apparent wind speed, so the natural elevation decreases, and the
+    # initial state contains the reel-out speed
+    elevations = map((0.0, 2.0)) do v_reel_out
+        set = deepcopy(load_settings("system.yaml"))
+        set.v_reel_out = v_reel_out
+        set.v_reel_outs[1] = v_reel_out
+        s = Model(KCU(set))
+        integrator = init!(s; trim=true)
+        @test integrator.u[end] ≈ v_reel_out
+        rad2deg(calc_elevation(s))
+    end
+    @test elevations[2] < elevations[1] - 1.0
+end
 nothing

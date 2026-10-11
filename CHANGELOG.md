@@ -63,6 +63,15 @@ SPDX-License-Identifier: MIT
   velocity of each tether particle points along its tether segment and grows linearly from zero at
   the winch to `v_reel_out` at the KCU; the kite particles move with the KCU. The initial states
   change for all simulations with `v_reel_out ≠ 0`.
+- The steady state of KPS3 (`find_steady_state!` and `init!`) ignored `v_reel_out`: all particles
+  were at rest and the reel-out speed in the initial state vector was zero, so the initial
+  elevation did not depend on `v_reel_out`, and in the simulation the winch first had to accelerate
+  to the set speed. Now, as for KPS4, the velocity of each particle points along its tether segment
+  and grows linearly from zero at the winch to `v_reel_out` at the kite, and the initial reel-out
+  speed is `v_reel_out`. With `trim=true`, `system.yaml` and a wind speed of 14.5 m/s, the
+  natural elevation decreases from 73.5° to 70.4° for `v_reel_out = 1 m/s` and to 60.9° for
+  4 m/s, and it stays constant during the simulation. The initial states change for all
+  simulations with `v_reel_out ≠ 0`.
 
 ### KiteModels v0.11.19 2026-10-10
 #### Fixed
