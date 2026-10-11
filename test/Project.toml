@@ -35,6 +35,7 @@ WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
 
 [sources]
 KiteModels = {path = ".."}
+KiteViewers = {url = "https://github.com/OpenSourceAWE/KiteViewers.jl", rev = "agent/54-update-kiteutils"}
 
 [compat]
 Aqua = "0.8.11"

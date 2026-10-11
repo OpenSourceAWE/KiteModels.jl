@@ -314,6 +314,11 @@ function orient_euler(s::AKM; one_point=false)
     SVector(roll, pitch, yaw)
 end
 
+"""
+    calc_orient_quat(s::AKM; viewer=false, one_point=false)
+
+Orientation of the kite as a quaternion in the `KS` convention (against NED).
+"""
 function calc_orient_quat(s::AKM; viewer=false, one_point=false)
     if viewer
         x, _, z = kite_ref_frame(s)
@@ -323,9 +328,9 @@ function calc_orient_quat(s::AKM; viewer=false, one_point=false)
         rotation = rot(pos_kite_, pos_before, -x)
     else
         x, y, z = kite_ref_frame(s; one_point) # in ENU reference
-        x = enu2ned(x)
-        y = enu2ned(y)
-        z = enu2ned(z)
+        x = fromENU2NED(x)
+        y = fromENU2NED(y)
+        z = fromENU2NED(z)
 
         # reference frame for the orientation: NED (north, east, down)
         ax = @SVector [1, 0, 0]
@@ -394,7 +399,7 @@ end
 Determine the heading angle of the kite in radian.
 """
 function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_point=false, respos=true)
-    orientation = orient_euler(s; one_point)
+    attitude = fromKS2KA(calc_orient_quat(s; one_point))
     elevation = calc_elevation(s)
     # use azimuth in wind reference frame
     if neg_azimuth
@@ -402,7 +407,7 @@ function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_
     else
         azimuth = calc_azimuth(s)
     end
-    calc_heading(orientation, elevation, azimuth; upwind_dir=upwind_dir_, respos)
+    calc_heading(attitude, elevation, azimuth; upwind_dir=upwind_dir_, respos)
 end
 
 """
@@ -527,7 +532,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
-    ss.orient .= calc_orient_quat(s)
+    ss.orient .= fromKS2KA(calc_orient_quat(s))
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
@@ -568,12 +573,11 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.set_steering = s.kcu.set_steering
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
-    ss.roll, ss.pitch, ss.yaw = orient_euler(s)
     # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
     # psi_m = psi - phi_dot * cos(theta)
     # This removes the effect of roll on the heading measurement
     body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
-    ss.turn_rates .= [0, 0, body_rate]
+    ss.turn_rates .= fromKS2KA_body(SVec3(0, 0, body_rate))
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd

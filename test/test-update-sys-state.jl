@@ -50,8 +50,8 @@ end
     @test ss.X ≈ [pos[1] for pos in kps4.pos]
     @test ss.Y ≈ [pos[2] for pos in kps4.pos]
     @test ss.Z ≈ [pos[3] for pos in kps4.pos]
-    @test ss.orient ≈ calc_orient_quat(kps4)
-    @test [ss.roll, ss.pitch, ss.yaw] ≈ orient_euler(kps4)
+    @test ss.orient ≈ fromKS2KA(calc_orient_quat(kps4))
+    @test SVector(euler_KS(ss.orient)) ≈ orient_euler(kps4)
     @test ss.vel_kite ≈ kps4.vel_kite
     @test ss.v_wind_gnd ≈ kps4.v_wind_gnd
     @test ss.v_wind_kite ≈ kps4.v_wind
@@ -106,7 +106,8 @@ end
     @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt
     @test ss.heading_rate ≈ wrap(heading_1 - heading_0) / dt
     # Erhard and Strauch (2013): the roll contribution is removed from the heading rate
-    @test ss.turn_rates ≈ [0, 0, ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)]
+    @test fromKA2KS_body(ss.turn_rates) ≈
+          [0, 0, ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)]
 end
 
 @testset "update_sys_state! rates at the wrap boundary" begin

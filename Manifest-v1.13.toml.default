@@ -2,7 +2,7 @@
 
 julia_version = "1.13.1"
 manifest_format = "2.1"
-project_hash = "15bc8be9d852005d661871bfa51ace960c21e8ae"
+project_hash = "8ab9aee386001baa6732b7c487c6ae190f8d1f7f"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1513,7 +1513,7 @@ version = "0.6.12"
 deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
 path = "."
 uuid = "b94af626-7959-4878-9336-2adc27959007"
-version = "0.11.20"
+version = "0.12.0"
 
 [[deps.KitePodModels]]
 deps = ["DocStringExtensions", "KiteUtils", "Reexport"]
@@ -1524,15 +1524,16 @@ version = "0.4.2"
 
 [[deps.KiteUtils]]
 deps = ["Arrow", "CSV", "DocStringExtensions", "LinearAlgebra", "OrderedCollections", "Parameters", "Parsers", "Pkg", "PrecompileTools", "RecursiveArrayTools", "ReferenceFrameRotations", "Rotations", "StaticArrays", "StructArrays", "StructTypes", "YAML"]
-git-tree-sha1 = "fbeb8355b4797ffc263320be2dc74dcdbe9310fc"
+git-tree-sha1 = "85b4f730bf098b5afc796daa11dd8fde66a1db2c"
 registries = "General"
 uuid = "90980105-b163-44e5-ba9f-8b1c83bb0533"
-version = "0.12.2"
+version = "0.13.1"
 
 [[deps.KiteViewers]]
 deps = ["FileIO", "GLMakie", "GeometryBasics", "Joysticks", "KiteUtils", "LinearAlgebra", "Parameters", "Pkg", "PrecompileTools", "Printf", "Reexport", "Rotations", "StaticArrays", "StructArrays", "Timers"]
-git-tree-sha1 = "ba3472753e0fda3b2436936ad12c763c9fd660b7"
-registries = "General"
+git-tree-sha1 = "503f9eaaaae53811443a59a88f5bfd472bd6a66c"
+repo-rev = "agent/54-update-kiteutils"
+repo-url = "https://github.com/OpenSourceAWE/KiteViewers.jl"
 uuid = "2e593061-95e7-45e4-95f4-df0491f2e601"
 version = "0.6.0"
 
