@@ -674,7 +674,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
             s.set.elevation = el
             y, yd, conv, st = solve(false; restart=true)
             if conv && !st
-                prn && println("find_steady_state!: trimmed steady state found, starting at $el°")
+                prn && println("find_steady_state!: trimmed steady state found, starting at $(el)°")
                 return y, yd
             end
         end

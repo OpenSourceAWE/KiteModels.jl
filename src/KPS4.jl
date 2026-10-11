@@ -785,7 +785,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
                 conv || continue
                 y, yd = steady_state(r.zero)
                 if s.alpha_2 <= alpha_stall
-                    prn && println("find_steady_state!: trimmed steady state found, starting at $el°")
+                    prn && println("find_steady_state!: trimmed steady state found, starting at $(el)°")
                     results, converged, stalled = r, true, false
                     y00, yd00 = y, yd
                     break
