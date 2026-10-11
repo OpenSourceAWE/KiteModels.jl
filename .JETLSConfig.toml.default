@@ -29,3 +29,10 @@ pattern = "`KiteModels.KPS4` has abstract field `wm::WinchModels.AbstractWinchMo
 match_by = "message"
 match_type = "literal"
 severity = "off"
+
+[[diagnostic.patterns]]
+pattern = "`solve` is captured and boxed"
+match_by = "message"
+match_type = "literal"
+severity = "off"
+path = "src/KPS4.jl"

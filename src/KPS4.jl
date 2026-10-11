@@ -902,7 +902,7 @@ function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false, contin
     # returns the result for (sf, d), trying both scaling options, or nothing
     function try_solve(sf, d, x0)
         for autoscale in (true, false)
-            r = solve(sf, d, x0; autoscale)
+            local r = solve(sf, d, x0; autoscale)
             usable(r) && return r
         end
         nothing
