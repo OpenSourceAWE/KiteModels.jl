@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.12.0 - unreleased
+### KiteModels v0.12.0 2026-10-11
 #### Changed
 - BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
   the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
