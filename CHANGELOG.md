@@ -15,8 +15,21 @@ SPDX-License-Identifier: MIT
   lower elevations, in steps of 5°. The default `trim=false` keeps the previous behaviour.
 - `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The trim depends on the stiffness
   factor, which `next_step!` raises to 1.0, so use `init!(s; trim=true, stiffness_factor=1.0)` for an
-  initial state that is an equilibrium of the simulation; then the elevation stays constant
-  (within 0.1° over 10 s for KPS4 with `system.yaml`).
+  initial state that is an equilibrium of the simulation; then the elevation stays constant.
+- `find_steady_state!` with `trim=false` (KPS3 and KPS4) logs a warning if the kite is in deep
+  stall (angle of attack beyond the angle of maximum lift). This happens if the prescribed elevation
+  is far below the natural elevation (with `system.yaml`: below about 60°), because then the kite
+  can only be balanced in deep stall; before, such a state was returned silently.
+#### Changed
+- The keyword argument `delta` of `find_steady_state!` and `init!` is deprecated and ignored.
+  `delta` perturbed the initial state (all particles shifted sideways by `delta` [m], with the
+  velocity `delta` [m/s]), and the returned state was perturbed too, so it was not an equilibrium:
+  the kite moved by up to 0.4° after `init!` even with `trim=true`. Now the steady state is solved
+  without perturbation, with a perturbation of 0.001 only as an internal fallback, and it is always
+  returned without perturbation. The initial states change slightly, also for `steady_state=false`.
+  The examples, tests and `precompile.jl` no longer pass `delta`.
+- The cases of `test/test-steady-state-robustness.jl` at an elevation of 50° are moved to 60° and
+  65°, because at 50° the steady state is in deep stall.
 #### Fixed
 - `find_steady_state!` (KPS4) now solves for the wind at the height of the kite. Before, the wind
   was set once from the height of the kite before the solver started, which is 0 m after `clear!`,

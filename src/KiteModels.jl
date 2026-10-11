@@ -77,6 +77,18 @@ Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
 
+# Perturbations of the initial state, tried in this order by the steady state solvers: delta
+# shifts all particles sideways by delta [m] and gives them the velocity delta [m/s]. A perturbed
+# start can help the nonlinear solver, but the returned steady state is never perturbed.
+const STEADY_STATE_DELTAS = (0.0, 0.001)
+
+function warn_delta_deprecated(delta, f)
+    isnothing(delta) || Base.depwarn("The keyword argument `delta` of `$f` is deprecated and " *
+        "ignored: the steady state is solved without perturbation (with a small perturbation " *
+        "only as fallback) and returned without perturbation.", f)
+    nothing
+end
+
 function __init__()
     if isdir(joinpath(pwd(), "data")) && isfile(joinpath(pwd(), "data", "system.yaml"))
         set_data_path(joinpath(pwd(), "data"))
@@ -639,15 +651,14 @@ function init_winch_state!(s::AKM)
 end
 
 """
-    init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false, steady_state=true, trim=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+    init!(s::AKM; stiffness_factor=0.5, prn=false, steady_state=true,
+                      trim=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
 Parameters:
 - s:     an instance of an abstract kite model
 - stiffness_factor: factor applied to the tether stiffness during initialization
-- delta: initial stretch of the tether during the steady state calculation
 - prn: if set to true, print the detailed solver results
 - steady_state: if `true` (default), call `find_steady_state!` to solve for an equilibrium
   before constructing the integrator. If `false`, skip the steady-state solver and initialise
@@ -659,11 +670,14 @@ Parameters:
   lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. Ignored if
   `steady_state` is `false`.
 
+The keyword argument `delta` is deprecated and ignored.
+
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true,
+function init!(s::AKM; stiffness_factor=0.5, delta=nothing, prn=false, steady_state=true,
                trim=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+    warn_delta_deprecated(delta, :init!)
     clear!(s)
     init_winch_state!(s)
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
@@ -671,18 +685,18 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
 
     y0, yd0 = if steady_state
         try
-            KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn, trim)
+            KiteModels.find_steady_state!(s; stiffness_factor, upwind_dir, prn, trim)
         catch e
             if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
                 println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
-                        "Try to increase the delta parameter or to decrease the stiffness_factor of the init! function.")
+                        "Try to decrease the stiffness_factor of the init! function.")
                 return nothing
             else
                 rethrow(e)
             end
         end
     else
-        y0, yd0 = KiteModels.init(s; delta, upwind_dir)
+        y0, yd0 = KiteModels.init(s; upwind_dir)
         set_v_wind_ground!(s, calc_height(s),
             s.set.v_wind; upwind_dir)
         y0, yd0

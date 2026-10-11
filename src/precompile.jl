@@ -18,8 +18,8 @@
     @compile_workload begin
         # all calls in this block will be precompiled, regardless of whether(
         # they belong to your package or not (on Julia 1.8 and higher)
-        integrator = KiteModels.init!(kps3_; delta=0.001, stiffness_factor=0.035, prn=false)
-        integrator = KiteModels.init!(kps4_; delta=0.001, stiffness_factor=0.035, prn=false)
+        integrator = KiteModels.init!(kps3_; stiffness_factor=0.035, prn=false)
+        integrator = KiteModels.init!(kps4_; stiffness_factor=0.035, prn=false)
         nothing
     end
 end

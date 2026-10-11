@@ -595,44 +595,62 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
  end
 
 """
-    find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2,
-                       trim=false)
+    find_steady_state!(s::KPS3; prn=false, stiffness_factor=0.035, upwind_dir=-pi/2, trim=false)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
 
 The tether particles are in equilibrium. The kite is placed at the elevation angle from the
 settings, so only its horizontal force balance is solved for; the kite can only be fully balanced
-at its natural elevation.
+at its natural elevation. If the prescribed elevation is far below the natural elevation, the kite
+can only be balanced in deep stall, with an angle of attack beyond the angle of maximum lift; then
+a warning is logged.
 
 If `trim` is `true`, the vertical force balance of the kite is solved for too and the elevation
 is free: the kite is placed at the elevation where its lift matches gravity (its natural
 elevation), starting the search at `s.set.elevation`. Trimmed steady states with an angle of
 attack beyond the angle of maximum lift (deep stall) are rejected. If no valid trim is found from
 `s.set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 5°.
+
+The keyword argument `delta` is deprecated and ignored.
 """
-function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2,
+function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=0.035, upwind_dir=-pi/2,
                             trim=false)
+    warn_delta_deprecated(delta, :find_steady_state!)
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver
     # converged and whether the kite is in deep stall.
     function solve(warn)
-        set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-        # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
-        p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
-        s.stiffness_factor=stiffness_factor
-        p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false, trim)
-        s.stiffness_factor=1.0
-        # if the solution with the reduced stiffness failed, start again from the straight tether
-        p, converged = find_steady_state_inner(s, converged ? p : p0, prn; delta, upwind_dir, warn, trim)
+        local p, converged
+        for delta in STEADY_STATE_DELTAS
+            set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+            # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
+            p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
+            s.stiffness_factor=stiffness_factor
+            p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false, trim)
+            s.stiffness_factor=1.0
+            # if the solution with the reduced stiffness failed, start again from the straight tether
+            p, converged = find_steady_state_inner(s, converged ? p : p0, prn; delta, upwind_dir, warn=false, trim)
+            converged && break
+        end
+        if !converged && warn
+            @warn "find_steady_state!: solver did not converge!"
+            all(isfinite, p) || error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
+        end
         all(isfinite, p) || return nothing, nothing, false, false
-        y0, yd0 = init(s, steady_state_offsets(s, p); delta=delta, upwind_dir)
-        trim && residual!(zeros(length(y0)), yd0, y0, s)  # updates the angle of attack s.alpha_2
-        y0, yd0, converged, trim && s.alpha_2 > alpha_stall
+        y0, yd0 = init(s, steady_state_offsets(s, p); upwind_dir)
+        residual!(zeros(length(y0)), yd0, y0, s)  # updates the angle of attack s.alpha_2
+        y0, yd0, converged, s.alpha_2 > alpha_stall
     end
     y0, yd0, converged, stalled = solve(!trim)
-    (trim && (stalled || !converged)) || return y0, yd0
+    if !trim
+        converged && stalled && @warn "find_steady_state!: the kite is in deep stall at the prescribed " *
+            "elevation of $(el_set)° (angle of attack $(round(s.alpha_2, digits=1))°); use trim=true or a " *
+            "higher elevation"
+        return y0, yd0
+    end
+    (stalled || !converged) || return y0, yd0
     try
         # Restart from other elevations: from far below the natural elevation the solver can
         # find a deep stall trim.

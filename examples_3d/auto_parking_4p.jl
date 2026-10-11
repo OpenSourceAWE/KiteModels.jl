@@ -170,7 +170,7 @@ function simulate(integrator, sys_state)
 end
 
 function play()
-    integrator = KiteModels.init!(kps4; delta = 0.001, stiffness_factor = 0.1)
+    integrator = KiteModels.init!(kps4; stiffness_factor = 0.1)
     sys_state = SysState(kps4)
     toc()
     simulate(integrator, sys_state)

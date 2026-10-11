@@ -84,7 +84,7 @@ function simulate(s, integrator, steps, plot = false; fig = "")
     iter / steps
 end
 
-integrator = init!(kps3, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = init!(kps3, stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps3, integrator, STEPS, true; fig = "kps3")
 reactivate_host_app()
 
@@ -95,7 +95,7 @@ println("winch_force [N]: $(round(winch_force(kps3), digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
 kps4.set.alpha_zero = ALPHA_ZERO
-integrator = init!(kps4; delta = 0.003, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = init!(kps4; stiffness_factor = 0.1, prn = STATISTIC)
 av_steps = simulate(kps4, integrator, STEPS, true; fig = "kps4")
 reactivate_host_app()
 

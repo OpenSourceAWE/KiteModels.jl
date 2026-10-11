@@ -687,7 +687,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         # and the updraft shows up in v_wind_kite (and therefore in the logged system state)
         local kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
         kps4_.set.kcu_diameter = 0.0
-        integrator = KiteModels.init!(kps4_; stiffness_factor=0.5, delta=0.005, prn=false)
+        integrator = KiteModels.init!(kps4_; stiffness_factor=0.5, prn=false)
         dt = 1/kps4_.set.sample_freq
         for _ in 1:5
             next_step!(kps4_, integrator; set_speed=0, v_wind_vert=1.5, dt)

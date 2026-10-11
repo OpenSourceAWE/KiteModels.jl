@@ -705,8 +705,7 @@ function turn(res, upwind_dir)
 end
 
 """
-    find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2,
-                       trim=false)
+    find_steady_state!(s::KPS4; prn=false, stiffness_factor=0.035, upwind_dir=-pi/2, trim=false)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
@@ -715,7 +714,9 @@ The forces on the tether particles, the KCU and the kite particles are balanced 
 gravity), except for the z component of the kite points C and D: instead, the elevation
 of the kite (`pos_kite`, point B) is kept at `s.set.elevation`, because the kite can only
 be fully balanced at its natural elevation. Therefore `calc_elevation(s)` returns
-`s.set.elevation` after the steady state was found.
+`s.set.elevation` after the steady state was found. If the prescribed elevation is far
+below the natural elevation, the kite can only be balanced in deep stall, with an angle of
+attack beyond the angle of maximum lift; then a warning is logged.
 
 If `trim` is `true`, all forces including gravity are balanced, also the z components of
 the forces on C and D, and the elevation is solved for instead: the kite is placed at the
@@ -728,11 +729,24 @@ restarted at higher and then at lower elevations, in steps of 5°.
 The nonlinear solver is sensitive to the starting point, so small floating-point
 differences (e.g. between Julia versions) can decide whether it converges. If the
 first attempt fails, it is repeated without autoscaling and then by continuation:
-a solution is first found for an easier `stiffness_factor` (and `delta`) and then
-used as start value while stepping towards the requested values.
+a solution is first found for an easier `stiffness_factor` and then used as start value
+while stepping towards the requested value. The initial state is not perturbed, unless
+this fails; the returned steady state is never perturbed.
+
+The keyword argument `delta` is deprecated and ignored.
 """
-function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2,
+function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=0.035, upwind_dir=-pi/2,
                             trim=false)
+    warn_delta_deprecated(delta, :find_steady_state!)
+    # solve without perturbation of the initial state, with a perturbation only as fallback
+    function solve()
+        local r, conv
+        for delta in STEADY_STATE_DELTAS
+            r, conv = solve_steady_state!(s; prn, delta, stiffness_factor, trim)
+            conv && break
+        end
+        r, conv
+    end
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
@@ -749,7 +763,7 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
         y_, yd_
     end
     try
-        results, converged = solve_steady_state!(s; prn, delta, stiffness_factor, trim)
+        results, converged = solve()
         converged && ((y00, yd00) = steady_state(results.zero))
         stalled = trim && converged && s.alpha_2 > alpha_stall
         if trim && (stalled || !converged)
@@ -758,7 +772,7 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
             starts = [el_set .+ (5.0:5.0:85.0); el_set .- (5.0:5.0:85.0)]
             for el in filter(el -> 5.0 <= el <= 89.0, starts)
                 s.set.elevation = el
-                r, conv = solve_steady_state!(s; prn, delta, stiffness_factor, trim)
+                r, conv = solve()
                 conv || continue
                 y, yd = steady_state(r.zero)
                 if s.alpha_2 <= alpha_stall
@@ -783,6 +797,11 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
                 error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
             end
             y00, yd00 = steady_state(results.zero)
+        end
+        if !trim && converged && s.alpha_2 > alpha_stall
+            @warn "find_steady_state!: the kite is in deep stall at the prescribed elevation of " *
+                  "$(el_set)° (angle of attack $(round(s.alpha_2, digits=1))°); use trim=true or a " *
+                  "higher elevation"
         end
         return y00, yd00
     catch e

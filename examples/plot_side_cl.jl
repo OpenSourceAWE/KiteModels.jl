@@ -85,7 +85,7 @@ STEERING::Vector{Float64} = zeros(length(STEERING_RANGE))
 SIDE_CL::Vector{Float64}  = zeros(length(STEERING_RANGE))
 for (i, set_steering) in pairs(STEERING_RANGE)
     local side_cl, integrator
-    integrator = KiteModels.init!(kps4;  delta=0.001, stiffness_factor=0.1, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4; stiffness_factor=0.1, prn=STATISTIC)
     side_cl, steering = simulate(integrator, STEPS, set_steering, plot=false)
     SIDE_CL[i] = side_cl
     STEERING[i] = steering
