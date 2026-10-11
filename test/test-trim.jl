@@ -5,7 +5,7 @@ using Pkg
 if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
-using Test
+using LinearAlgebra, Test
 using KiteModels, KitePodModels
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
@@ -61,5 +61,44 @@ end
         max_dev = max(max_dev, abs(rad2deg(calc_elevation(s) - el0)))
     end
     @test max_dev < 0.2
+end
+
+# wind profiles of AtmosphericModels.jl, fitted to the near-shore location Maasvlakte, NL and
+# to the inland location Cabauw, NL
+const PROFILES = Dict("Maasvlakte" => (profile_law=3, alpha=0.08163, z0=0.0002),
+                      "Cabauw"     => (profile_law=1, alpha=0.234,   z0=0.0002))
+
+function profile_settings(profile, v_wind)
+    set = deepcopy(load_settings("system.yaml"))
+    p = PROFILES[profile]
+    set.profile_law, set.alpha, set.z0, set.v_wind = p.profile_law, p.alpha, p.z0, v_wind
+    set
+end
+
+@testset "trim for wind profile $profile, $Model" for Model in (KPS3, KPS4), profile in ("Maasvlakte", "Cabauw")
+    elevations = Float64[]
+    for v_wind in (4.0, 7.0, 10.0)
+        # at 4 m/s, Maasvlakte has only 5.2 m/s at the height of the kite: the lift is too small
+        # to carry the kite, so no trim with attached flow exists
+        profile == "Maasvlakte" && v_wind == 4.0 && continue
+        s = Model(KCU(profile_settings(profile, v_wind)))
+        integrator = @test_logs min_level=Base.CoreLogging.Warn init!(s; trim=true, stiffness_factor=1.0, delta=0.0)
+        el0 = calc_elevation(s)
+        push!(elevations, el0)
+        # the kite is balanced for the wind of the profile at its height, with attached flow
+        v_profile = v_wind * KiteModels.calc_wind_factor(s.am, calc_height(s))
+        @test norm(s.v_wind) ≈ v_profile rtol=1e-6
+        @test s.alpha_2 < s.set.alpha_cl[argmax(s.set.cl_list)]
+        # the trimmed state is an equilibrium of the simulation, so the elevation stays constant
+        dt = 1/s.set.sample_freq
+        max_dev = 0.0
+        for _ in 1:round(Int, 10/dt)
+            next_step!(s, integrator; set_speed=0.0, dt)
+            max_dev = max(max_dev, abs(rad2deg(calc_elevation(s) - el0)))
+        end
+        @test max_dev < 0.01
+    end
+    # the kite flies higher at higher wind speeds
+    @test issorted(elevations)
 end
 nothing
