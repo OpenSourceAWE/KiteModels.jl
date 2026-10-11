@@ -301,19 +301,19 @@ rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
 _ec=0; julia --project=examples -e '
 using Pkg
 try
-Pkg.resolve()
-Pkg.instantiate()
+    Pkg.resolve()
+    Pkg.instantiate()
 catch e
-@warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-proj_dir = dirname(Base.active_project())
-for f in readdir(proj_dir)
-    if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-        rm(joinpath(proj_dir, f), force=true)
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
     end
-end
-Pkg.resolve()
-Pkg.instantiate()
-exit(2)
+    Pkg.resolve()
+    Pkg.instantiate()
+    exit(2)
 end
 ' || _ec=$?
 if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.12)")
@@ -323,19 +323,19 @@ run_precompile "--project=examples"
 _ec=0; julia --project=test -e '
 using Pkg
 try
-Pkg.resolve()
-Pkg.instantiate()
+    Pkg.resolve()
+    Pkg.instantiate()
 catch e
-@warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-proj_dir = dirname(Base.active_project())
-for f in readdir(proj_dir)
-    if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-        rm(joinpath(proj_dir, f), force=true)
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
     end
-end
-Pkg.resolve()
-Pkg.instantiate()
-exit(2)
+    Pkg.resolve()
+    Pkg.instantiate()
+    exit(2)
 end
 ' || _ec=$?
 if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.12)")
@@ -347,19 +347,19 @@ echo "Precompiling examples_3d project..."
 _ec=0; julia --project=examples_3d -e '
 using Pkg
 try
-Pkg.resolve()
-Pkg.instantiate()
+    Pkg.resolve()
+    Pkg.instantiate()
 catch e
-@warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-proj_dir = dirname(Base.active_project())
-for f in readdir(proj_dir)
-    if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-        rm(joinpath(proj_dir, f), force=true)
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
     end
-end
-Pkg.resolve()
-Pkg.instantiate()
-exit(2)
+    Pkg.resolve()
+    Pkg.instantiate()
+    exit(2)
 end
 ' || _ec=$?
 if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples_3d (1.12)")
@@ -370,19 +370,19 @@ rm -f docs/Manifest*.toml
 _ec=0; julia --project=docs -e '
 using Pkg
 try
-Pkg.resolve()
-Pkg.instantiate()
+    Pkg.resolve()
+    Pkg.instantiate()
 catch e
-@warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
-proj_dir = dirname(Base.active_project())
-for f in readdir(proj_dir)
-    if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
-        rm(joinpath(proj_dir, f), force=true)
+    @warn "Pkg.resolve()/instantiate() failed, attempting clean resolve..." exception=e
+    proj_dir = dirname(Base.active_project())
+    for f in readdir(proj_dir)
+        if startswith(f, "Manifest") && endswith(f, ".toml") && !endswith(f, ".default")
+            rm(joinpath(proj_dir, f), force=true)
+        end
     end
-end
-Pkg.resolve()
-Pkg.instantiate()
-exit(2)
+    Pkg.resolve()
+    Pkg.instantiate()
+    exit(2)
 end
 ' || _ec=$?
 if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("docs (1.12)")
