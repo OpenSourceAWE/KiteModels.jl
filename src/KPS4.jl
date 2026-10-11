@@ -745,7 +745,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
     # solve without perturbation of the initial state, with a perturbation only as fallback; the
     # restarts at other elevations use a cheaper solve, so that failing to find a trim is fast
     function solve(; restart=false)
-        local r, conv
+        r, conv = nothing, false
         for delta in (restart ? (0.0,) : STEADY_STATE_DELTAS)
             r, conv = solve_steady_state!(s; prn, delta, trim, continuation=!restart)
             conv && break
