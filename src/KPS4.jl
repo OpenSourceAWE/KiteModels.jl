@@ -717,9 +717,10 @@ of the kite (`pos_kite`, point B) is kept at `s.set.elevation`, because the kite
 be fully balanced at its natural elevation. Therefore `calc_elevation(s)` returns
 `s.set.elevation` after the steady state was found.
 
-If `trim` is `true`, the z components of the forces on C and D are balanced too and the
-elevation is solved for instead: the kite is placed at the elevation where its lift
-matches gravity (its natural elevation), starting the search at `s.set.elevation`.
+If `trim` is `true`, all forces including gravity are balanced, also the z components of
+the forces on C and D, and the elevation is solved for instead: the kite is placed at the
+elevation where its lift matches gravity (its natural elevation), starting the search at
+`s.set.elevation`.
 Trimmed steady states with an angle of attack beyond the angle of maximum lift (deep
 stall) are rejected. If no valid trim is found from `s.set.elevation`, the solver is
 restarted at higher and then at lower elevations, in steps of 5°.
@@ -738,6 +739,11 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     # the state for the offsets X, which are relative to the tether at s.set.elevation
     function steady_state(X)
         y_, yd_ = init(s, X; upwind_dir)
+        # the accelerations of a steady state that is balanced with gravity are zero
+        if trim
+            n = 3*(s.set.segments+KITE_PARTICLES)
+            yd_[n+1:2n] .= 0.0
+        end
         set_v_wind_ground!(s, y_[3*s.set.segments+6], s.set.v_wind; upwind_dir)
         residual!(res, yd_, y_, s, 0.0)
         y_, yd_
@@ -801,6 +807,12 @@ function solve_steady_state!(s::KPS4; prn=false, delta=0.001, stiffness_factor=0
     function test_initial_condition!(F, x::Vector)
         x1 = copy(x)
         y0, yd0 = init(s, x1; delta=delta_ref[])
+        # init sets the vertical accelerations to -g, so that gravity is not balanced; with trim
+        # the accelerations are zero, so that the kite and the tether are balanced with gravity
+        if trim
+            n = 3*(s.set.segments+KITE_PARTICLES)
+            yd0[n+1:2n] .= 0.0
+        end
         # the wind at the height of the kite (z of point B) of this candidate state
         set_v_wind_ground!(s, y0[3*s.set.segments+6], s.set.v_wind; upwind_dir=-pi/2)
         try

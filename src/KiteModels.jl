@@ -640,7 +640,7 @@ end
 
 """
     init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false, steady_state=true) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+                      prn=false, steady_state=true, trim=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -655,11 +655,15 @@ Parameters:
   produces a non-equilibrium starting point, which is useful when the caller has already
   set up a consistent state or when the steady-state solver is known to struggle (e.g.
   unusual wind conditions). Returns `nothing` if steady-state solving fails.
+- trim: if `true`, the steady state is found at the natural elevation of the kite, where its
+  lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. Ignored if
+  `steady_state` is `false`.
 
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true,
+               trim=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     clear!(s)
     init_winch_state!(s)
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
@@ -667,7 +671,7 @@ function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_stat
 
     y0, yd0 = if steady_state
         try
-            KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
+            KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn, trim)
         catch e
             if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
                 println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*

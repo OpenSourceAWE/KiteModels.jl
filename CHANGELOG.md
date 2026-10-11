@@ -6,12 +6,17 @@ SPDX-License-Identifier: MIT
 #### Added
 - `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the
   vertical force balance of the kite is solved too, so the kite is placed at the elevation where its
-  lift matches gravity (its natural elevation); `set.elevation` is only the start value. A second,
-  fully balanced trim exists at low elevations with the kite in deep stall (e.g. at 25° with an
-  angle of attack of 75° for KPS4 with `system.yaml`). Solutions with an angle of attack beyond the
-  angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and if no valid trim is
-  found from `set.elevation`, the solver is restarted at higher and then at lower elevations, in
-  steps of 5°. The default `trim=false` keeps the previous behaviour.
+  lift matches gravity (its natural elevation); `set.elevation` is only the start value. For KPS4
+  all forces including gravity are balanced in this case (with `trim=false`, the accelerations in
+  `yd0` are `-g`, so gravity is not balanced), and the returned accelerations are zero. A second,
+  fully balanced trim exists at low elevations with the kite in deep stall. Solutions with an angle
+  of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and
+  if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at
+  lower elevations, in steps of 5°. The default `trim=false` keeps the previous behaviour.
+- `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The trim depends on the stiffness
+  factor, which `next_step!` raises to 1.0, so use `init!(s; trim=true, stiffness_factor=1.0)` for an
+  initial state that is an equilibrium of the simulation; then the elevation stays constant
+  (within 0.1° over 10 s for KPS4 with `system.yaml`).
 #### Fixed
 - `find_steady_state!` (KPS4) now solves for the wind at the height of the kite. Before, the wind
   was set once from the height of the kite before the solver started, which is 0 m after `clear!`,

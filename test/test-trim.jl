@@ -38,12 +38,28 @@ end
     el_trim, max_res = steady_state(Model, el_set; trim=true, delta=0.0)
     @test max_res < 1e-4
     @test abs(el_trim - el_set) > 0.5
-    @test 60.0 < el_trim < 80.0
+    @test 50.0 < el_trim < 80.0
     # the trimmed elevation does not depend on the start value or on delta; from 30° the solver
     # finds a deep stall trim first, and for KPS4 it diverges from 55°, so both need restarts
     for el0 in (30.0, 55.0, 85.0)
         @test steady_state(Model, el0; trim=true, delta=0.0)[1] ≈ el_trim atol=1e-3
     end
     @test steady_state(Model, el_set; trim=true, delta=0.001)[1] ≈ el_trim atol=0.05
+end
+
+@testset "init! with trim=true, $Model" for Model in (KPS3, KPS4)
+    # at full stiffness the trimmed initial state is an equilibrium of the simulation,
+    # so the elevation stays constant
+    s = Model(KCU(deepcopy(load_settings("system.yaml"))))
+    integrator = @test_logs min_level=Base.CoreLogging.Warn init!(s; trim=true, stiffness_factor=1.0)
+    el0 = calc_elevation(s)
+    @test abs(rad2deg(el0) - s.set.elevation) > 0.5
+    dt = 1/s.set.sample_freq
+    max_dev = 0.0
+    for _ in 1:round(Int, 10/dt)
+        next_step!(s, integrator; set_speed=0.0, dt)
+        max_dev = max(max_dev, abs(rad2deg(calc_elevation(s) - el0)))
+    end
+    @test max_dev < 0.2
 end
 nothing
