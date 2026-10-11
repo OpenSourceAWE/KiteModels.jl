@@ -2,6 +2,12 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.20 - unreleased
+#### Changed
+- Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+  so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
+  value instead of four.
+
 ### KiteModels v0.11.19 2026-10-10
 #### Fixed
 - The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
