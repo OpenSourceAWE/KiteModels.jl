@@ -38,8 +38,9 @@ Then we call the function `find_steady_state` which uses a non-linear solver to 
 find_steady_state!(kps, prn=true)
 ```
 
-Finding the steady state of the 4-point model is difficult and it only works when we artificially reduce the stiffness by a factor
-of 0.035. In the function [`init!`](@ref) this factor is slowly increased to 1.0.
+The steady state is solved for the full tether stiffness. If the solver does not converge directly, a solution for a
+reduced stiffness is found first and used as start value. With `trim=true`, the kite is placed at its natural elevation
+instead of at the elevation from the settings.
 
 To plot the result in 2D we extract the vectors of the x and z coordinates of the tether particles with a for loop:
 
