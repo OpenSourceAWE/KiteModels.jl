@@ -54,7 +54,7 @@ x, y, z = kite_ref_frame(kps3)
 println("x:", x) # from trailing edge to leading edge in ENU reference frame
 println("y:", y) # to the right looking in flight direction
 println("z:", z) # down
-println("v_reel_out: ", round(kps4.v_reel_out, digits = 3), " m/s")
+println("v_reel_out: ", round(kps3.v_reel_out, digits = 3), " m/s")
 azimuth = calc_azimuth(kps3)
 println("azimuth: ", round(rad2deg(azimuth), digits = 2), "°")
 
