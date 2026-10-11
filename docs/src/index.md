@@ -4,7 +4,7 @@ CurrentModule = KiteModels
 
 # KiteModels
 
-Documentation for the package [KiteModels](https://github.com/ufechner7/KiteModels.jl).
+Documentation for the package [KiteModels](https://github.com/OpenSourceAWE/KiteModels.jl).
 
 The models have the following subcomponents, implemented in separate packages:
 
@@ -12,7 +12,7 @@ The models have the following subcomponents, implemented in separate packages:
 - WinchModel from [WinchModels](https://github.com/OpenSourceAWE/WinchModels.jl)
 - KitePodModel from  [KitePodModels](https://github.com/OpenSourceAWE/KitePodModels.jl)
 
-This package is part of Julia Kite Power Tools, which consist of the following packages:
+This package is part of Julia Kite Power Tools, which consists of the following packages:
 
 ![Julia Kite Power Tools package overview](https://github.com/OpenSourceAWE/KiteUtils.jl/raw/main/docs/src/kite_power_tools.png)
 
@@ -22,7 +22,7 @@ If you want to run simulations and see the results in 3D, please install the met
 
 ## Installation as package
 
-Install [Julia 1.12](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.13 is also supported.
+Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -74,11 +74,7 @@ times faster.
 
 ## Installation from git
 
-Install [Julia 1.12](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.13 is also supported. On Linux, make sure that Python3 and Matplotlib are installed:
-
-```bash
-sudo apt install python3-matplotlib
-```
+Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -200,4 +196,4 @@ The one point and four point kite models are described in detail in [Dynamic Mod
 - the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/OpenSourceAWE/KiteViewers.jl)
 - the [VortexStepMethod](https://github.com/OpenSourceAWE/VortexStepMethod.jl)
 
-Authors: Uwe Fechner (<uwe.fechner.msc@gmail.com>), Bart van de Lint (<bart@vandelint.net>)
+Authors: Uwe Fechner ([uwe.fechner.msc@gmail.com](mailto:uwe.fechner.msc@gmail.com)), Bart van de Lint ([bart@vandelint.net](mailto:bart@vandelint.net))

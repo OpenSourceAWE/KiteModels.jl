@@ -2,11 +2,68 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.17 2026-08-12
+### KiteModels v0.11.20 - unreleased
 #### Changed
 - Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
   so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
   value instead of four.
+
+### KiteModels v0.11.19 2026-10-10
+#### Fixed
+- The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
+  in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake
+  state after construction, so that repeated calls of `init!` give the same result) instead of on
+  every call of the residual function. Before, it depended on the number of residual evaluations
+  of the DAE solver, so tiny numerical differences (e.g. between Julia versions) could switch the
+  brake at a different moment. With a winch `v_min` of 0.15 m/s this made the reel-out speed of the
+  hydra20 simulations of KiteControllers.jl run away on Julia 1.13. The simulation results change
+  slightly.
+- `find_steady_state!` (KPS3) now finds a real equilibrium. Before, `nlsolve` usually stopped
+  because its steps became tiny, with the accelerations of the tether particles still at about
+  25 m/s², and on some machines it printed `find_steady_state!: solver did not converge!`. The
+  unknowns are now the angles and relative stretches of the tether segments instead of the offsets
+  of the particle positions, the solver starts from a slightly stretched tether (the spring force
+  has a kink at zero stretch), and, as for KPS4, the elevation of the kite is prescribed instead of
+  its vertical force balance, so `calc_elevation(s)` returns `set.elevation`. The tether particles
+  and the horizontal force balance of the kite are now solved to `ftol = 1e-6`; a warning is only
+  printed if this fails. The horizontal residuals are taken in the plane of the tether, so the
+  result no longer depends on `upwind_dir`. The initial state changes: for example, with a 392 m
+  tether the kite starts at 70° instead of 64.3°.
+#### Changed
+- requires WinchModels 0.3.12 (for `update_winch_state!` and `calc_acceleration(...; update_state)`)
+- support Julia 1.12 and 1.13 only, as WinchModels 0.3.12 and KiteUtils do: `julia` compat
+  `"1.12, 1.13"`, `Manifest-v1.11.toml.default` is removed, `bin/install`,
+  `bin/update_default_manifest` and `bin/create_sys_image` no longer offer Julia 1.11, CI tests
+  Julia 1.12 instead of 1.11, and the docs no longer mention Julia 1.11
+- the default manifests for Julia 1.12 and 1.13 use WinchModels 0.3.12 and the latest versions of
+  the other dependencies
+
+### KiteModels v0.11.18 2026-10-10
+#### Changed
+- The system of equations of `find_steady_state!` (KPS4) is now square and well-posed. Before, one
+  unknown had no effect, one equation was missing (its entry stayed `0`), and the x equation of the
+  point p8 was used twice, so the elevation of the kite could drift from `set.elevation` by several
+  degrees, depending on rounding. Now the elevation of the kite (`pos_kite`, so that
+  `calc_elevation(s)` returns `set.elevation`) is prescribed instead of the z balance of the kite
+  points C and D (the kite can only be fully balanced at its natural elevation), C and D enter as
+  symmetric (x) and antisymmetric (y) combination, and the unused unknown is fixed to zero. The
+  initial state of the simulation changes slightly.
+#### Fixed
+- `find_steady_state!` (KPS4) is more robust: if the first `nlsolve` attempt fails or returns
+  a result with a large residual, it is retried without autoscaling and then by continuation
+  (solving for an easier `stiffness_factor`/`delta` first and stepping towards the requested values).
+  Before, convergence depended on tiny floating-point differences, so e.g. the `hydra20_426`
+  project of KiteControllers.jl failed to initialise on Julia 1.13 while it worked on Julia 1.12.
+- a residual entry that is not used as equation could keep the value `1e6` after an infeasible
+  solver step; it is now reset on every evaluation
+- the warning "Warning in test_initial_condition!" for infeasible solver steps is now a debug message
+- `find_steady_state!` now also warns if the solver stopped because the steps became small while the
+  residual norm is still above `1e-3`; before, such a result was accepted silently. The warning now
+  includes the residual norm.
+#### Added
+- test `test/test-steady-state-robustness.jl` for cases where a single solver attempt does not converge
+
+### KiteModels v0.11.17 2026-10-09
 #### Added
 - `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
   for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
@@ -16,6 +73,27 @@ SPDX-License-Identifier: MIT
   so `upwind_dir` and tether drag are unaffected; a future phase 2 could extend the tether. Since
   `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
   automatically.
+- Support for Julia 1.13: `julia` compat entry extended to `1.11, 1.12, 1.13` (also in the `docs`,
+  `examples` and `examples_3d` projects), new default manifest `Manifest-v1.13.toml.default` (with
+  some packages downgraded to reduce the size of the system image), and `bin/install` offers
+  Julia 1.13 as a third choice (the default if it is already the active juliaup channel).
+
+#### Changed
+- `Parameters` compat widened to `0.12, 0.13`.
+- `bin/install` and `bin/create_sys_image` pick the default manifest generically as
+  `Manifest-v<julia_major>.toml.default` and fail if it is missing; `bin/create_sys_image` no longer
+  deletes the obsolete `data/model_*.bin` files, and `bin/create_sys_image2` also backs up
+  `Manifest-v1.13.toml` when updating.
+- README and documentation: links to `WinchModels`, `KitePodModels` and `AtmosphericModels` point to
+  the OpenSourceAWE organisation, the package diagram is taken from `KiteUtils.jl`, Julia 1.12 is
+  the recommended version, and the reference to the meta-package `KiteSimulators` was dropped.
+
+#### Removed
+- `bin/setup_env` (the `LD_PRELOAD`/`LD_LIBRARY_PATH` workaround) and `bin/jetls_with_env`, which
+  depended on it. `bin/install`, `bin/run_julia`, `bin/create_sys_image` and `bin/create_sys_image2`
+  no longer source it, and the retry without these overrides is gone. `copy_bin()` no longer copies
+  `setup_env`.
+- Obsolete `data/model*.bin` / `data/prob*.bin` entries from `.gitignore`.
 
 ### KiteModels v0.11.16 2026-08-10
 #### Added
