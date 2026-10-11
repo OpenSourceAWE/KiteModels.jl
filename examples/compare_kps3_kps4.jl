@@ -47,12 +47,12 @@ function simulate(s, integrator, steps, plot = false; fig = "")
             s.pos,
             0.0;
             zoom = ZOOM,
-            xlim = (35, 55),
+            xlim = (40, 55),
             xy = (52.0, z_text),
             front = FRONT_VIEW,
             fig,
         )
-        sleep(0.025)
+        sleep(0.05)
     end
     for i in 1:steps
         if PRINT
@@ -72,12 +72,12 @@ function simulate(s, integrator, steps, plot = false; fig = "")
                     s.pos,
                     reltime;
                     zoom = ZOOM,
-                    xlim = (35, 75),
+                    xlim = (40, 55),
                     xy = (52.0, z_text),
                     front = FRONT_VIEW,
                     fig,
                 )
-                sleep(0.025)
+                sleep(0.05)
             end
         end
     end
