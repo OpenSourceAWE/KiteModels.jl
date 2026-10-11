@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "dd958dd897cd55999deead3b6d0c5ed2dc8a633b"
+project_hash = "109e004a467d83a5381a76149e526d1a7c65902f"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1380,11 +1380,9 @@ version = "0.13.1"
 
 [[deps.KiteViewers]]
 deps = ["FileIO", "GLMakie", "GeometryBasics", "Joysticks", "KiteUtils", "LinearAlgebra", "Parameters", "Pkg", "PrecompileTools", "Printf", "Reexport", "Rotations", "StaticArrays", "StructArrays", "Timers"]
-git-tree-sha1 = "503f9eaaaae53811443a59a88f5bfd472bd6a66c"
-repo-rev = "agent/54-update-kiteutils"
-repo-url = "https://github.com/OpenSourceAWE/KiteViewers.jl"
+git-tree-sha1 = "017c164c65b5f6ca1efc97e7dfa3c5d9ef4c78e2"
 uuid = "2e593061-95e7-45e4-95f4-df0491f2e601"
-version = "0.6.0"
+version = "0.7.0"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
