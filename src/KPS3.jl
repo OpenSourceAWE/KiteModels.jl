@@ -551,7 +551,7 @@ function steady_state_offsets(s::KPS3, p)
     X
 end
 
-function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=nothing, warn=true)
+function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=nothing, warn=true, trim=false)
     res = zeros(MVector{6*s.set.segments+2, SimFloat})
     segments = s.set.segments
     # init turns the tether into the wind direction; turn the residuals and positions back
@@ -562,7 +562,7 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
     # Equations: the horizontal and vertical force balance of the tether particles, the horizontal
     # force balance of the kite and its elevation angle. The kite can only be fully balanced at its
     # natural elevation, so the elevation from the settings is prescribed instead of its vertical
-    # force balance.
+    # force balance, unless trim is true.
     function test_initial_condition!(F, x::Vector)
         y0, yd0 = init(s, steady_state_offsets(s, x); delta, upwind_dir)
         residual!(res, yd0, y0, s)
@@ -571,6 +571,7 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
             F[i]          = horizontal(res[j+1], res[j+2])
             F[i+segments] = res[j+3]
         end
+        trim && return nothing
         # replace the vertical force balance of the kite by the elevation angle, scaled to meters
         j = 3*(segments-1)
         x_kite = horizontal(y0[j+1], y0[j+2])
@@ -594,7 +595,8 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
  end
 
 """
-    find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
+    find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2,
+                       trim=false)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
@@ -602,15 +604,53 @@ Find an initial equilibrium, based on the initial parameters
 The tether particles are in equilibrium. The kite is placed at the elevation angle from the
 settings, so only its horizontal force balance is solved for; the kite can only be fully balanced
 at its natural elevation.
+
+If `trim` is `true`, the vertical force balance of the kite is solved for too and the elevation
+is free: the kite is placed at the elevation where its lift matches gravity (its natural
+elevation), starting the search at `s.set.elevation`. Trimmed steady states with an angle of
+attack beyond the angle of maximum lift (deep stall) are rejected. If no valid trim is found from
+`s.set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 5°.
 """
-function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2)
-    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-    # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
-    p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
-    s.stiffness_factor=stiffness_factor
-    p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false)
-    s.stiffness_factor=1.0
-    # if the solution with the reduced stiffness failed, start again from the straight tether
-    p, _ = find_steady_state_inner(s, converged ? p : p0, prn; delta, upwind_dir)
-    init(s, steady_state_offsets(s, p); delta=delta, upwind_dir)
+function find_steady_state!(s::KPS3; prn=false, delta = 0.002, stiffness_factor=0.035, upwind_dir=-pi/2,
+                            trim=false)
+    el_set = s.set.elevation
+    alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
+    # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver
+    # converged and whether the kite is in deep stall.
+    function solve(warn)
+        set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+        # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
+        p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
+        s.stiffness_factor=stiffness_factor
+        p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false, trim)
+        s.stiffness_factor=1.0
+        # if the solution with the reduced stiffness failed, start again from the straight tether
+        p, converged = find_steady_state_inner(s, converged ? p : p0, prn; delta, upwind_dir, warn, trim)
+        all(isfinite, p) || return nothing, nothing, false, false
+        y0, yd0 = init(s, steady_state_offsets(s, p); delta=delta, upwind_dir)
+        trim && residual!(zeros(length(y0)), yd0, y0, s)  # updates the angle of attack s.alpha_2
+        y0, yd0, converged, trim && s.alpha_2 > alpha_stall
+    end
+    y0, yd0, converged, stalled = solve(!trim)
+    (trim && (stalled || !converged)) || return y0, yd0
+    try
+        # Restart from other elevations: from far below the natural elevation the solver can
+        # find a deep stall trim.
+        starts = [el_set .+ (5.0:5.0:85.0); el_set .- (5.0:5.0:85.0)]
+        for el in filter(el -> 5.0 <= el <= 89.0, starts)
+            s.set.elevation = el
+            y, yd, conv, st = solve(false)
+            if conv && !st
+                prn && println("find_steady_state!: trimmed steady state found, starting at $el°")
+                return y, yd
+            end
+        end
+    finally
+        s.set.elevation = el_set
+    end
+    # no valid trim found, return the result from el_set again
+    y0, yd0, _, stalled = solve(true)
+    stalled && @warn "find_steady_state!: only a trimmed steady state in deep stall was found " *
+                     "(angle of attack $(round(s.alpha_2, digits=1))°)"
+    y0, yd0
 end

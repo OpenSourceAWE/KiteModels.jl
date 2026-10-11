@@ -2,6 +2,24 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.11.20 - unreleased
+#### Added
+- `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the
+  vertical force balance of the kite is solved too, so the kite is placed at the elevation where its
+  lift matches gravity (its natural elevation); `set.elevation` is only the start value. A second,
+  fully balanced trim exists at low elevations with the kite in deep stall (e.g. at 25° with an
+  angle of attack of 75° for KPS4 with `system.yaml`). Solutions with an angle of attack beyond the
+  angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and if no valid trim is
+  found from `set.elevation`, the solver is restarted at higher and then at lower elevations, in
+  steps of 5°. The default `trim=false` keeps the previous behaviour.
+#### Fixed
+- `find_steady_state!` (KPS4) now solves for the wind at the height of the kite. Before, the wind
+  was set once from the height of the kite before the solver started, which is 0 m after `clear!`,
+  so the kite was balanced for the ground wind (9.51 m/s instead of 12.6 m/s with `system.yaml`);
+  afterwards the wind at the real height was set, which left force residuals of about 130 N on the
+  kite points. The initial state changes: for example, with `system.yaml` the winch force increases
+  from 308 N to 456 N.
+
 ### KiteModels v0.11.19 2026-10-10
 #### Fixed
 - The state of the winch (brake on/off, rate limited set speed) is now updated once per time step

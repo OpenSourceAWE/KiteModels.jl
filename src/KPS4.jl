@@ -705,7 +705,8 @@ function turn(res, upwind_dir)
 end
 
 """
-    find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2))
+    find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2,
+                       trim=false)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
@@ -716,14 +717,82 @@ of the kite (`pos_kite`, point B) is kept at `s.set.elevation`, because the kite
 be fully balanced at its natural elevation. Therefore `calc_elevation(s)` returns
 `s.set.elevation` after the steady state was found.
 
+If `trim` is `true`, the z components of the forces on C and D are balanced too and the
+elevation is solved for instead: the kite is placed at the elevation where its lift
+matches gravity (its natural elevation), starting the search at `s.set.elevation`.
+Trimmed steady states with an angle of attack beyond the angle of maximum lift (deep
+stall) are rejected. If no valid trim is found from `s.set.elevation`, the solver is
+restarted at higher and then at lower elevations, in steps of 5°.
+
 The nonlinear solver is sensitive to the starting point, so small floating-point
 differences (e.g. between Julia versions) can decide whether it converges. If the
 first attempt fails, it is repeated without autoscaling and then by continuation:
 a solution is first found for an easier `stiffness_factor` (and `delta`) and then
 used as start value while stepping towards the requested values.
 """
-function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2)
-    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir=-pi/2)
+function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=0.035, upwind_dir=-pi/2,
+                            trim=false)
+    el_set = s.set.elevation
+    alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
+    res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
+    # the state for the offsets X, which are relative to the tether at s.set.elevation
+    function steady_state(X)
+        y_, yd_ = init(s, X; upwind_dir)
+        set_v_wind_ground!(s, y_[3*s.set.segments+6], s.set.v_wind; upwind_dir)
+        residual!(res, yd_, y_, s, 0.0)
+        y_, yd_
+    end
+    try
+        results, converged = solve_steady_state!(s; prn, delta, stiffness_factor, trim)
+        converged && ((y00, yd00) = steady_state(results.zero))
+        stalled = trim && converged && s.alpha_2 > alpha_stall
+        if trim && (stalled || !converged)
+            # Restart from other elevations: the solver converges from above the natural
+            # elevation, but diverges or finds a deep stall trim from far below it.
+            starts = [el_set .+ (5.0:5.0:85.0); el_set .- (5.0:5.0:85.0)]
+            for el in filter(el -> 5.0 <= el <= 89.0, starts)
+                s.set.elevation = el
+                r, conv = solve_steady_state!(s; prn, delta, stiffness_factor, trim)
+                conv || continue
+                y, yd = steady_state(r.zero)
+                if s.alpha_2 <= alpha_stall
+                    prn && println("find_steady_state!: trimmed steady state found, starting at $el°")
+                    results, converged, stalled = r, true, false
+                    y00, yd00 = y, yd
+                    break
+                end
+            end
+            if stalled
+                s.set.elevation = el_set
+                y00, yd00 = steady_state(results.zero)
+                @warn "find_steady_state!: only a trimmed steady state in deep stall was found " *
+                      "(angle of attack $(round(s.alpha_2, digits=1))°)"
+            end
+        end
+        if !converged
+            s.set.elevation = el_set
+            @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations), residual_norm=$(results.residual_norm))"
+            # Check if the solution contains finite values
+            if !all(isfinite, results.zero)
+                error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
+            end
+            y00, yd00 = steady_state(results.zero)
+        end
+        return y00, yd00
+    catch e
+        if e isa AssertionError
+            error("find_steady_state!: computation resulted in non-finite values. The solver did not find a valid steady state.")
+        else
+            rethrow(e)
+        end
+    finally
+        s.set.elevation = el_set
+    end
+end
+
+# Solve for the offsets of the steady state, see find_steady_state!. Returns the result of nlsolve
+# and whether it is usable.
+function solve_steady_state!(s::KPS4; prn=false, delta=0.001, stiffness_factor=0.035, trim=false)
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
     delta_ref = Ref(delta)
@@ -732,6 +801,8 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     function test_initial_condition!(F, x::Vector)
         x1 = copy(x)
         y0, yd0 = init(s, x1; delta=delta_ref[])
+        # the wind at the height of the kite (z of point B) of this candidate state
+        set_v_wind_ground!(s, y0[3*s.set.segments+6], s.set.v_wind; upwind_dir=-pi/2)
         try
             residual!(res, yd0, y0, s, 0.0)
         catch e
@@ -746,7 +817,7 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
         # 2..segments+1, p8 and p9, the symmetric part of the x residual of C and D, the elevation
         # of the kite, the unused entry and the antisymmetric part of the y residual of C and D.
         # The kite can only be fully balanced at its natural elevation, therefore the elevation
-        # of the kite is prescribed instead of the z residual of C and D.
+        # of the kite is prescribed instead of the z residual of C and D, unless trim is true.
         segments = s.set.segments
         n_free = segments + KITE_PARTICLES - 1            # number of x (and of z) unknowns
         acc(i, k) = res[k + 3*(i-2) + 3*(segments+KITE_PARTICLES)]  # residual of particle i, component k
@@ -757,8 +828,12 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
         C, D = segments+4, segments+5
         F[n_free]   = 0.5 * (acc(C, 1) + acc(D, 1))
         # position of the kite as returned by pos_kite (point B = p9 = particle segments+3)
-        kite = SVector(y0[3*segments+4], y0[3*segments+5], y0[3*segments+6])
-        F[2*n_free] = calc_elevation(kite) - deg2rad(s.set.elevation)
+        if trim
+            F[2*n_free] = 0.5 * (acc(C, 3) + acc(D, 3))
+        else
+            kite = SVector(y0[3*segments+4], y0[3*segments+5], y0[3*segments+6])
+            F[2*n_free] = calc_elevation(kite) - deg2rad(s.set.elevation)
+        end
         F[end-1]    = x[end-1]
         F[end]      = 0.5 * (acc(C, 2) - acc(D, 2))
         return nothing
@@ -810,25 +885,7 @@ function find_steady_state!(s::KPS4; prn=false, delta = 0.001, stiffness_factor=
     s.stiffness_factor = stiffness_factor
     delta_ref[] = delta
     if prn println("\nresult: $results") end
-    if !usable(results)
-        @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations), residual_norm=$(results.residual_norm))"
-        # Check if the solution contains finite values
-        if !all(isfinite, results.zero)
-            error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
-        end
-    end
-    try
-        y00, yd00 = init(s, results.zero; upwind_dir)
-        set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
-        residual!(res, yd00, y00, s, 0.0)
-        return y00, yd00
-    catch e
-        if e isa AssertionError
-            error("find_steady_state!: computation resulted in non-finite values. The solver did not find a valid steady state.")
-        else
-            rethrow(e)
-        end
-    end
+    results, usable(results)
 end
 
 const KITE_ANGLE = 3.83 # angle between the kite and the last tether segment due to the mass of the control pod
