@@ -1861,10 +1861,10 @@ version = "0.24.15"
 
 [[deps.MakieControlPlots]]
 deps = ["CairoMakie", "GLMakie", "GridLayoutBase", "JLD2", "LaTeXStrings", "Makie", "Pkg", "PrecompileTools", "Printf", "StaticArraysCore"]
-git-tree-sha1 = "aeb72de0f9bad76c4080d79b954864e6b090be2e"
+git-tree-sha1 = "1d45e9c07bb53aad7c9f666c221a07b3a9199e9b"
 registries = "General"
 uuid = "6d616b69-6563-4f6e-8472-6f6c706c6f74"
-version = "0.1.20"
+version = "0.1.21"
 weakdeps = ["ControlSystemsBase"]
 
     [deps.MakieControlPlots.extensions]
@@ -2715,10 +2715,10 @@ version = "1.0.0"
 
 [[deps.SIMD]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "1ed93b3c4ffd33cc0c5d17eeb46f1b504ce42731"
+git-tree-sha1 = "e24dc23107d426a096d3eae6c165b921e74c18e4"
 registries = "General"
 uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
-version = "3.8.0"
+version = "3.7.2"
 
 [[deps.SIMDTypes]]
 git-tree-sha1 = "330289636fb8107c5f32088d2741e9fd7a061a5c"

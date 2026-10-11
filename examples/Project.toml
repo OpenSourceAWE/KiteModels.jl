@@ -19,7 +19,6 @@ Timers = "21f18d07-b854-4dab-86f0-c15a3821819a"
 
 [sources]
 KiteModels = {path = ".."}
-MakieControlPlots = {rev = "main", url = "https://github.com/OpenSourceAWE/MakieControlPlots.jl.git"}
 
 [compat]
 BenchmarkTools = "1.6"
