@@ -99,7 +99,7 @@ if "KiteViewers" ∈ keys(Pkg.project().dependencies)
             iter / steps
         end
         
-        integrator = KiteModels.init!(kps4, stiffness_factor=0.1, prn=STATISTIC)
+        integrator = KiteModels.init!(kps4, prn=STATISTIC)
         
         println("\nStarting simulation...")
         simulate(integrator, STEPS)

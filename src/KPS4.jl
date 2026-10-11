@@ -705,7 +705,7 @@ function turn(res, upwind_dir)
 end
 
 """
-    find_steady_state!(s::KPS4; prn=false, stiffness_factor=0.035, upwind_dir=-pi/2, trim=false)
+    find_steady_state!(s::KPS4; prn=false, upwind_dir=-pi/2, trim=false)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
@@ -721,33 +721,38 @@ attack beyond the angle of maximum lift; then a warning is logged.
 If `trim` is `true`, all forces including gravity are balanced, also the z components of
 the forces on C and D, and the elevation is solved for instead: the kite is placed at the
 elevation where its lift matches gravity (its natural elevation), starting the search at
-`s.set.elevation`.
+80° or at `s.set.elevation`, if it is higher: the solver converges from above the natural
+elevation, but often not from far below it.
 Trimmed steady states with an angle of attack beyond the angle of maximum lift (deep
-stall) are rejected. If no valid trim is found from `s.set.elevation`, the solver is
-restarted at higher and then at lower elevations, in steps of 5°.
+stall) are rejected. If no valid trim is found from the start elevation, the solver is
+restarted at higher and then at lower elevations than `s.set.elevation`, in steps of 5°.
 
-The nonlinear solver is sensitive to the starting point, so small floating-point
+The steady state is always solved for the full tether stiffness (`s.stiffness_factor` is 1.0
+afterwards). The nonlinear solver is sensitive to the starting point, so small floating-point
 differences (e.g. between Julia versions) can decide whether it converges. If the
 first attempt fails, it is repeated without autoscaling and then by continuation:
-a solution is first found for an easier `stiffness_factor` and then used as start value
-while stepping towards the requested value. The initial state is not perturbed, unless
-this fails; the returned steady state is never perturbed.
+a solution is first found for a reduced tether stiffness and then used as start value
+for the full stiffness. The initial state is not perturbed, unless this fails; the returned
+steady state is never perturbed.
 
-The keyword argument `delta` is deprecated and ignored.
+The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored.
 """
-function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=0.035, upwind_dir=-pi/2,
+function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=nothing, upwind_dir=-pi/2,
                             trim=false)
     warn_delta_deprecated(delta, :find_steady_state!)
+    warn_stiffness_factor_deprecated(stiffness_factor, :find_steady_state!)
     # solve without perturbation of the initial state, with a perturbation only as fallback
     function solve()
         local r, conv
         for delta in STEADY_STATE_DELTAS
-            r, conv = solve_steady_state!(s; prn, delta, stiffness_factor, trim)
+            r, conv = solve_steady_state!(s; prn, delta, trim)
             conv && break
         end
         r, conv
     end
     el_set = s.set.elevation
+    # elevation of the first attempt; the offsets of its result are relative to it
+    el_start = trim ? max(el_set, TRIM_START_ELEVATION) : el_set
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
     # the state for the offsets X, which are relative to the tether at s.set.elevation
@@ -763,6 +768,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
         y_, yd_
     end
     try
+        s.set.elevation = el_start
         results, converged = solve()
         converged && ((y00, yd00) = steady_state(results.zero))
         stalled = trim && converged && s.alpha_2 > alpha_stall
@@ -770,7 +776,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
             # Restart from other elevations: the solver converges from above the natural
             # elevation, but diverges or finds a deep stall trim from far below it.
             starts = [el_set .+ (5.0:5.0:85.0); el_set .- (5.0:5.0:85.0)]
-            for el in filter(el -> 5.0 <= el <= 89.0, starts)
+            for el in filter(el -> 5.0 <= el <= 89.0 && el != el_start, starts)
                 s.set.elevation = el
                 r, conv = solve()
                 conv || continue
@@ -783,14 +789,14 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
                 end
             end
             if stalled
-                s.set.elevation = el_set
+                s.set.elevation = el_start
                 y00, yd00 = steady_state(results.zero)
                 @warn "find_steady_state!: only a trimmed steady state in deep stall was found " *
                       "(angle of attack $(round(s.alpha_2, digits=1))°)"
             end
         end
         if !converged
-            s.set.elevation = el_set
+            s.set.elevation = el_start
             @warn "find_steady_state!: solver did not converge! (f_converged=$(results.f_converged), x_converged=$(results.x_converged), iterations=$(results.iterations), residual_norm=$(results.residual_norm))"
             # Check if the solution contains finite values
             if !all(isfinite, results.zero)
@@ -815,9 +821,19 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
     end
 end
 
-# Solve for the offsets of the steady state, see find_steady_state!. Returns the result of nlsolve
-# and whether it is usable.
-function solve_steady_state!(s::KPS4; prn=false, delta=0.001, stiffness_factor=0.035, trim=false)
+# Stiffness factors for the continuation in solve_steady_state!: if the solve for the full tether
+# stiffness fails, the solution is first found for the reduced stiffness factors of a schedule,
+# each starting from the previous solution. A benchmark with system.yaml (wind speeds of 6 to
+# 25 m/s, elevations of 40° to 85°, tether lengths of 50 to 1000 m, with and without trim) showed
+# that the solve for the full stiffness converges directly in most cases and is the fastest
+# option, starting at a reduced stiffness is needed mainly with trim, and the schedules fail in
+# different cases, so they are tried in turn.
+const STIFFNESS_SCHEDULES = ((0.1, 1.0), (0.1, 0.3, 1.0), (0.3, 1.0))
+
+# Solve for the offsets of the steady state for the full tether stiffness, see
+# find_steady_state!. Returns the result of nlsolve and whether it is usable.
+function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false)
+    stiffness_factor = 1.0
     s.stiffness_factor = stiffness_factor
     res = zeros(MVector{6*(s.set.segments+KITE_PARTICLES)+2, SimFloat})
     delta_ref = Ref(delta)
@@ -892,8 +908,18 @@ function solve_steady_state!(s::KPS4; prn=false, delta=0.001, stiffness_factor=0
     if !usable(results)
         r = solve(stiffness_factor, delta, X00; autoscale=false)
         usable(r) || (r = nothing)
+        # continuation with a fixed schedule of stiffness factors
+        for schedule in STIFFNESS_SCHEDULES
+            isnothing(r) || break
+            r = try_solve(schedule[1], delta, X00)
+            for sf in schedule[2:end]
+                isnothing(r) && break
+                r = try_solve(sf, delta, r.zero)
+            end
+            !isnothing(r) && prn && println("find_steady_state!: converged with the stiffness schedule $schedule")
+        end
         if isnothing(r)
-            # continuation: solve an easier problem, then step towards the requested parameters
+            # continuation: solve an easier problem, then step towards the full stiffness
             starts = [(sf0, delta) for sf0 in (0.1, 0.2, 0.3, 0.05) if sf0 != stiffness_factor]
             if delta != 0.001
                 push!(starts, (stiffness_factor, 0.001))

@@ -103,7 +103,7 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     set.elevation = 67.0
     kcu = KCU(set)
     kps4::KPS4 = KPS4(kcu)
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.04, prn=STATISTIC)
+    integrator = KiteModels.init!(kps4; prn=STATISTIC)
     set_depower_steering(kps4.kcu, depower, 0.0)
     # scale excitation amplitude to the steady-state winch torque for any kite size
     sin_amplitude = 6.8 * norm(kps4.forces[1]) * set.drum_radius / set.gear_ratio

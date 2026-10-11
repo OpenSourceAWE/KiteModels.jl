@@ -109,7 +109,7 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 set.elevations[1] += 5
 set.v_wind = V_WIND_200
-integrator = KiteModels.init!(kps4; stiffness_factor=1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; prn=STATISTIC)
 if ! isnothing(integrator)
     simulate(kps4, integrator, logger, STEPS)
     set_depower_steering(kps4.kcu, depower, 0.0)

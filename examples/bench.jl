@@ -39,7 +39,7 @@ function simulate(integrator, steps)
     iter / steps
 end
 
-integrator = KiteModels.init!(kps3; stiffness_factor = 0.1, prn = STATISTIC)
+integrator = KiteModels.init!(kps3; prn = STATISTIC)
 
 println("\nStarting simulation...")
 simulate(integrator, 100)

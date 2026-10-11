@@ -97,9 +97,6 @@ julia> calc_height(kps)
 152.18828499538841
 ```
 
-Because of the the stiffness_factor of 0.035 we have a longer tether-length then when using
-the 1 point kite model.
-
 Print the force at the winch (groundstation, in Newton) and at each tether segment:
 
 ```julia

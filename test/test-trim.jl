@@ -50,7 +50,7 @@ end
     # at full stiffness the trimmed initial state is an equilibrium of the simulation,
     # so the elevation stays constant
     s = Model(KCU(deepcopy(load_settings("system.yaml"))))
-    integrator = @test_logs min_level=Base.CoreLogging.Warn init!(s; trim=true, stiffness_factor=1.0)
+    integrator = @test_logs min_level=Base.CoreLogging.Warn init!(s; trim=true)
     el0 = calc_elevation(s)
     @test abs(rad2deg(el0) - s.set.elevation) > 0.5
     dt = 1/s.set.sample_freq
@@ -81,7 +81,7 @@ end
         # to carry the kite, so no trim with attached flow exists
         profile == "Maasvlakte" && v_wind == 4.0 && continue
         s = Model(KCU(profile_settings(profile, v_wind)))
-        integrator = @test_logs min_level=Base.CoreLogging.Warn init!(s; trim=true, stiffness_factor=1.0)
+        integrator = @test_logs min_level=Base.CoreLogging.Warn init!(s; trim=true)
         el0 = calc_elevation(s)
         push!(elevations, el0)
         # the kite is balanced for the wind of the profile at its height, with attached flow
@@ -113,11 +113,27 @@ end
     @test !isnothing(init!(Model(KCU(deepcopy(load_settings("system.yaml")))); delta=0.005))
 end
 
+@testset "deprecated keyword stiffness_factor, $Model" for Model in (KPS3, KPS4)
+    # stiffness_factor is still accepted, but ignored: the steady state is solved for the full
+    # tether stiffness
+    s = Model(KCU(deepcopy(load_settings("system.yaml"))))
+    KiteModels.clear!(s)
+    y_ref, _ = find_steady_state!(s)
+    s = Model(KCU(deepcopy(load_settings("system.yaml"))))
+    KiteModels.clear!(s)
+    y, _ = find_steady_state!(s; stiffness_factor=0.1)
+    @test y ≈ y_ref
+    @test s.stiffness_factor == 1.0
+    s = Model(KCU(deepcopy(load_settings("system.yaml"))))
+    @test !isnothing(init!(s; stiffness_factor=0.1))
+    @test s.stiffness_factor == 1.0
+end
+
 @testset "deep stall at a low prescribed elevation, $Model" for Model in (KPS3, KPS4)
-    # 50° is far below the natural elevation: without trim, the kite can only be balanced in deep
+    # 40° is far below the natural elevation: without trim, the kite can only be balanced in deep
     # stall, which is reported; with trim, the natural elevation is found
     set = deepcopy(load_settings("system.yaml"))
-    set.elevation = 50.0
+    set.elevation = 40.0
     s = Model(KCU(set))
     KiteModels.clear!(s)
     @test_logs (:warn, r"deep stall at the prescribed elevation") find_steady_state!(s)

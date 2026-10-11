@@ -33,7 +33,7 @@ logger = Logger(set.segments + 1, STEPS)
 
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
-_ = KiteModels.init!(kps3; stiffness_factor=0.1, prn=STATISTIC)
+_ = KiteModels.init!(kps3; prn=STATISTIC)
 lift, drag = lift_drag(kps3)
 sys_state::SysState = KiteModels.SysState(kps3)
 log!(logger, sys_state)

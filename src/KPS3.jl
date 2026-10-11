@@ -594,8 +594,12 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
     results.zero, results.f_converged
  end
 
+# stiffness factor of the first solve of find_steady_state! (KPS3); its result is the start value
+# for the solve with the full tether stiffness
+const KPS3_START_STIFFNESS_FACTOR = 0.035
+
 """
-    find_steady_state!(s::KPS3; prn=false, stiffness_factor=0.035, upwind_dir=-pi/2, trim=false)
+    find_steady_state!(s::KPS3; prn=false, upwind_dir=-pi/2, trim=false)
 
 Find an initial equilibrium, based on the initial parameters
 `l_tether`, elevation and `v_reel_out`.
@@ -612,11 +616,14 @@ elevation), starting the search at `s.set.elevation`. Trimmed steady states with
 attack beyond the angle of maximum lift (deep stall) are rejected. If no valid trim is found from
 `s.set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 5°.
 
-The keyword argument `delta` is deprecated and ignored.
+The steady state is always solved for the full tether stiffness; a solution for a reduced
+stiffness is only used as start value. The keyword arguments `delta` and `stiffness_factor`
+are deprecated and ignored.
 """
-function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=0.035, upwind_dir=-pi/2,
+function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=nothing, upwind_dir=-pi/2,
                             trim=false)
     warn_delta_deprecated(delta, :find_steady_state!)
+    warn_stiffness_factor_deprecated(stiffness_factor, :find_steady_state!)
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver
@@ -627,7 +634,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
             set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
             # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
             p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
-            s.stiffness_factor=stiffness_factor
+            s.stiffness_factor=KPS3_START_STIFFNESS_FACTOR
             p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false, trim)
             s.stiffness_factor=1.0
             # if the solution with the reduced stiffness failed, start again from the straight tether

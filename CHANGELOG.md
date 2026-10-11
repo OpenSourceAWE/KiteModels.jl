@@ -13,13 +13,13 @@ SPDX-License-Identifier: MIT
   of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and
   if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at
   lower elevations, in steps of 5°. The default `trim=false` keeps the previous behaviour.
-- `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The trim depends on the stiffness
-  factor, which `next_step!` raises to 1.0, so use `init!(s; trim=true, stiffness_factor=1.0)` for an
-  initial state that is an equilibrium of the simulation; then the elevation stays constant.
+- `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The initial state is then an
+  equilibrium of the simulation, so the elevation stays constant.
 - `find_steady_state!` with `trim=false` (KPS3 and KPS4) logs a warning if the kite is in deep
   stall (angle of attack beyond the angle of maximum lift). This happens if the prescribed elevation
-  is far below the natural elevation (with `system.yaml`: below about 60°), because then the kite
-  can only be balanced in deep stall; before, such a state was returned silently.
+  is far below the natural elevation (with `system.yaml`: below about 65° for KPS3 and 45° for
+  KPS4), because then the kite can only be balanced in deep stall; before, such a state was
+  returned silently.
 #### Changed
 - The keyword argument `delta` of `find_steady_state!` and `init!` is deprecated and ignored.
   `delta` perturbed the initial state (all particles shifted sideways by `delta` [m], with the
@@ -28,6 +28,22 @@ SPDX-License-Identifier: MIT
   without perturbation, with a perturbation of 0.001 only as an internal fallback, and it is always
   returned without perturbation. The initial states change slightly, also for `steady_state=false`.
   The examples, tests and `precompile.jl` no longer pass `delta`.
+- The keyword argument `stiffness_factor` of `find_steady_state!` and `init!` is deprecated and
+  ignored. Before, the KPS4 steady state was solved for the reduced tether stiffness
+  `stiffness_factor`, which `next_step!` then raised by 0.01 per time step to 1.0, so the initial
+  state was not an equilibrium of the simulation (with a stretched tether and a transient during
+  the first seconds), and the result depended on the chosen value. Now the steady state is always
+  solved for the full tether stiffness, and `s.stiffness_factor` is 1.0 afterwards. A reduced
+  stiffness is only used internally as start value: if the direct solve fails, the stiffness
+  schedules 0.1 → 1.0, 0.1 → 0.3 → 1.0 and 0.3 → 1.0 are tried, and then the previous continuation.
+  In a benchmark with `system.yaml` (wind speeds of 6 to 25 m/s, elevations of 40° to 85°, tether
+  lengths of 50 to 1000 m, with and without trim), all 160 cases were solved, in 0.14 s on average.
+  For KPS3, the first solve uses a fixed stiffness factor of 0.035; the result was already solved
+  for the full stiffness. The initial states change. The examples, tests and `precompile.jl` no
+  longer pass `stiffness_factor`.
+- With `trim=true`, `find_steady_state!` (KPS4) starts the search at 80° (or at `set.elevation`, if
+  it is higher) instead of at `set.elevation`, because the solver converges from above the natural
+  elevation, but often not from far below it. The restarts at other elevations are unchanged.
 - The cases of `test/test-steady-state-robustness.jl` at an elevation of 50° are moved to 60° and
   65°, because at 50° the steady state is in deep stall.
 #### Fixed
