@@ -35,7 +35,7 @@ logger = Logger(set.segments + 5, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
-integrator = KiteModels.init!(kps4; stiffness_factor=0.1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; stiffness_factor=1, prn=STATISTIC, trim=true)
 for _ in 1:80
     next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, upwind_dir=deg2rad(UPWIND_DIR), dt)
 end
@@ -57,6 +57,7 @@ println("--> orient_quat (viewer): roll: ", roll, " pitch: ", pitch, "   yaw: ",
 println("x:", kps4.x) # from trailing edge to leading edge in ENU reference frame
 println("y:", kps4.y) # to the right looking in flight direction
 println("z:", kps4.z) # down
+println("v_reel_out: ", round(kps4.v_reel_out, digits = 3), " m/s")
 azimuth = calc_azimuth(kps4)
 println("azimuth: ", round(rad2deg(azimuth), digits = 2), "°")
 println("azimuth_north: ", round(rad2deg(KiteUtils.azimuth_north(pos_kite(kps4))), digits = 2), "°")

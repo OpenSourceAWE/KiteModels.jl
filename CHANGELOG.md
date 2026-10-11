@@ -37,6 +37,16 @@ SPDX-License-Identifier: MIT
   afterwards the wind at the real height was set, which left force residuals of about 130 N on the
   kite points. The initial state changes: for example, with `system.yaml` the winch force increases
   from 308 N to 456 N.
+- The initial velocities of the particles (KPS4, in `find_steady_state!` and `init!`) caused by
+  reeling out were multiplied by the length of the tether segments (about 25 m with `system.yaml`),
+  and the direction of the KCU was taken from the bridle. With `v_reel_out = 1 m/s` the KCU moved
+  at 20.9 m/s and the kite at 5.0 m/s instead of 1.0 m/s, so the steady state was found for a much
+  lower apparent wind speed. With `trim=true` the kite was therefore placed far below its natural
+  elevation (54.8° instead of 68.2° in `examples/test_init_4p.jl`), and after `init!` it climbed
+  for about 10 s, with a peak of the tether force of more than twice the steady value. Now the
+  velocity of each tether particle points along its tether segment and grows linearly from zero at
+  the winch to `v_reel_out` at the KCU; the kite particles move with the KCU. The initial states
+  change for all simulations with `v_reel_out ≠ 0`.
 
 ### KiteModels v0.11.19 2026-10-10
 #### Fixed
