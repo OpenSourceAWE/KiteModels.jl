@@ -685,8 +685,8 @@ Parameters:
   lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. If no trim
   with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
 
-The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: the initial
-state is always an equilibrium for the full tether stiffness.
+The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
+`steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
 
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
