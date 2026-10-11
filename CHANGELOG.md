@@ -2,11 +2,13 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.20 - unreleased
+### KiteModels v0.11.20 2026-10-11
 #### Changed
 - Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
   so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
   value instead of four.
+- the `examples_3d` project accepts KiteViewers 0.6, and the default manifests for Julia 1.12 and
+  1.13 use KiteUtils 0.12.2, KiteViewers 0.6.0, KitePodModels 0.4.2 and AtmosphericModels 0.3.12
 
 ### KiteModels v0.11.19 2026-10-10
 #### Fixed
