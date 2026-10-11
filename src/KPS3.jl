@@ -636,7 +636,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
     # converged and whether the kite is in deep stall. The restarts at other elevations use only
     # the unperturbed start value, so that failing to find a trim is fast.
     function solve(warn; restart=false)
-        p, converged = nothing, false
+        local p, converged = nothing, false
         for delta in (restart ? (0.0,) : STEADY_STATE_DELTAS)
             set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
             # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
@@ -653,7 +653,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
             all(isfinite, p) || error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
         end
         all(isfinite, p) || return nothing, nothing, false, false
-        y0, yd0 = init(s, steady_state_offsets(s, p); upwind_dir)
+        local y0, yd0 = init(s, steady_state_offsets(s, p); upwind_dir)
         residual!(zeros(length(y0)), yd0, y0, s)  # updates the angle of attack s.alpha_2
         y0, yd0, converged, s.alpha_2 > alpha_stall
     end
