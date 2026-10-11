@@ -482,7 +482,7 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=
     # reeling out: the velocity of each particle points along its tether segment and grows linearly
     # from zero at the winch to v_reel_out at the kite
     for i in 1:s.set.segments
-        vel[i+1] .+= normalize(pos[i+1] - pos[i]) * (s.set.v_reel_out * i / s.set.segments)
+        vel[i+1] .+= normalize(pos[i+1] - pos[i]) * (s.set.v_reel_out::Float64 * i / s.set.segments)
     end
     for i in eachindex(pos)
         @inbounds s.pos[i] .= pos[i]
@@ -540,9 +540,9 @@ end
 # elevation angle [rad] (first half) and their relative stretches [-] (second half), to the offsets of
 # the particle positions from the straight, unstretched tether in x and z direction, as used by init.
 function steady_state_offsets(s::KPS3, p)
-    segments = s.set.segments
-    l0 = s.set.l_tether / segments
-    elevation = deg2rad(s.set.elevation)
+    segments = s.set.segments::Int64
+    l0 = s.set.l_tether::Float64 / segments
+    elevation = deg2rad(s.set.elevation::Float64)
     X = zeros(SimFloat, 2segments)
     x, z = 0.0, 0.0
     for i in 1:segments
