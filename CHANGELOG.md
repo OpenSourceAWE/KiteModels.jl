@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.20 - unreleased
+### KiteModels v0.12.1 - unreleased
 #### Added
 - `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the
   vertical force balance of the kite is solved too, so the kite is placed at the elevation where its
@@ -76,6 +76,31 @@ SPDX-License-Identifier: MIT
   natural elevation decreases from 73.5° to 70.4° for `v_reel_out = 1 m/s` and to 60.9° for
   4 m/s, and it stays constant during the simulation. The initial states change for all
   simulations with `v_reel_out ≠ 0`.
+
+### KiteModels v0.12.0 2026-10-11
+#### Changed
+- BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
+  the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
+  and `calc_orient_quat` stay `KS`, and `update_sys_state!` converts at the boundary.
+- BREAKING: `roll`, `pitch` and `yaw` are no longer written to `SysState`, which
+  dropped them in KiteUtils 0.13. `orient_euler(s)` still reports them, against
+  NED, and `euler_KS(ss.orient)` recovers them from a state or a log.
+- `turn_rates` is `KA`, so the z component has the opposite sign to before.
+- `calc_heading(s)` passes the quaternion rather than Euler angles, skipping a
+  round trip through `quat2euler`. The angle is unchanged.
+- Requires KiteUtils 0.13. The default manifests for Julia 1.12 and 1.13 use KiteUtils 0.13.1.
+- the examples `parking_4p.jl` and `parking_wind_dir.jl` convert `turn_rates` back to `KS` with
+  `fromKA2KS_body` for plotting the body turn rate
+#### Added
+- docstring for `calc_orient_quat`, now also listed in the documentation
+
+### KiteModels v0.11.20 2026-10-11
+#### Changed
+- Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+  so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
+  value instead of four.
+- the `examples_3d` project accepts KiteViewers 0.6, and the default manifests for Julia 1.12 and
+  1.13 use KiteUtils 0.12.2, KiteViewers 0.6.0, KitePodModels 0.4.2 and AtmosphericModels 0.3.12
 
 ### KiteModels v0.11.19 2026-10-10
 #### Fixed

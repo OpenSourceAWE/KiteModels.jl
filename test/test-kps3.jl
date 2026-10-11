@@ -382,7 +382,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         @test all(pos_kite(kps) .≈ [134.97402018366216, 0.0, 366.8418273480761])
         @test calc_elevation(kps) .≈ 1.2182337959242815 # 69.8 deg
         @test calc_azimuth(kps) ≈ 0
-        @test calc_heading(kps) ≈ 0 || calc_heading(kps) ≈ 2π
+        @test mod2pi(calc_heading(kps) + π) ≈ π
         calc_course(kps) # the course for vel_kite=zero is undefined, so we cannot test it
     end
 
