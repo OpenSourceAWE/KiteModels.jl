@@ -4,78 +4,18 @@ SPDX-License-Identifier: MIT
 -->
 ### KiteModels v0.12.1 - unreleased
 #### Added
-- `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the
-  vertical force balance of the kite is solved too, so the kite is placed at the elevation where its
-  lift matches gravity (its natural elevation); `set.elevation` is only the start value. For KPS4
-  all forces including gravity are balanced in this case (with `trim=false`, the accelerations in
-  `yd0` are `-g`, so gravity is not balanced), and the returned accelerations are zero. A second,
-  fully balanced trim exists at low elevations with the kite in deep stall. Solutions with an angle
-  of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and
-  if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at
-  lower elevations, in steps of 10°, with a cheaper solve (no perturbation, no last-resort
-  continuation). If no trim with attached flow is found, an error is thrown instead of returning a
-  deep stall or non-converged state; with `system.yaml` and the Maasvlakte wind profile at 4 m/s
-  this takes 7 s (KPS3) and 11 s (KPS4). The default `trim=false` keeps the previous behaviour.
-- `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The initial state is then an
-  equilibrium of the simulation, so the elevation stays constant. If no trim with attached flow
-  is found, `init!` returns `nothing`.
-- `find_steady_state!` with `trim=false` (KPS3 and KPS4) logs a warning if the kite is in deep
-  stall (angle of attack beyond the angle of maximum lift). This happens if the prescribed elevation
-  is far below the natural elevation (with `system.yaml`: below about 65° for KPS3 and 45° for
-  KPS4), because then the kite can only be balanced in deep stall; before, such a state was
-  returned silently.
+- `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the vertical force balance of the kite is solved too, so the kite is placed at the elevation where its lift matches gravity (its natural elevation); `set.elevation` is only the start value. For KPS4 all forces including gravity are balanced in this case (with `trim=false`, the accelerations in `yd0` are `-g`, so gravity is not balanced), and the returned accelerations are zero. A second, fully balanced trim exists at low elevations with the kite in deep stall. Solutions with an angle of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 10°, with a cheaper solve (no perturbation, no last-resort continuation). If no trim with attached flow is found, an error is thrown instead of returning a deep stall or non-converged state; with `system.yaml` and the Maasvlakte wind profile at 4 m/s this takes 7 s (KPS3) and 11 s (KPS4). The default `trim=false` keeps the previous behaviour.
+- `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The initial state is then an equilibrium of the simulation, so the elevation stays constant. If no trim with attached flow is found, `init!` returns `nothing`.
+- `find_steady_state!` with `trim=false` (KPS3 and KPS4) logs a warning if the kite is in deep stall (angle of attack beyond the angle of maximum lift). This happens if the prescribed elevation is far below the natural elevation (with `system.yaml`: below about 65° for KPS3 and 45° for KPS4), because then the kite can only be balanced in deep stall; before, such a state was returned silently.
 #### Changed
-- The keyword argument `delta` of `find_steady_state!` and `init!` is deprecated and ignored.
-  `delta` perturbed the initial state (all particles shifted sideways by `delta` [m], with the
-  velocity `delta` [m/s]), and the returned state was perturbed too, so it was not an equilibrium:
-  the kite moved by up to 0.4° after `init!` even with `trim=true`. Now the steady state is solved
-  without perturbation, with a perturbation of 0.001 only as an internal fallback, and it is always
-  returned without perturbation. The initial states change slightly, also for `steady_state=false`.
-  The examples, tests and `precompile.jl` no longer pass `delta`.
-- The keyword argument `stiffness_factor` of `find_steady_state!` and `init!` is deprecated and
-  ignored. Before, the KPS4 steady state was solved for the reduced tether stiffness
-  `stiffness_factor`, which `next_step!` then raised by 0.01 per time step to 1.0, so the initial
-  state was not an equilibrium of the simulation (with a stretched tether and a transient during
-  the first seconds), and the result depended on the chosen value. Now the steady state is always
-  solved for the full tether stiffness, and `s.stiffness_factor` is 1.0 afterwards. A reduced
-  stiffness is only used internally as start value: if the direct solve fails, the stiffness
-  schedules 0.1 → 1.0, 0.1 → 0.3 → 1.0 and 0.3 → 1.0 are tried, and then the previous continuation.
-  In a benchmark with `system.yaml` (wind speeds of 6 to 25 m/s, elevations of 40° to 85°, tether
-  lengths of 50 to 1000 m, with and without trim), all 160 cases were solved, in 0.14 s on average.
-  For KPS3, the first solve uses a fixed stiffness factor of 0.035; the result was already solved
-  for the full stiffness. The initial states change. The examples, tests and `precompile.jl` no
-  longer pass `stiffness_factor`.
-- With `trim=true`, `find_steady_state!` (KPS4) starts the search at 80° (or at `set.elevation`, if
-  it is higher) instead of at `set.elevation`, because the solver converges from above the natural
-  elevation, but often not from far below it. The restarts at other elevations are unchanged.
-- The cases of `test/test-steady-state-robustness.jl` at an elevation of 50° are moved to 60° and
-  65°, because at 50° the steady state is in deep stall.
+- The keyword argument `delta` of `find_steady_state!` and `init!` is deprecated and ignored. `delta` perturbed the initial state (all particles shifted sideways by `delta` [m], with the velocity `delta` [m/s]), and the returned state was perturbed too, so it was not an equilibrium: the kite moved by up to 0.4° after `init!` even with `trim=true`. Now the steady state is solved without perturbation, with a perturbation of 0.001 only as an internal fallback, and it is always returned without perturbation. The initial states change slightly, also for `steady_state=false`. The examples, tests and `precompile.jl` no longer pass `delta`.
+- The keyword argument `stiffness_factor` of `find_steady_state!` and `init!` is deprecated and ignored. Before, the KPS4 steady state was solved for the reduced tether stiffness `stiffness_factor`, which `next_step!` then raised by 0.01 per time step to 1.0, so the initial state was not an equilibrium of the simulation (with a stretched tether and a transient during the first seconds), and the result depended on the chosen value. Now the steady state is always solved for the full tether stiffness, and `s.stiffness_factor` is 1.0 afterwards. A reduced stiffness is only used internally as start value: if the direct solve fails, the stiffness schedules 0.1 → 1.0, 0.1 → 0.3 → 1.0 and 0.3 → 1.0 are tried, and then the previous continuation. In a benchmark with `system.yaml` (wind speeds of 6 to 25 m/s, elevations of 40° to 85°, tether lengths of 50 to 1000 m, with and without trim), all 160 cases were solved, in 0.14 s on average. For KPS3, the first solve uses a fixed stiffness factor of 0.035; the result was already solved for the full stiffness. The initial states change. The examples, tests and `precompile.jl` no longer pass `stiffness_factor`.
+- With `trim=true`, `find_steady_state!` (KPS4) starts the search at 80° (or at `set.elevation`, if it is higher) instead of at `set.elevation`, because the solver converges from above the natural elevation, but often not from far below it. The restarts at other elevations are unchanged.
+- The cases of `test/test-steady-state-robustness.jl` at an elevation of 50° are moved to 60° and 65°, because at 50° the steady state is in deep stall.
 #### Fixed
-- `find_steady_state!` (KPS4) now solves for the wind at the height of the kite. Before, the wind
-  was set once from the height of the kite before the solver started, which is 0 m after `clear!`,
-  so the kite was balanced for the ground wind (9.51 m/s instead of 12.6 m/s with `system.yaml`);
-  afterwards the wind at the real height was set, which left force residuals of about 130 N on the
-  kite points. The initial state changes: for example, with `system.yaml` the winch force increases
-  from 308 N to 456 N.
-- The initial velocities of the particles (KPS4, in `find_steady_state!` and `init!`) caused by
-  reeling out were multiplied by the length of the tether segments (about 25 m with `system.yaml`),
-  and the direction of the KCU was taken from the bridle. With `v_reel_out = 1 m/s` the KCU moved
-  at 20.9 m/s and the kite at 5.0 m/s instead of 1.0 m/s, so the steady state was found for a much
-  lower apparent wind speed. With `trim=true` the kite was therefore placed far below its natural
-  elevation (54.8° instead of 68.2° in `examples/test_init_4p.jl`), and after `init!` it climbed
-  for about 10 s, with a peak of the tether force of more than twice the steady value. Now the
-  velocity of each tether particle points along its tether segment and grows linearly from zero at
-  the winch to `v_reel_out` at the KCU; the kite particles move with the KCU. The initial states
-  change for all simulations with `v_reel_out ≠ 0`.
-- The steady state of KPS3 (`find_steady_state!` and `init!`) ignored `v_reel_out`: all particles
-  were at rest and the reel-out speed in the initial state vector was zero, so the initial
-  elevation did not depend on `v_reel_out`, and in the simulation the winch first had to accelerate
-  to the set speed. Now, as for KPS4, the velocity of each particle points along its tether segment
-  and grows linearly from zero at the winch to `v_reel_out` at the kite, and the initial reel-out
-  speed is `v_reel_out`. With `trim=true`, `system.yaml` and a wind speed of 14.5 m/s, the
-  natural elevation decreases from 73.5° to 70.4° for `v_reel_out = 1 m/s` and to 60.9° for
-  4 m/s, and it stays constant during the simulation. The initial states change for all
-  simulations with `v_reel_out ≠ 0`.
+- `find_steady_state!` (KPS4) now solves for the wind at the height of the kite. Before, the wind was set once from the height of the kite before the solver started, which is 0 m after `clear!`, so the kite was balanced for the ground wind (9.51 m/s instead of 12.6 m/s with `system.yaml`); afterwards the wind at the real height was set, which left force residuals of about 130 N on the kite points. The initial state changes: for example, with `system.yaml` the winch force increases from 308 N to 456 N.
+- The initial velocities of the particles (KPS4, in `find_steady_state!` and `init!`) caused by reeling out were multiplied by the length of the tether segments (about 25 m with `system.yaml`), and the direction of the KCU was taken from the bridle. With `v_reel_out = 1 m/s` the KCU moved at 20.9 m/s and the kite at 5.0 m/s instead of 1.0 m/s, so the steady state was found for a much lower apparent wind speed. With `trim=true` the kite was therefore placed far below its natural elevation (54.8° instead of 68.2° in `examples/test_init_4p.jl`), and after `init!` it climbed for about 10 s, with a peak of the tether force of more than twice the steady value. Now the velocity of each tether particle points along its tether segment and grows linearly from zero at the winch to `v_reel_out` at the KCU; the kite particles move with the KCU. The initial states change for all simulations with `v_reel_out ≠ 0`.
+- The steady state of KPS3 (`find_steady_state!` and `init!`) ignored `v_reel_out`: all particles were at rest and the reel-out speed in the initial state vector was zero, so the initial elevation did not depend on `v_reel_out`, and in the simulation the winch first had to accelerate to the set speed. Now, as for KPS4, the velocity of each particle points along its tether segment and grows linearly from zero at the winch to `v_reel_out` at the kite, and the initial reel-out speed is `v_reel_out`. With `trim=true`, `system.yaml` and a wind speed of 14.5 m/s, the natural elevation decreases from 73.5° to 70.4° for `v_reel_out = 1 m/s` and to 60.9° for 4 m/s, and it stays constant during the simulation. The initial states change for all simulations with `v_reel_out ≠ 0`.
 
 ### KiteModels v0.12.0 2026-10-11
 #### Changed
