@@ -23,3 +23,9 @@ pattern = "`integrator` is not defined"
 match_by = "message"
 match_type = "literal"
 severity = "off"
+
+[[diagnostic.patterns]]
+pattern = "`KiteModels.KPS4` has abstract field `wm::WinchModels.AbstractWinchModel`"
+match_by = "message"
+match_type = "literal"
+severity = "off"

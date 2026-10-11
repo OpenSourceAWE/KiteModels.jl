@@ -769,6 +769,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
         residual!(res, yd_, y_, s, 0.0)
         y_, yd_
     end
+    y00, yd00 = nothing, nothing
     try
         s.set.elevation = el_start
         results, converged = solve()
