@@ -2,6 +2,23 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.12.0 - unreleased
+#### Changed
+- BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
+  the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
+  and `calc_orient_quat` stay `KS`, and `update_sys_state!` converts at the boundary.
+- BREAKING: `roll`, `pitch` and `yaw` are no longer written to `SysState`, which
+  dropped them in KiteUtils 0.13. `orient_euler(s)` still reports them, against
+  NED, and `euler_KS(ss.orient)` recovers them from a state or a log.
+- `turn_rates` is `KA`, so the z component has the opposite sign to before.
+- `calc_heading(s)` passes the quaternion rather than Euler angles, skipping a
+  round trip through `quat2euler`. The angle is unchanged.
+- Requires KiteUtils 0.13. The default manifests for Julia 1.12 and 1.13 use KiteUtils 0.13.1.
+- the examples `parking_4p.jl` and `parking_wind_dir.jl` convert `turn_rates` back to `KS` with
+  `fromKA2KS_body` for plotting the body turn rate
+#### Added
+- docstring for `calc_orient_quat`, now also listed in the documentation
+
 ### KiteModels v0.11.20 2026-10-11
 #### Changed
 - Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
