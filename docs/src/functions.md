@@ -108,6 +108,7 @@ calc_drag_force
 tether_drag_forces
 particle_velocities
 UNUSED_FIELDS
+UNUSED_FIELDS_KPS3
 inner_loop!
 loop!
 make_jac
