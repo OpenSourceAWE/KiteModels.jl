@@ -457,12 +457,28 @@ const SEGMENTS = load_settings("system.yaml").segments
             heading_0 = calc_heading(kps)
             set_depower_steering(kps.kcu, 0.25, 0.0)
             next_step!(kps, integrator; set_speed=0, dt=0.05)
-            # next_step! uses the heading at the start of the time step for the correction
-            @test kps.psi ≈ heading_0
+            # next_step! uses the heading at the start of the time step for the correction;
+            # it is calculated with the accepted state and the wind at its height, so it differs
+            # slightly from heading_0
+            @test kps.psi ≈ heading_0 atol=1e-3
             for i in 1:9
                 next_step!(kps, integrator; set_speed=0, dt=0.05)
             end
             rad2deg(atan(sin(calc_heading(kps) - heading_0), cos(calc_heading(kps) - heading_0)))
+        end
+        # if the wind direction changes, the heading is calculated with the new wind
+        let set = deepcopy(load_settings("system.yaml"))
+            kps = KPS3(KCU(set))
+            integrator = KiteModels.init!(kps)
+            for i in 1:10
+                next_step!(kps, integrator; set_speed=0, dt=0.05, upwind_dir=-pi/2)
+            end
+            u_0 = copy(integrator.u)
+            next_step!(kps, integrator; set_speed=0, dt=0.05, upwind_dir=-pi/2 + deg2rad(30))
+            # s.v_wind is the new wind; restore the state at the start of the time step
+            KiteModels.update_kite_state!(kps, u_0)
+            kps.v_apparent .= kps.v_wind - kps.vel_kite
+            @test kps.psi ≈ calc_heading(kps)
         end
         c2_cor = load_settings("system.yaml").c2_cor
         @test c2_cor > 0

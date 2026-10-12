@@ -253,6 +253,19 @@ function particle_velocities(s::KPS3{S, T, P}) where {S, T, P}
     SVector{P, SVec3}(ntuple(vel, Val(P)))
 end
 
+# Set the positions of the particles and the velocity of the kite from the state vector `u`
+# of the integrator. Between two calls of residual! they belong to the last trial state of
+# the solver.
+function update_kite_state!(s::KPS3{S, T, P}, u) where {S, T, P}
+    # the state vector holds the positions of the particles 2:P, then their velocities
+    for i in 2:P
+        s.pos[i] .= (u[3*(i-2)+1], u[3*(i-2)+2], u[3*(i-2)+3])
+    end
+    i_vel = 3*(P-1) + 3*(P-2)
+    s.vel_kite .= (u[i_vel+1], u[i_vel+2], u[i_vel+3])
+    nothing
+end
+
 """
     tether_drag_forces(s::KPS3)
 

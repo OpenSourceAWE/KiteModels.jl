@@ -956,10 +956,15 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
     end
     s.t_0 = integrator.t
     isnothing(s.wm) || update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+    # KPS3: the wind and the heading below belong to the accepted state, not to the last trial
+    # state of the solver
+    isa(s, KPS3) && update_kite_state!(s, integrator.u)
     set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
     if isa(s, KPS3)
         # heading for the correction of the influence of gravity on the turn rate, Eq. 30 of
-        # Fechner et al. (2015); kept constant during the time step
+        # Fechner et al. (2015); kept constant during the time step. The kite frame of KPS3
+        # is built from the apparent wind, so it must be the one of the new wind.
+        s.v_apparent .= s.v_wind - s.vel_kite
         s.psi = calc_heading(s)
     end
     s.iter = 0
