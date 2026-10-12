@@ -182,8 +182,8 @@ function clear!(s::KPS3)
     s.axial_damping  = s.set.axial_damping / s.segment_length
     s.kcu.depower = s.set.depower::Float64/100.0
     s.kcu.set_depower = s.kcu.depower
-    s.kcu.steering = 0.0
-    s.kcu.set_steering = 0.0
+    s.kcu.steering = s.set.steering::Float64/100.0
+    s.kcu.set_steering = s.kcu.steering
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
 end
 
@@ -616,6 +616,9 @@ end
 
 Return an array of the scalar spring forces of all tether segments.
 """
+# The one-point kite has no heading of its own, so s.set.heading is ignored.
+set_initial_heading!(s::KPS3, y0, yd0) = nothing
+
 function spring_forces(s::KPS3)
     forces = zeros(SimFloat, s.set.segments)
     for i in 1:s.set.segments

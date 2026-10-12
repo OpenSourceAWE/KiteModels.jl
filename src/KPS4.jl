@@ -245,8 +245,8 @@ function clear!(s::KPS4)
     s.ks = deg2rad(Float64(s.set.max_steering))
     s.kcu.depower = s.set.depower::Float64/100.0
     s.kcu.set_depower = s.kcu.depower
-    s.kcu.steering = 0.0
-    s.kcu.set_steering = 0.0
+    s.kcu.steering = s.set.steering::Float64/100.0
+    s.kcu.set_steering = s.kcu.steering
     s.pitch = 0.0
     s.pitch_rate = 0.0
     s.alpha_depower = 0.0
@@ -1256,6 +1256,45 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
         vel[i] .+= vel[s.set.segments+1]
     end
     pos, vel, acc
+end
+
+# Turn the kite of the initial state y0 to the heading s.set.heading: the kite points A, C and D
+# are rotated about the line from the KCU to the kite (point B), so that the lengths of all
+# springs, the position of the kite and thus its elevation and azimuth stay the same. The angle
+# of rotation is solved for, so that calc_heading returns s.set.heading. Afterwards the state of
+# the model is updated by evaluating the residual. The tether is not changed, so the initial
+# state is not an equilibrium.
+function set_initial_heading!(s::KPS4, y0, yd0)
+    heading = deg2rad(s.set.heading)
+    heading == 0 && return nothing
+    segments = s.set.segments
+    # index of the first element of the position of particle i (2 ≤ i) in the state vector
+    i0(i) = 3*(i-2) + 1
+    pos(y, i) = SVec3(y[i0(i)], y[i0(i)+1], y[i0(i)+2])
+    kcu  = pos(y0, segments+1)
+    axis = normalize(pos(y0, segments+3) - kcu)
+    y_ref = copy(y0)
+    res = zeros(SimFloat, length(y0))
+    function heading_error(angle)
+        for i in (segments+2, segments+4, segments+5)   # A, C and D
+            v = pos(y_ref, i) - kcu
+            # Rodrigues' rotation formula
+            v_rot = v * cos(angle) + (axis × v) * sin(angle) + axis * (axis ⋅ v) * (1 - cos(angle))
+            y0[i0(i):i0(i)+2] .= kcu + v_rot
+        end
+        residual!(res, yd0, y0, s, 0.0)
+        wrap2pi(calc_heading(s) - heading)
+    end
+    # Newton iteration; the heading changes approximately like the angle of rotation
+    angle = 0.0
+    for _ in 1:20
+        err = heading_error(angle)
+        abs(err) < 1e-10 && return nothing
+        h = 1e-6
+        slope = (heading_error(angle + h) - err) / h
+        angle -= err / slope
+    end
+    error("set_initial_heading!: no rotation of the kite found for the heading $(s.set.heading)°")
 end
 
 function set_initial_velocity!(s::KPS4)

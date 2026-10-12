@@ -919,9 +919,17 @@ settings; for KPS3 and KPS4 only the first value of each vector is used:
 - `elevations`: the elevation of the kite; with `trim=true` only the start value of the search
   for the natural elevation.
 - `azimuths`: the azimuth of the kite in the wind reference frame; see `find_steady_state!`.
-- `headings`, `steerings`, `elevation_rates`, `azimuth_rates`, `heading_rates` and
-  `kite_distances` are ignored: the heading of the kite is zero (relative to the vertical plane
-  of the tether), the steering is zero, and apart from reeling out the kite is at rest.
+- `steerings`: the steering setting [%] of the KCU.
+- `headings` (KPS4 only): the heading of the kite. After the steady state was found, the kite
+  is turned about the line from the KCU to the kite, which keeps the position of the kite and
+  the lengths of all springs; the tether is not changed. A kite with a heading other than zero
+  is not in equilibrium: it flies towards its nose. The one-point kite of KPS3 has no heading
+  of its own, so the heading is ignored.
+- `elevation_rates`, `azimuth_rates`, `heading_rates` and `kite_distances` are ignored: apart
+  from reeling out, the kite is at rest.
+
+The steady state is solved with the steering applied; its symmetric forces are balanced, but a
+steering other than zero makes the kite turn.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
@@ -961,6 +969,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
+    isnothing(initial_state) && set_initial_heading!(s, y0, yd0)
 
     if s.set.solver=="IDA"
         solver  = Sundials.IDA(linear_solver=Symbol(s.set.linear_solver), max_order = s.set.max_order)
