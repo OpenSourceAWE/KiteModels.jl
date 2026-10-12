@@ -44,7 +44,7 @@ echo "Switched to Julia ${_desired_julia}."
 echo
 
 cd bin
-./install --update -y
+./install --update -y --test
 
 julia_version=$(julia --version | awk '{print($3)}')
 julia_major=${julia_version:0:3}

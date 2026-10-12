@@ -633,8 +633,9 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver
-    # converged and whether the kite is in deep stall. The restarts at other elevations use only
-    # the unperturbed start value, so that failing to find a trim is fast.
+    # converged and whether the kite is in deep stall (or, with trim, below the horizon). The
+    # restarts at other elevations use only the unperturbed start value, so that failing to find
+    # a trim is fast.
     function solve(warn; restart=false)
         local p, converged = nothing, false
         for delta in (restart ? (0.0,) : STEADY_STATE_DELTAS)
@@ -655,7 +656,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
         all(isfinite, p) || return nothing, nothing, false, false
         local y0, yd0 = init(s, steady_state_offsets(s, p); upwind_dir)
         residual!(zeros(length(y0)), yd0, y0, s)  # updates the angle of attack s.alpha_2
-        y0, yd0, converged, s.alpha_2 > alpha_stall
+        y0, yd0, converged, s.alpha_2 > alpha_stall || (trim && !above_horizon(s))
     end
     y0, yd0, converged, stalled = solve(!trim)
     if !trim

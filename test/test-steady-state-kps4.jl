@@ -34,26 +34,17 @@ end
         kps4_local = KPS4(KCU(deepcopy(set)))
         init_392(kps4_local, l)
         KiteModels.set_depower_steering!(kps4_local, kps4_local.set.depower_offset/100.0, 0.0)
-        try
-            _, res2 = find_steady_state!(kps4_local; prn=false)
-            @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
-            pre_tension = KiteModels.calc_pre_tension(kps4_local)
-            @test pre_tension > 1.0001
-            @test pre_tension < 1.01
-            @test unstretched_length(kps4_local) ≈  l              # initial, unstretched tether length
-            @test isapprox(tether_length(kps4_local), 1.008954l, rtol=2e-2) # real, stretched tether length
-            @info "elevation: $(rad2deg(calc_elevation(kps4_local)))°"
-            @info "aoa: $(kps4_local.alpha_2)°"
-            @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
-            println()
-        catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
-                @warn "Steady state solver failed to converge for l=$l. Skipping test."
-                @test_broken false  # Mark as known issue (CI flake only)
-            else
-                rethrow(e)
-            end
-        end
+        _, res2 = find_steady_state!(kps4_local; prn=false)
+        @test sum(res2) ≈ -9.81*(set.segments+ KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
+        pre_tension = KiteModels.calc_pre_tension(kps4_local)
+        @test pre_tension > 1.0001
+        @test pre_tension < 1.01
+        @test unstretched_length(kps4_local) ≈  l              # initial, unstretched tether length
+        @test isapprox(tether_length(kps4_local), 1.008954l, rtol=2e-2) # real, stretched tether length
+        @info "elevation: $(rad2deg(calc_elevation(kps4_local)))°"
+        @info "aoa: $(kps4_local.alpha_2)°"
+        @info "CL: $(kps4_local.calc_cl(kps4_local.alpha_2)), CD: $(kps4_local.calc_cd(kps4_local.alpha_2))"
+        println()
     end
 end
 nothing
