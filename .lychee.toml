@@ -1,8 +1,11 @@
+max_retries = 3
+
 exclude = [
   "@ref",
   "@cite",
   "^https://github.com/.*/releases/tag/v.*$",
   "^https://doi.org/FIXME$",
+  "^https://doi.org/10.5281/zenodo",
   "^https://OpenSourceAWE.github.io/KiteModels.jl/stable$",
   "^https://research.tudelft.nl/",
   "zenodo.org/badge/DOI/FIXME$",

@@ -2,7 +2,111 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels v0.11.17 2026-08-12
+### KiteModels Unreleased
+#### Changed
+- `bin/install` runs the test suite only if the new option `--test` is passed. Before, it always ran the tests, including the benchmarks, which can take up to an hour. `bin/update_default_manifest` passes `--test`, so a new default manifest is only written if all tests pass.
+- the link checker no longer checks the Zenodo DOI, which often fails with 504 Gateway Timeout, and uses the default timeout of 20 s again
+#### Fixed
+- `find_steady_state!(s; trim=true)` (KPS3 and KPS4) could accept a trim with the kite below the horizon. For example, KPS3 with `system.yaml`, a wind speed of 6 m/s, a tether length of 1000 m and `set.elevation = 40°` returned a trim at an elevation of -78°, with the tether hanging below the ground. Such a trim is now rejected like a trim in deep stall, so the solver restarts at other elevations; in this example it finds the natural elevation of 53.9°.
+
+### KiteModels v0.12.1 2026-10-12
+#### Added
+- `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the vertical force balance of the kite is solved too, so the kite is placed at the elevation where its lift matches gravity (its natural elevation); `set.elevation` is only the start value. For KPS4 all forces including gravity are balanced in this case (with `trim=false`, the accelerations in `yd0` are `-g`, so gravity is not balanced), and the returned accelerations are zero. A second, fully balanced trim exists at low elevations with the kite in deep stall. Solutions with an angle of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 10°, with a cheaper solve (no perturbation, no last-resort continuation). If no trim with attached flow is found, an error is thrown instead of returning a deep stall or non-converged state; with `system.yaml` and the Maasvlakte wind profile at 4 m/s this takes 7 s (KPS3) and 11 s (KPS4). The default `trim=false` keeps the previous behaviour.
+- `init!(s; trim=true)` passes `trim` to `find_steady_state!`. The initial state is then an equilibrium of the simulation, so the elevation stays constant. If no trim with attached flow is found, `init!` returns `nothing`.
+- `find_steady_state!` with `trim=false` (KPS3 and KPS4) logs a warning if the kite is in deep stall (angle of attack beyond the angle of maximum lift). This happens if the prescribed elevation is far below the natural elevation (with `system.yaml`: below about 65° for KPS3 and 45° for KPS4), because then the kite can only be balanced in deep stall; before, such a state was returned silently.
+#### Changed
+- The keyword argument `delta` of `find_steady_state!` and `init!` is deprecated and ignored. `delta` perturbed the initial state (all particles shifted sideways by `delta` [m], with the velocity `delta` [m/s]), and the returned state was perturbed too, so it was not an equilibrium: the kite moved by up to 0.4° after `init!` even with `trim=true`. Now the steady state is solved without perturbation, with a perturbation of 0.001 only as an internal fallback, and it is always returned without perturbation. The initial states change slightly, also for `steady_state=false`. The examples, tests and `precompile.jl` no longer pass `delta`.
+- The keyword argument `stiffness_factor` of `find_steady_state!` and `init!` is deprecated and ignored. Before, the KPS4 steady state was solved for the reduced tether stiffness `stiffness_factor`, which `next_step!` then raised by 0.01 per time step to 1.0, so the initial state was not an equilibrium of the simulation (with a stretched tether and a transient during the first seconds), and the result depended on the chosen value. Now the steady state is always solved for the full tether stiffness, and `s.stiffness_factor` is 1.0 afterwards. A reduced stiffness is only used internally as start value: if the direct solve fails, the stiffness schedules 0.1 → 1.0, 0.1 → 0.3 → 1.0 and 0.3 → 1.0 are tried, and then the previous continuation. In a benchmark with `system.yaml` (wind speeds of 6 to 25 m/s, elevations of 40° to 85°, tether lengths of 50 to 1000 m, with and without trim), all 160 cases were solved, in 0.14 s on average. For KPS3, the first solve uses a fixed stiffness factor of 0.035; the result was already solved for the full stiffness. The initial states change. The examples, tests and `precompile.jl` no longer pass `stiffness_factor`.
+- With `trim=true`, `find_steady_state!` (KPS4) starts the search at 80° (or at `set.elevation`, if it is higher) instead of at `set.elevation`, because the solver converges from above the natural elevation, but often not from far below it. The restarts at other elevations are unchanged.
+- The cases of `test/test-steady-state-robustness.jl` at an elevation of 50° are moved to 60° and 65°, because at 50° the steady state is in deep stall.
+- The steady-state tests of KPS4 (`test/test-kps4.jl` and `test/test-steady-state-kps4.jl`) no longer turn a failing `find_steady_state!` into `@test_broken` when `CI=true`, so a solver regression now fails CI (#314).
+- The `examples_3d` project uses the registered KiteViewers 0.7 instead of a git branch, and the default manifests for Julia 1.12 and 1.13 use KiteUtils 0.13.2, KiteViewers 0.7.0 and MakieControlPlots 0.1.21.
+#### Fixed
+- `find_steady_state!` (KPS4) now solves for the wind at the height of the kite. Before, the wind was set once from the height of the kite before the solver started, which is 0 m after `clear!`, so the kite was balanced for the ground wind (9.51 m/s instead of 12.6 m/s with `system.yaml`); afterwards the wind at the real height was set, which left force residuals of about 130 N on the kite points. The initial state changes: for example, with `system.yaml` the winch force increases from 308 N to 456 N.
+- The initial velocities of the particles (KPS4, in `find_steady_state!` and `init!`) caused by reeling out were multiplied by the length of the tether segments (about 25 m with `system.yaml`), and the direction of the KCU was taken from the bridle. With `v_reel_out = 1 m/s` the KCU moved at 20.9 m/s and the kite at 5.0 m/s instead of 1.0 m/s, so the steady state was found for a much lower apparent wind speed. With `trim=true` the kite was therefore placed far below its natural elevation (54.8° instead of 68.2° in `examples/test_init_4p.jl`), and after `init!` it climbed for about 10 s, with a peak of the tether force of more than twice the steady value. Now the velocity of each tether particle points along its tether segment and grows linearly from zero at the winch to `v_reel_out` at the KCU; the kite particles move with the KCU. The initial states change for all simulations with `v_reel_out ≠ 0`.
+- The steady state of KPS3 (`find_steady_state!` and `init!`) ignored `v_reel_out`: all particles were at rest and the reel-out speed in the initial state vector was zero, so the initial elevation did not depend on `v_reel_out`, and in the simulation the winch first had to accelerate to the set speed. Now, as for KPS4, the velocity of each particle points along its tether segment and grows linearly from zero at the winch to `v_reel_out` at the kite, and the initial reel-out speed is `v_reel_out`. With `trim=true`, `system.yaml` and a wind speed of 14.5 m/s, the natural elevation decreases from 73.5° to 70.4° for `v_reel_out = 1 m/s` and to 60.9° for 4 m/s, and it stays constant during the simulation. The initial states change for all simulations with `v_reel_out ≠ 0`.
+
+### KiteModels v0.12.0 2026-10-11
+#### Changed
+- BREAKING: the quaternion written to `SysState` is `KA` (aft-right-up, against ENU),
+  the convention KiteUtils 0.13 stores. The model itself is unchanged: `kite_ref_frame`
+  and `calc_orient_quat` stay `KS`, and `update_sys_state!` converts at the boundary.
+- BREAKING: `roll`, `pitch` and `yaw` are no longer written to `SysState`, which
+  dropped them in KiteUtils 0.13. `orient_euler(s)` still reports them, against
+  NED, and `euler_KS(ss.orient)` recovers them from a state or a log.
+- `turn_rates` is `KA`, so the z component has the opposite sign to before.
+- `calc_heading(s)` passes the quaternion rather than Euler angles, skipping a
+  round trip through `quat2euler`. The angle is unchanged.
+- Requires KiteUtils 0.13. The default manifests for Julia 1.12 and 1.13 use KiteUtils 0.13.1.
+- the examples `parking_4p.jl` and `parking_wind_dir.jl` convert `turn_rates` back to `KS` with
+  `fromKA2KS_body` for plotting the body turn rate
+#### Added
+- docstring for `calc_orient_quat`, now also listed in the documentation
+
+### KiteModels v0.11.20 2026-10-11
+#### Changed
+- Requires KiteUtils 0.12. `SysState(kps)` builds a single-winch, single-tether state,
+  so `winch_force`, `l_tether`, `v_reelout`, `set_force`, `set_torque` and `set_speed` hold one
+  value instead of four.
+- the `examples_3d` project accepts KiteViewers 0.6, and the default manifests for Julia 1.12 and
+  1.13 use KiteUtils 0.12.2, KiteViewers 0.6.0, KitePodModels 0.4.2 and AtmosphericModels 0.3.12
+
+### KiteModels v0.11.19 2026-10-10
+#### Fixed
+- The state of the winch (brake on/off, rate limited set speed) is now updated once per time step
+  in `next_step!` (and reset in `init!` to the initial set speed `set.v_reel_out` and the brake
+  state after construction, so that repeated calls of `init!` give the same result) instead of on
+  every call of the residual function. Before, it depended on the number of residual evaluations
+  of the DAE solver, so tiny numerical differences (e.g. between Julia versions) could switch the
+  brake at a different moment. With a winch `v_min` of 0.15 m/s this made the reel-out speed of the
+  hydra20 simulations of KiteControllers.jl run away on Julia 1.13. The simulation results change
+  slightly.
+- `find_steady_state!` (KPS3) now finds a real equilibrium. Before, `nlsolve` usually stopped
+  because its steps became tiny, with the accelerations of the tether particles still at about
+  25 m/s², and on some machines it printed `find_steady_state!: solver did not converge!`. The
+  unknowns are now the angles and relative stretches of the tether segments instead of the offsets
+  of the particle positions, the solver starts from a slightly stretched tether (the spring force
+  has a kink at zero stretch), and, as for KPS4, the elevation of the kite is prescribed instead of
+  its vertical force balance, so `calc_elevation(s)` returns `set.elevation`. The tether particles
+  and the horizontal force balance of the kite are now solved to `ftol = 1e-6`; a warning is only
+  printed if this fails. The horizontal residuals are taken in the plane of the tether, so the
+  result no longer depends on `upwind_dir`. The initial state changes: for example, with a 392 m
+  tether the kite starts at 70° instead of 64.3°.
+#### Changed
+- requires WinchModels 0.3.12 (for `update_winch_state!` and `calc_acceleration(...; update_state)`)
+- support Julia 1.12 and 1.13 only, as WinchModels 0.3.12 and KiteUtils do: `julia` compat
+  `"1.12, 1.13"`, `Manifest-v1.11.toml.default` is removed, `bin/install`,
+  `bin/update_default_manifest` and `bin/create_sys_image` no longer offer Julia 1.11, CI tests
+  Julia 1.12 instead of 1.11, and the docs no longer mention Julia 1.11
+- the default manifests for Julia 1.12 and 1.13 use WinchModels 0.3.12 and the latest versions of
+  the other dependencies
+
+### KiteModels v0.11.18 2026-10-10
+#### Changed
+- The system of equations of `find_steady_state!` (KPS4) is now square and well-posed. Before, one
+  unknown had no effect, one equation was missing (its entry stayed `0`), and the x equation of the
+  point p8 was used twice, so the elevation of the kite could drift from `set.elevation` by several
+  degrees, depending on rounding. Now the elevation of the kite (`pos_kite`, so that
+  `calc_elevation(s)` returns `set.elevation`) is prescribed instead of the z balance of the kite
+  points C and D (the kite can only be fully balanced at its natural elevation), C and D enter as
+  symmetric (x) and antisymmetric (y) combination, and the unused unknown is fixed to zero. The
+  initial state of the simulation changes slightly.
+#### Fixed
+- `find_steady_state!` (KPS4) is more robust: if the first `nlsolve` attempt fails or returns
+  a result with a large residual, it is retried without autoscaling and then by continuation
+  (solving for an easier `stiffness_factor`/`delta` first and stepping towards the requested values).
+  Before, convergence depended on tiny floating-point differences, so e.g. the `hydra20_426`
+  project of KiteControllers.jl failed to initialise on Julia 1.13 while it worked on Julia 1.12.
+- a residual entry that is not used as equation could keep the value `1e6` after an infeasible
+  solver step; it is now reset on every evaluation
+- the warning "Warning in test_initial_condition!" for infeasible solver steps is now a debug message
+- `find_steady_state!` now also warns if the solver stopped because the steps became small while the
+  residual norm is still above `1e-3`; before, such a result was accepted silently. The warning now
+  includes the residual norm.
+#### Added
+- test `test/test-steady-state-robustness.jl` for cases where a single solver attempt does not converge
+
+### KiteModels v0.11.17 2026-10-09
 #### Added
 - `next_step!` accepts the keyword argument `v_wind_vert` (default `0.0`, fully backward compatible)
   for injecting a constant vertical wind component (updraft/downdraft) at the kite. It is stored in
@@ -12,6 +116,27 @@ SPDX-License-Identifier: MIT
   so `upwind_dir` and tether drag are unaffected; a future phase 2 could extend the tether. Since
   `v_wind_kite(s)` returns `s.v_wind`, the component shows up in the logged `v_wind_kite` state
   automatically.
+- Support for Julia 1.13: `julia` compat entry extended to `1.11, 1.12, 1.13` (also in the `docs`,
+  `examples` and `examples_3d` projects), new default manifest `Manifest-v1.13.toml.default` (with
+  some packages downgraded to reduce the size of the system image), and `bin/install` offers
+  Julia 1.13 as a third choice (the default if it is already the active juliaup channel).
+
+#### Changed
+- `Parameters` compat widened to `0.12, 0.13`.
+- `bin/install` and `bin/create_sys_image` pick the default manifest generically as
+  `Manifest-v<julia_major>.toml.default` and fail if it is missing; `bin/create_sys_image` no longer
+  deletes the obsolete `data/model_*.bin` files, and `bin/create_sys_image2` also backs up
+  `Manifest-v1.13.toml` when updating.
+- README and documentation: links to `WinchModels`, `KitePodModels` and `AtmosphericModels` point to
+  the OpenSourceAWE organisation, the package diagram is taken from `KiteUtils.jl`, Julia 1.12 is
+  the recommended version, and the reference to the meta-package `KiteSimulators` was dropped.
+
+#### Removed
+- `bin/setup_env` (the `LD_PRELOAD`/`LD_LIBRARY_PATH` workaround) and `bin/jetls_with_env`, which
+  depended on it. `bin/install`, `bin/run_julia`, `bin/create_sys_image` and `bin/create_sys_image2`
+  no longer source it, and the retry without these overrides is gone. `copy_bin()` no longer copies
+  `setup_env`.
+- Obsolete `data/model*.bin` / `data/prob*.bin` entries from `.gitignore`.
 
 ### KiteModels v0.11.16 2026-08-10
 #### Added

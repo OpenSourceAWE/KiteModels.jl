@@ -13,5 +13,5 @@ kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
 
 reltime = 0.0
-integrator = KiteModels.init!(kps3, stiffness_factor=0.04)
+integrator = KiteModels.init!(kps3)
 plot2d(kps3.pos, reltime; zoom=false, front=false, segments=set.segments)

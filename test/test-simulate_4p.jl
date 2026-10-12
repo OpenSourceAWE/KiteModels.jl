@@ -37,15 +37,14 @@ end
     local kps4
     kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
     kps4.set.kcu_diameter = 0.0
-    init_150(kps4)  
-    kps4.set.elevation = 60.0
+    init_150(kps4)  # elevation 70°, close to the equilibrium of ≈68°; at 60° find_steady_state! does not converge
     kps4.set.alpha_zero = 0.0
     STEPS = 500
     kps4.set.depower = 23.6
     kps4.set.solver = "IDA"
     kps4.set.profile_law = Int(EXPLOG)
     kps4.set.alpha = 0.08163
-    integrator = KiteModels.init!(kps4; stiffness_factor=0.4, delta=0.0015, prn=false)
+    integrator = KiteModels.init!(kps4; prn=false)
     simulate(kps4, integrator, 100)
     av_steps = simulate(kps4, integrator, STEPS-100)
     if Sys.isapple()

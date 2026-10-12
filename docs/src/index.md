@@ -4,18 +4,17 @@ CurrentModule = KiteModels
 
 # KiteModels
 
-Documentation for the package [KiteModels](https://github.com/ufechner7/KiteModels.jl).
+Documentation for the package [KiteModels](https://github.com/OpenSourceAWE/KiteModels.jl).
 
 The models have the following subcomponents, implemented in separate packages:
 
-- AtmosphericModel from [AtmosphericModels](https://github.com/aenarete/AtmosphericModels.jl)
-- WinchModel from [WinchModels](https://github.com/aenarete/WinchModels.jl)
-- KitePodModel from  [KitePodModels](https://github.com/aenarete/KitePodModels.jl)
-- If you want to use the package [VortexStepMethod](https://github.com/Albatross-Kite-Transport/VortexStepMethod.jl) for calculating the aerodynamic forces and moments, please look at [V3Kite.jl](https://github.com/OpenSourceAWE/V3Kite.jl) or [RamAirKites.jl](https://github.com/OpenSourceAWE/RamAirKites.jl)
+- AtmosphericModel from [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
+- WinchModel from [WinchModels](https://github.com/OpenSourceAWE/WinchModels.jl)
+- KitePodModel from  [KitePodModels](https://github.com/OpenSourceAWE/KitePodModels.jl)
 
-This package is part of Julia Kite Power Tools, which consist of the following packages:
+This package is part of Julia Kite Power Tools, which consists of the following packages:
 
-![Julia Kite Power Tools](kite_power_tools.png)
+![Julia Kite Power Tools package overview](https://github.com/OpenSourceAWE/KiteUtils.jl/raw/main/docs/src/kite_power_tools.png)
 
 ## What to install
 
@@ -23,11 +22,7 @@ If you want to run simulations and see the results in 3D, please install the met
 
 ## Installation as package
 
-Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 and 1.12 are also supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
-
-```bash
-sudo apt install python3-matplotlib
-```
+Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -79,11 +74,7 @@ times faster.
 
 ## Installation from git
 
-Install [Julia 1.11](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. Julia 1.10 and 1.12 are also supported, but the performance is worse. On Linux, make sure that Python3 and Matplotlib are installed:
-
-```bash
-sudo apt install python3-matplotlib
-```
+Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -132,6 +123,14 @@ If you now launch Julia with `./bin/run_julia` and then run the above example ag
 should be much faster.
 
 ## News
+
+### October 2026
+
+- `find_steady_state!` and `init!` are now much more robust: in a benchmark with wind speeds of 6 to 25 m/s,
+  elevations of 40° to 85° and tether lengths of 50 to 1000 m, all cases were solved. The keyword arguments
+  `delta` and `stiffness_factor` are no longer needed; they are deprecated and ignored. The new keyword argument
+  `trim=true` places the kite at its natural elevation, where all forces are balanced, so that the elevation
+  stays constant after `init!`
 
 ### May 2026
 
@@ -200,10 +199,9 @@ The one point and four point kite models are described in detail in [Dynamic Mod
 ## See also
 
 - [Research Fechner](https://research.tudelft.nl/en/publications/?search=Fechner+wind&pageSize=50&ordering=rating&descending=true) for the scientific background of this code
-- The meta-package  [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl)
 - the package [KiteUtils](https://github.com/OpenSourceAWE/KiteUtils.jl)
-- the packages [WinchModels](https://github.com/aenarete/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
+- the packages [WinchModels](https://github.com/OpenSourceAWE/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
 - the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/OpenSourceAWE/KiteViewers.jl)
 - the [VortexStepMethod](https://github.com/OpenSourceAWE/VortexStepMethod.jl)
 
-Authors: Uwe Fechner (<uwe.fechner.msc@gmail.com>), Bart van de Lint (<bart@vandelint.net>)
+Authors: Uwe Fechner ([uwe.fechner.msc@gmail.com](mailto:uwe.fechner.msc@gmail.com)), Bart van de Lint ([bart@vandelint.net](mailto:bart@vandelint.net))
