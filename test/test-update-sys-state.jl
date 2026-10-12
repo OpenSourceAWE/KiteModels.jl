@@ -17,7 +17,7 @@ wrap(delta) = atan(sin(delta), cos(delta))
 set = deepcopy(load_settings("system.yaml"))
 set.upwind_dir = rad2deg(-pi/2)
 kps4::KPS4 = KPS4(deepcopy(set))
-integrator = init!(kps4; stiffness_factor=0.5, delta=0.005, prn=false)
+integrator = init!(kps4; prn=false)
 DT = 1/set.sample_freq
 # `next_step!` stores the time of the *previous* step in `t_0`, so two steps are needed
 # before `s.t_0 > 0` and the rate calculation sees a non-zero time difference
@@ -124,7 +124,7 @@ end
 
 @testset "update_sys_state! KPS3" begin
     kps3 = KPS3(deepcopy(set))
-    integrator3 = init!(kps3; stiffness_factor=0.5, delta=0.0001, prn=false)
+    integrator3 = init!(kps3; prn=false)
     next_step!(kps3, integrator3; set_speed=0, dt=DT)
     ss = SysState(kps3)
     @test length(ss.X) == length(kps3.pos)

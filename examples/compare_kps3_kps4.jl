@@ -47,12 +47,12 @@ function simulate(s, integrator, steps, plot = false; fig = "")
             s.pos,
             0.0;
             zoom = ZOOM,
-            xlim = (35, 55),
+            xlim = (40, 55),
             xy = (52.0, z_text),
             front = FRONT_VIEW,
             fig,
         )
-        sleep(0.025)
+        sleep(0.05)
     end
     for i in 1:steps
         if PRINT
@@ -72,19 +72,19 @@ function simulate(s, integrator, steps, plot = false; fig = "")
                     s.pos,
                     reltime;
                     zoom = ZOOM,
-                    xlim = (35, 75),
+                    xlim = (40, 55),
                     xy = (52.0, z_text),
                     front = FRONT_VIEW,
                     fig,
                 )
-                sleep(0.025)
+                sleep(0.05)
             end
         end
     end
     iter / steps
 end
 
-integrator = init!(kps3, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = init!(kps3, prn = STATISTIC)
 av_steps = simulate(kps3, integrator, STEPS, true; fig = "kps3")
 reactivate_host_app()
 
@@ -95,7 +95,7 @@ println("winch_force [N]: $(round(winch_force(kps3), digits=2))")
 println("Average number of callbacks per time step: $(round(av_steps, digits=2))")
 
 kps4.set.alpha_zero = ALPHA_ZERO
-integrator = init!(kps4; delta = 0.003, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = init!(kps4; prn = STATISTIC)
 av_steps = simulate(kps4, integrator, STEPS, true; fig = "kps4")
 reactivate_host_app()
 

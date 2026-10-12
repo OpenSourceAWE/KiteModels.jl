@@ -26,6 +26,14 @@ This package is part of Julia Kite Power Tools, which consists of the following 
 
 ## News
 
+### October 2026
+
+- `find_steady_state!` and `init!` are now much more robust: in a benchmark with wind speeds of 6 to 25 m/s,
+  elevations of 40° to 85° and tether lengths of 50 to 1000 m, all cases were solved. The keyword arguments
+  `delta` and `stiffness_factor` are no longer needed; they are deprecated and ignored. The new keyword argument
+  `trim=true` places the kite at its natural elevation, where all forces are balanced, so that the elevation
+  stays constant after `init!`
+
 ### May 2026
 
 - a turbulent wind field is now available and can be used with the examples. It uses the package [AtmosphericModels.jl](https://github.com/OpenSourceAWE/AtmosphericModels.jl) to generate 3D turbulent wind field files on request. The first

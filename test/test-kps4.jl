@@ -582,25 +582,16 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
         height = sin(deg2rad(kps4.set.elevations[1])) * kps4.set.l_tethers[1]
         kps4.v_wind .= kps4.v_wind_gnd * calc_wind_factor(kps4.am, height)
-        try
-            res1, res2 = find_steady_state!(kps4; stiffness_factor = 0.07, prn = false)
-            # TODO check why -9.81 appears in the residual
-            @test sum(res2) ≈ -9.81*(kps4.set.segments + KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
-            pre_tension = KiteModels.calc_pre_tension(kps4)
-            @test pre_tension > 1.0001
-            @test pre_tension < 1.01
-            @test unstretched_length(kps4) ≈ 392.0              # initial, unstretched tether length
-            # println("length: ", tether_length(kps4))
-            @test isapprox(tether_length(kps4), 395.52, rtol = 1e-2) # real, stretched tether length
-            #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
-        catch e
-            if e isa ErrorException && contains(e.msg, "find_steady_state!") && get(ENV, "CI", "false") == "true"
-                @warn "Steady state solver failed to converge. Skipping test."
-                @test_broken false  # Mark as known issue (CI flake only)
-            else
-                rethrow(e)
-            end
-        end
+        res1, res2 = find_steady_state!(kps4; prn = false)
+        # TODO check why -9.81 appears in the residual
+        @test sum(res2) ≈ -9.81*(kps4.set.segments + KiteModels.KITE_PARTICLES) # velocity and acceleration must be near zero
+        pre_tension = KiteModels.calc_pre_tension(kps4)
+        @test pre_tension > 1.0001
+        @test pre_tension < 1.01
+        @test unstretched_length(kps4) ≈ 392.0              # initial, unstretched tether length
+        # println("length: ", tether_length(kps4))
+        @test isapprox(tether_length(kps4), 395.52, rtol = 1e-2) # real, stretched tether length
+        #    @test winch_force(kps) ≈ 276.25776695110034        # initial force at the winch [N]
         #    lift, drag = lift_drag(kps)
         #    @test lift ≈ 443.63303000106197                    # initial lift force of the kite [N]
         #    @test drag ≈ 94.25223134952152                     # initial drag force of the kite [N]
@@ -687,7 +678,7 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         # and the updraft shows up in v_wind_kite (and therefore in the logged system state)
         local kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
         kps4_.set.kcu_diameter = 0.0
-        integrator = KiteModels.init!(kps4_; stiffness_factor=0.5, delta=0.005, prn=false)
+        integrator = KiteModels.init!(kps4_; prn=false)
         dt = 1/kps4_.set.sample_freq
         for _ in 1:5
             next_step!(kps4_, integrator; set_speed=0, v_wind_vert=1.5, dt)
@@ -704,9 +695,10 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         kps4_ = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
         kps4_.set.kcu_diameter = 0.0
         kps4_.set.max_iter = 500
-        integrator = KiteModels.init!(kps4_; stiffness_factor = 0.07, prn = false)
+        integrator = KiteModels.init!(kps4_; prn = false)
         kps4_.set.version = 2
-        kps4_.stiffness_factor = 3
+        # the steady state is solved for the full stiffness; increase it to break the bridle
+        kps4_.stiffness_factor = 20
         @test maximum(spring_forces(kps4_; prn = false)) > 9000
     end
 
