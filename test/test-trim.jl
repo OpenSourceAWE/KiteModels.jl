@@ -143,6 +143,22 @@ end
     @test s.alpha_2 < s.set.alpha_cl[argmax(s.set.cl_list)]
 end
 
+@testset "no trim below the horizon, $Model" for Model in (KPS3, KPS4)
+    # with a long tether at a low wind speed, the KPS3 solver converged from 40° to a trim with
+    # the tether hanging below the ground (elevation -78°), which was accepted
+    set = deepcopy(load_settings("system.yaml"))
+    set.v_wind = 6.0
+    set.elevation = 40.0
+    set.l_tethers[1] = 1000.0
+    set.l_tether = 1000.0
+    s = Model(KCU(set))
+    KiteModels.clear!(s)
+    @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(s; trim=true)
+    @test 0.0 < rad2deg(calc_elevation(s)) < 90.0
+    @test KiteModels.pos_kite(s)[3] > 0.0
+    @test s.alpha_2 < s.set.alpha_cl[argmax(s.set.cl_list)]
+end
+
 @testset "no trim with attached flow, $Model" for Model in (KPS3, KPS4)
     # at 4 m/s, Maasvlakte has only 5.2 m/s at the height of the kite, so no trim with attached
     # flow exists: find_steady_state! throws an error and init! returns nothing instead of

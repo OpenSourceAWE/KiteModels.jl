@@ -93,6 +93,10 @@ const TRIM_START_ELEVATION = 80.0
 # restart at higher and lower elevations, in steps of TRIM_RESTART_STEP [°]
 const TRIM_RESTART_STEP = 10.0
 
+# The steady state solvers can converge to a trim with the kite below the horizon (with the
+# tether hanging below the ground); such a trim is rejected like a trim in deep stall
+above_horizon(s::AKM) = 0.0 < calc_elevation(s) < pi/2
+
 function warn_delta_deprecated(delta, f)
     isnothing(delta) || Base.depwarn("The keyword argument `delta` of `$f` is deprecated and " *
         "ignored: the steady state is solved without perturbation (with a small perturbation " *

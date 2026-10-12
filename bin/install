@@ -4,6 +4,7 @@
 
 _yes_to_all=false
 update=false
+run_tests=false
 
 print_usage() {
     echo "Usage:"
@@ -12,6 +13,8 @@ print_usage() {
     echo "./install -y"
     echo "./install --yes"
     echo "./install --update -y"
+    echo "./install --test"
+    echo "./install --update -y --test"
     echo "./install -h"
     echo "./install --help"
 }
@@ -29,6 +32,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -y|--yes)
             _yes_to_all=true
+            shift
+            ;;
+        --test)
+            run_tests=true
             shift
             ;;
         *)
@@ -340,9 +347,15 @@ end
 ' || _ec=$?
 if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("test (1.12)")
 elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("test (1.12)"); fi
-echo "Precompiling test project and running the tests..."
+echo "Precompiling test project..."
 run_precompile "--project=test"
-julia --project -e 'using Pkg; Pkg.test()'
+if [[ $run_tests == true ]]; then
+    echo "Running the tests..."
+    if ! julia --project -e 'using Pkg; Pkg.test()'; then
+        echo "ERROR: Tests failed. Aborting install."
+        exit 1
+    fi
+fi
 echo "Precompiling examples_3d project..."
 _ec=0; julia --project=examples_3d -e '
 using Pkg
