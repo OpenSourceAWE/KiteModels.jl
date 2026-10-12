@@ -62,10 +62,10 @@ if ! command -v juliaup &> /dev/null; then
     exit 1
 fi
 
-# if julia is not installed, install Julia 1.11
+# if julia is not installed, install Julia 1.12
 if ! command -v julia &> /dev/null; then
-    juliaup add 1.11
-    juliaup default 1.11
+    juliaup add 1.12
+    juliaup default 1.12
 fi
 
 $JULIA_CMD --startup-file=no --project -e "using Pkg; Pkg.instantiate();"

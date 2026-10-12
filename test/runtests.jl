@@ -22,7 +22,9 @@ const build_is_production_build = let v = get(ENV, build_is_production_build_env
     end
 end::Bool
 
-cd("..")
+if realpath(pwd()) == realpath(@__DIR__)
+    cd("..")
+end
 KiteUtils.set_data_path("") 
 
 @testset verbose = true "Testing KiteModels..." begin

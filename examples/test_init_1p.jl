@@ -23,6 +23,7 @@ V_WIND = 14.5
 # the following values can be changed to match your interest
 dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
+set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
 const PLOT = true
 STATISTIC = false
@@ -33,7 +34,7 @@ logger = Logger(set.segments + 1, STEPS)
 
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
-_ = KiteModels.init!(kps3; delta=0.03, stiffness_factor=0.1, prn=STATISTIC)
+_ = KiteModels.init!(kps3; prn=STATISTIC, trim=true)
 lift, drag = lift_drag(kps3)
 sys_state::SysState = KiteModels.SysState(kps3)
 log!(logger, sys_state)
@@ -53,6 +54,7 @@ x, y, z = kite_ref_frame(kps3)
 println("x:", x) # from trailing edge to leading edge in ENU reference frame
 println("y:", y) # to the right looking in flight direction
 println("z:", z) # down
+println("v_reel_out: ", round(kps3.v_reel_out, digits = 3), " m/s")
 azimuth = calc_azimuth(kps3)
 println("azimuth: ", round(rad2deg(azimuth), digits = 2), "°")
 
