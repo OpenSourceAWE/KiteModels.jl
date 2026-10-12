@@ -37,7 +37,7 @@ export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
-export get_default_turbulence, n_springs, set_default_turbulence, spring_forces, states, upwind_dir
+export get_default_turbulence, n_springs, save_state, set_default_turbulence, spring_forces, states, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -695,6 +695,44 @@ Number of springs of the model: the tether segments and, for KPS4, the springs o
 """
 n_springs(s::KPS4) = length(s.springs)
 n_springs(s::KPS3) = s.set.segments
+
+"fields of SysState that KPS3 and KPS4 do not use"
+const UNUSED_FIELDS = (:set_ext_force_x, :set_ext_force_y, :set_ext_force_z, :gamma_distribution,
+                       :flap_angle, :twist_angles, :twist_vel, :pulley_len, :pulley_vel)
+
+"""
+    save_state(filename, ss::SysState; exclude=KiteModels.UNUSED_FIELDS)
+
+Write the fields of the system state `ss` to the YAML file `filename`, except the fields in
+`exclude`, by default the fields that KPS3 and KPS4 do not use. Scalars are written as numbers,
+vectors as YAML flow sequences, NaN and Inf as `.nan` and `.inf`.
+
+Example:
+```julia
+ss = SysState(kps4)
+save_state("output/sys_state.yaml", ss)
+```
+The file can be read with `YAML.load_file("output/sys_state.yaml")`, which returns a
+`Dict` with the field names as keys.
+"""
+function save_state(filename, ss::SysState; exclude=UNUSED_FIELDS)
+    function yaml_num(x)
+        x isa AbstractFloat || return string(x)
+        isnan(x) && return ".nan"
+        isinf(x) && return x > 0 ? ".inf" : "-.inf"
+        # shortest representation that round-trips, without the type suffix; for Float32 the
+        # exponent is written as f, e.g. 1.0f-5
+        replace(sprint(show, x; context=:typeinfo=>typeof(x)), 'f' => 'e')
+    end
+    yaml_val(x) = x isa AbstractVector ? "[" * join(yaml_num.(x), ", ") * "]" : yaml_num(x)
+    open(filename, "w") do io
+        for name in fieldnames(typeof(ss))
+            name in exclude && continue
+            println(io, name, ": ", yaml_val(getfield(ss, name)))
+        end
+    end
+    nothing
+end
 
 function calc_pre_tension(s::AKM)
     forces = spring_forces(s)

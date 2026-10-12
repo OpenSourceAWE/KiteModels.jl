@@ -36,42 +36,18 @@ kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 logger = Logger(set.segments + 5, STEPS; segments=n_springs(kps4))
 integrator = KiteModels.init!(kps4; prn=STATISTIC, trim=true)
+t_sim = 0.0 # wall-clock time of the last time step [s]
 for _ in 1:80
-    next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, upwind_dir=deg2rad(UPWIND_DIR), dt)
+    global t_sim = @elapsed next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out,
+                                       upwind_dir=deg2rad(UPWIND_DIR), dt)
 end
 lift, drag = lift_drag(kps4)
 sys_state::SysState = KiteModels.SysState(kps4)
-
-# fields of SysState that KPS3 and KPS4 do not use
-const EXCLUDE = (:set_ext_force_x, :set_ext_force_y, :set_ext_force_z, :gamma_distribution,
-                 :flap_angle, :twist_angles, :twist_vel, :pulley_len, :pulley_vel)
-
-"""
-    save_yaml(filename, ss::SysState; exclude=EXCLUDE)
-
-Write the fields of the system state `ss` to the YAML file `filename`, except the fields in
-`exclude`. Scalars are written as numbers, vectors as YAML flow sequences.
-"""
-function save_yaml(filename, ss::SysState; exclude=EXCLUDE)
-    function yaml_num(x)
-        x isa AbstractFloat || return string(x)
-        isnan(x) && return ".nan"
-        isinf(x) && return x > 0 ? ".inf" : "-.inf"
-        x isa Float32 ? @sprintf("%.9g", x) : string(x)
-    end
-    yaml_val(x) = x isa AbstractVector ? "[" * join(yaml_num.(x), ", ") * "]" : yaml_num(x)
-    open(filename, "w") do io
-        for name in fieldnames(typeof(ss))
-            name in exclude && continue
-            println(io, name, ": ", yaml_val(getfield(ss, name)))
-        end
-    end
-    nothing
-end
+sys_state.t_sim = t_sim
 
 output_dir = joinpath(dirname(@__DIR__), "output")
 mkpath(output_dir)
-save_yaml(joinpath(output_dir, "sys_state.yaml"), sys_state)
+save_state(joinpath(output_dir, "sys_state.yaml"), sys_state)
 log!(logger, sys_state)
 elev = rad2deg(logger.elevation_vec[end])
 println("Lift: $lift, Drag: $drag, elev: $elev, Iterations: $(kps4.iter)")

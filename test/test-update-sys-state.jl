@@ -79,6 +79,24 @@ end
     log!(Logger(length(kps4.pos), 2), ss)
 end
 
+@testset "save_state" begin
+    ss = SysState(kps4)
+    ss.depower = NaN
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    save_state(file, ss)
+    state = KiteUtils.YAML.load_file(file)
+    @test !haskey(state, "flap_angle")
+    @test length(state) == fieldcount(typeof(ss)) - length(KiteModels.UNUSED_FIELDS)
+    @test isnan(state["depower"])
+    @test state["time"] == ss.time
+    # the shortest representation of Float32 values round-trips
+    @test Float32.(state["X"]) == ss.X
+    @test Float32.(state["spring_force"]) == ss.spring_force
+    @test state["elevation"] isa Float64
+    save_state(file, ss; exclude=())
+    @test length(KiteUtils.YAML.load_file(file)) == fieldcount(typeof(ss))
+end
+
 @testset "update_sys_state! zoom" begin
     ss = SysState(kps4)
     zoomed = SysState(kps4, 2.0)
