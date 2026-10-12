@@ -14,7 +14,7 @@ module KiteModels
 
 using PrecompileTools: @compile_workload, @setup_workload
 using Logging
-using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NLsolve, NonlinearSolve,
+using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NonlinearSolve,
       OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve, Parameters,
       StaticArrays, Statistics, Suppressor
 import Sundials

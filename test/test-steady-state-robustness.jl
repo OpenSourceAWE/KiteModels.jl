@@ -8,7 +8,7 @@ end
 using Test
 using KiteModels, KitePodModels
 
-# Cases for which a single nlsolve attempt in find_steady_state! did not converge when the
+# Cases for which a single attempt of the nonlinear solver in find_steady_state! did not converge when the
 # initial state was perturbed by delta, so that the retries without autoscaling and the
 # continuation in the stiffness factor were needed. The elevations are high enough for a steady
 # state with attached flow: below about 45°, the kite can only be balanced in deep stall.

@@ -6,6 +6,7 @@ SPDX-License-Identifier: MIT
 #### Changed
 - `bin/install` runs the test suite only if the new option `--test` is passed. Before, it always ran the tests, including the benchmarks, which can take up to an hour. `bin/update_default_manifest` passes `--test`, so a new default manifest is only written if all tests pass.
 - the link checker no longer checks the Zenodo DOI, which often fails with 504 Gateway Timeout, and uses the default timeout of 20 s again
+- `find_steady_state!` (KPS3 and KPS4) uses the trust region solver of NonlinearSolve instead of NLsolve, so `NLsolve` and `NLSolversBase` are no longer dependencies (#267). Like the autoscaling of NLsolve, the unknowns are scaled by the column norms of the Jacobian; the scaling is updated when the solver is restarted from its last iterate. In a benchmark with `system.yaml` (wind speeds of 6 to 25 m/s, elevations of 40° to 85°, tether lengths of 50 to 1000 m, with and without trim), the same cases are solved as with NLsolve, but hard cases take longer: the total time increased from 50 s to 152 s. At low elevations without trim, a different solution can be found than before.
 
 ### KiteModels v0.12.1 2026-10-12
 #### Added
