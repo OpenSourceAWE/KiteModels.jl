@@ -555,6 +555,8 @@ end
 # end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
+    # the positions, velocities and forces of the model must belong to the accepted state
+    isnothing(s.integrator) || update_caches!(s, s.integrator)
     dt = s.t_0 - ss.time
     ss.time = s.t_0
     pos = s.pos
@@ -883,6 +885,19 @@ function update_acc_kite!(s::AKM, du)
     nothing
 end
 
+
+# Evaluate the residual for the accepted state of the integrator. The solver evaluates it
+# for trial states too, so without this the positions, velocities, forces and the apparent
+# wind stored in the model could belong to a rejected trial state; the number of iterations
+# s.iter is not changed. Called by update_sys_state!, not by next_step!, because it costs
+# about 15 % of a time step.
+function update_caches!(s::AKM, integrator)
+    iter = s.iter
+    u = Vector{SimFloat}(integrator.u)
+    residual!(similar(u), Vector{SimFloat}(integrator.du), u, s, integrator.t)
+    s.iter = iter
+    nothing
+end
 
 """
     next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing

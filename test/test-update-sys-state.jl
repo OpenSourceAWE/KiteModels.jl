@@ -144,9 +144,10 @@ end
     ss = SysState(kps4)
     azimuth_0, heading_0, time_0 = ss.azimuth, ss.heading, ss.time
     next_step!(kps4, integrator; set_speed=0, dt=DT)
-    # the fresh angles are needed in full precision; the ones stored in `ss` are Float32
-    azimuth_1, heading_1 = calc_azimuth(kps4), calc_heading(kps4)
     update_sys_state!(ss, kps4)
+    # the fresh angles are needed in full precision; the ones stored in `ss` are Float32; read
+    # them after update_sys_state!, which evaluates the model for the accepted state
+    azimuth_1, heading_1 = calc_azimuth(kps4), calc_heading(kps4)
     dt = ss.time - time_0
     @test dt ≈ DT
     @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt
@@ -287,15 +288,14 @@ end
     # the kite is the last particle; its velocity follows the positions of the particles 2:P
     P = length(kps3.pos)
     i_vel = 3 * (P - 1) + 3 * (P - 2)
-    # vel_kite is from the last call of residual!, not from the accepted state, so it is not
-    # exact; the velocity of a tether particle would differ by tens of percent
-    @test kps3.vel_kite ≈ integrator3.u[i_vel+1:i_vel+3] rtol=1e-3
+    # SysState evaluates the residual for the accepted state, so vel_kite belongs to it
+    @test kps3.vel_kite ≈ integrator3.u[i_vel+1:i_vel+3]
     @test ss.vel_kite ≈ kps3.vel_kite
 
     azimuth_0, heading_0, time_0 = ss.azimuth, ss.heading, ss.time
     next_step!(kps3, integrator3; set_speed=0, dt=DT)
-    azimuth_1, heading_1 = calc_azimuth(kps3), calc_heading(kps3)
     update_sys_state!(ss, kps3)
+    azimuth_1, heading_1 = calc_azimuth(kps3), calc_heading(kps3)
     dt = ss.time - time_0
     @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt
     @test ss.heading_rate ≈ wrap(heading_1 - heading_0) / dt
@@ -307,10 +307,8 @@ end
     for _ in 1:20
         next_step!(kps3, integrator3; set_speed=0, dt=DT)
     end
-    # evaluate the residual for the accepted state, so that the forces of the residual and of
-    # update_sys_state! belong to the same positions and velocities
-    KiteModels.residual!(zeros(length(integrator3.u)), copy(integrator3.du), copy(integrator3.u),
-                         kps3, integrator3.t)
+    # update_sys_state! evaluates the residual for the accepted state, so afterwards the forces
+    # of the residual and of the SysState belong to the same positions and velocities
     ss = SysState(kps3)
     P = length(kps3.pos)
     vel = [SVector(ss.VX[i], ss.VY[i], ss.VZ[i]) for i in 1:P]
