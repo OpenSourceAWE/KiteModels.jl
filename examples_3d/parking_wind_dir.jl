@@ -100,8 +100,12 @@ STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
 HEADING_RATE::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 BODY_RATE::Vector{Float64}     = zeros(Int64(MAX_TIME/dt))
 
-function save_sys_state(sys_state, t_sim)
+# save a copy of sys_state with the time of the state; SysState.time is the start time of the
+# last time step
+function save_sys_state(sys_state, t_sim, time_)
+    sys_state = deepcopy(sys_state)
     sys_state.t_sim = t_sim
+    sys_state.time = time_
     output_dir = joinpath(dirname(@__DIR__), "output")
     mkpath(output_dir)
     script_name = splitext(basename(@__FILE__))[1]
@@ -162,7 +166,7 @@ function sim_parking(integrator)
         end
         update_sys_state!(sys_state, kps4)
         if i == round(Int, SAVE_TIME/dt)
-            save_sys_state(sys_state, t_sim)
+            save_sys_state(sys_state, t_sim, integrator.t)
         end
         T[i] = dt * i
         AZIMUTH[i] = sys_state.azimuth

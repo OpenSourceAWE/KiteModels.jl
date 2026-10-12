@@ -48,6 +48,8 @@ end
 lift, drag = lift_drag(kps4)
 sys_state::SysState = KiteModels.SysState(kps4)
 sys_state.t_sim = t_sim
+# SysState.time is the start time of the last time step; save the time of the state
+sys_state.time = integrator.t
 
 output_dir = joinpath(dirname(@__DIR__), "output")
 mkpath(output_dir)
