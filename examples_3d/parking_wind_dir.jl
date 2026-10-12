@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 # Park the kite while the wind direction changes.
+#
+# After 16 s simulation time, the system state is written to
+# output/sys_state_parking_wind_dir.yaml, with the script name, the simulation time and
+# the date and time of saving as meta data.
 
 using Pkg
 if dirname(Pkg.project().path) != @__DIR__
@@ -78,6 +82,7 @@ SHOW_KITE         = true
 UPWIND_DIR        = -pi/2 # the direction the wind is coming from.
 UPWIND_DIR2       = -pi/2+deg2rad(90)     # Zero is at north; clockwise positive
 INTERPOLATE       = true  # interpolate the turbulence between the grid points of the wind field
+SAVE_TIME         = 16    # simulation time [s] after which the system state is saved
 # end of user parameter section #
 
 viewer::Viewer3D = Viewer3D(SHOW_KITE, "WinchON")
@@ -94,6 +99,16 @@ SET_STEERING::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
 HEADING_RATE::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 BODY_RATE::Vector{Float64}     = zeros(Int64(MAX_TIME/dt))
+
+function save_sys_state(sys_state, t_sim)
+    sys_state.t_sim = t_sim
+    output_dir = joinpath(dirname(@__DIR__), "output")
+    mkpath(output_dir)
+    script_name = splitext(basename(@__FILE__))[1]
+    meta_data = Dict("script" => script_name, "time" => sys_state.time,
+                     "date_time" => Libc.strftime("%Y-%m-%d_%H:%M:%S", time()))
+    save_state(joinpath(output_dir, "sys_state_$(script_name).yaml"), sys_state; meta_data)
+end
 
 function sim_parking(integrator)
     upwind_dir=UPWIND_DIR
@@ -146,6 +161,9 @@ function sim_parking(integrator)
             t_gc_tot += @elapsed GC.gc(false)
         end
         update_sys_state!(sys_state, kps4)
+        if i == round(Int, SAVE_TIME/dt)
+            save_sys_state(sys_state, t_sim)
+        end
         T[i] = dt * i
         AZIMUTH[i] = sys_state.azimuth
         AZIMUTH_EAST[i] = calc_azimuth_east(kps4)
