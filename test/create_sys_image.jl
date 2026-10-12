@@ -10,7 +10,7 @@ if dirname(Pkg.project().path) != @__DIR__
 end
 @info "Loading packages ..."
 using AtmosphericModels, Colors, ControlSystemsBase, DSP, Dierckx, DiscretePIDs,
-    DocStringExtensions, JLD2, KitePodModels, KiteUtils, KiteViewers, LinearAlgebra, NLsolve,
+    DocStringExtensions, JLD2, KitePodModels, KiteUtils, KiteViewers, LinearAlgebra,
     NonlinearSolve, OrdinaryDiffEqBDF, OrdinaryDiffEqCore, OrdinaryDiffEqNonlinearSolve,
     Parameters, REPL, Rotations, StaticArrays, StatsBase, Sundials, WinchModels
 using BenchmarkTools, Documenter, PackageCompiler
@@ -29,7 +29,7 @@ let mem = Sys.free_memory() / 1024^2
 end
 
 PackageCompiler.create_sysimage(
-    [:Dierckx, :StaticArrays, :Parameters, :NLsolve, :DocStringExtensions, :Sundials, :KiteUtils, 
+    [:Dierckx, :StaticArrays, :Parameters, :DocStringExtensions, :Sundials, :KiteUtils, 
      :KitePodModels, :AtmosphericModels, :OrdinaryDiffEqCore, :OrdinaryDiffEqBDF, :WinchModels,
      :OrdinaryDiffEqNonlinearSolve,
      :JLD2, :Colors, :REPL, :NonlinearSolve, :DSP, :DiscretePIDs, 

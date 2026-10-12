@@ -834,7 +834,7 @@ end
 const STIFFNESS_SCHEDULES = ((0.1, 1.0), (0.1, 0.3, 1.0), (0.3, 1.0))
 
 # Solve for the offsets of the steady state for the full tether stiffness, see
-# find_steady_state!. Returns the result of nlsolve and whether it is usable.
+# find_steady_state!. Returns the result of nl_solve and whether it is usable.
 function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false, continuation=true)
     stiffness_factor = 1.0
     s.stiffness_factor = stiffness_factor
@@ -888,13 +888,13 @@ function solve_steady_state!(s::KPS4; prn=false, delta=0.001, trim=false, contin
         F[end]      = 0.5 * (acc(C, 2) - acc(D, 2))
         return nothing
     end
-    if prn println("\nStarted function test_nlsolve...") end
+    if prn println("\nStarted the nonlinear solver...") end
     X00 = zeros(SimFloat, 2*(s.set.segments+KITE_PARTICLES-1)+2)
     jac! = make_jac(test_initial_condition!, length(X00))
     function solve(sf, d, x0; autoscale=true)
         s.stiffness_factor = sf
         delta_ref[] = d
-        nlsolve(test_initial_condition!, jac!, copy(x0); autoscale, xtol=4e-7, ftol=4e-7,
+        nl_solve(test_initial_condition!, jac!, copy(x0); autoscale, ftol=4e-7,
                 iterations=s.set.max_iter)
     end
     # accept a result only if it is finite and the residual is small
