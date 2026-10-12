@@ -148,7 +148,9 @@ end
     integ_a = init!(a; prn=false)
     run!(a, integ_a, 40)
     file = joinpath(mktempdir(), "sys_state.yaml")
-    save_state(file, SysState(a))
+    ss = SysState(a)
+    ss.time = integ_a.t
+    save_state(file, ss)
     b = KPS4(deepcopy(set))
     integ_b = init!(b; initial_state=first(load_state(file)))
     # the simulation continues at the same time and stays within a millimetre of the original

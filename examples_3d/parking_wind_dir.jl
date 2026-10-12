@@ -127,8 +127,10 @@ function sim_parking(integrator, initial_state)
     GC.gc()
     max_time = 0
     t_gc_tot = 0
-    # continuing with the loaded SysState keeps the rates, e.g. heading_rate, correct
+    # continuing with the loaded SysState keeps the rates, e.g. heading_rate, correct;
+    # update_sys_state! expects the start time of the last time step in sys_state.time
     sys_state = isnothing(initial_state) ? SysState(kps4) : deepcopy(initial_state)
+    isnothing(initial_state) || (sys_state.time = integrator.t - dt)
     println("Kite position at start: ", round.(pos_kite(kps4), digits=2))
     if KiteUtils.PROJECT == "system.yaml"
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)

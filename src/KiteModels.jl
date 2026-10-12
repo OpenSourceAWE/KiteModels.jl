@@ -856,8 +856,9 @@ Parameters:
 - initial_state: a `SysState`, for example from [`load_state`](@ref), to continue a simulation
   from (KPS4 only). The model gets the positions and velocities of the particles, the tether
   length, the reel-out speed and the depower and steering of the KCU from it, and
-  `steady_state` and `trim` are ignored. `SysState.time` is the start time of the last time
-  step, so the integrator continues at `time + 1/s.set.sample_freq`. The state of the
+  `steady_state` and `trim` are ignored. The integrator continues at `initial_state.time`,
+  which must be the time of the state, `integrator.t` when it was saved; a `SysState` from
+  `update_sys_state!` holds the start time of the last time step instead. The state of the
   controllers of the caller and the pitch rate of the kite are not restored.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
@@ -912,7 +913,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     end
 
     dt = 1/s.set.sample_freq
-    t_start = isnothing(initial_state) ? 0.0 : initial_state.time + dt
+    t_start = isnothing(initial_state) ? 0.0 : Float64(initial_state.time)
     tspan   = (t_start, t_start + dt)
     abstol  = s.set.abs_tol # max error in m/s and m
 
