@@ -37,7 +37,8 @@ export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
-export get_default_turbulence, n_springs, save_state, set_default_turbulence, spring_forces, states, upwind_dir
+export get_default_turbulence, load_state, n_springs, save_state, set_default_turbulence, spring_forces, states
+export upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -733,8 +734,7 @@ Example:
 ss = SysState(kps4)
 save_state("output/sys_state.yaml", ss; meta_data=Dict("script" => "test_init_4p"))
 ```
-The file can be read with `YAML.load_file("output/sys_state.yaml")`, which returns a
-`Dict` with the keys `meta_data` and `sys_state`; the latter has the field names as keys.
+The file can be read back with [`load_state`](@ref).
 """
 function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIELDS)
     # double-quoted YAML string; escape_string only writes escapes that YAML knows too, e.g.
@@ -772,6 +772,40 @@ function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIE
     nothing
 end
 
+"""
+    load_state(filename)
+
+Read a system state from the YAML file `filename` that [`save_state`](@ref) wrote. Returns the
+tuple `(sys_state, meta_data)` of a new `SysState` and the `Dict` of the meta data.
+
+The number of points and of springs of the `SysState` is taken from the length of the fields
+`X` and `spring_force` in the file. Fields that are not in the file, for example because they
+were excluded when saving, keep the default value of `SysState`, which is zero.
+
+Example:
+```julia
+sys_state, meta_data = load_state("output/sys_state_test_init_4p.yaml")
+```
+"""
+function load_state(filename)
+    yaml  = KiteUtils.YAML.load_file(filename)
+    state = yaml["sys_state"]
+    ss = SysState(length(state["X"]); segments=length(get(state, "spring_force", ())))
+    for name in fieldnames(typeof(ss))
+        haskey(state, String(name)) || continue
+        value = state[String(name)]
+        field = getfield(ss, name)
+        if field isa AbstractVector
+            length(value) == length(field) || throw(ArgumentError(
+                "$name has $(length(value)) elements in $filename, but the SysState expects $(length(field))"))
+            field .= value
+        else
+            setfield!(ss, name, convert(fieldtype(typeof(ss), name), value))
+        end
+    end
+    ss, get(yaml, "meta_data", Dict())
+end
+
 function calc_pre_tension(s::AKM)
     forces = spring_forces(s)
     av_force = 0.0
@@ -802,8 +836,8 @@ function init_winch_state!(s::AKM)
 end
 
 """
-    init!(s::AKM; prn=false, steady_state=true,
-                      trim=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+    init!(s::AKM; prn=false, steady_state=true, trim=false,
+                  initial_state=nothing) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -819,6 +853,12 @@ Parameters:
 - trim: if `true`, the steady state is found at the natural elevation of the kite, where its
   lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. If no trim
   with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
+- initial_state: a `SysState`, for example from [`load_state`](@ref), to continue a simulation
+  from (KPS4 only). The model gets the positions and velocities of the particles, the tether
+  length, the reel-out speed and the depower and steering of the KCU from it, and
+  `steady_state` and `trim` are ignored. `SysState.time` is the start time of the last time
+  step, so the integrator continues at `time + 1/s.set.sample_freq`. The state of the
+  controllers of the caller and the pitch rate of the kite are not restored.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
@@ -827,7 +867,8 @@ Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
 function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, steady_state=true,
-               trim=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+               trim=false, initial_state=nothing
+               )::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     warn_delta_deprecated(delta, :init!)
     warn_stiffness_factor_deprecated(stiffness_factor, :init!)
     clear!(s)
@@ -835,7 +876,10 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
     s.stiffness_factor = 1.0
 
-    y0, yd0 = if steady_state
+    y0, yd0 = if !isnothing(initial_state)
+        s isa KPS4 || throw(ArgumentError("init!: initial_state is only supported for KPS4"))
+        init_from_state!(s, initial_state; upwind_dir)
+    elseif steady_state
         try
             KiteModels.find_steady_state!(s; upwind_dir, prn, trim)
         catch e
@@ -868,7 +912,8 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     end
 
     dt = 1/s.set.sample_freq
-    tspan   = (0.0, dt)
+    t_start = isnothing(initial_state) ? 0.0 : initial_state.time + dt
+    tspan   = (t_start, t_start + dt)
     abstol  = s.set.abs_tol # max error in m/s and m
 
     differential_vars = ones(Bool, length(y0))
@@ -879,9 +924,9 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
         _, pitch, _ = orient_euler(s)
         s.pitch_rate = 0
         s.pitch = pitch
-        set_initial_velocity!(s)
+        isnothing(initial_state) && set_initial_velocity!(s)
     end
-    s.v_reel_out = s.set.v_reel_out
+    isnothing(initial_state) && (s.v_reel_out = s.set.v_reel_out)
     s.integrator = integrator
     return integrator
 end

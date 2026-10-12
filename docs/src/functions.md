@@ -70,6 +70,7 @@ KiteUtils instead.
 
 ```@docs
 save_state
+load_state
 ```
 
 ## High level simulation interface

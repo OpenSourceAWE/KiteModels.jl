@@ -113,6 +113,53 @@ end
           Dict(string(key) => value for (key, value) in meta_data)
 end
 
+@testset "load_state" begin
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    meta_data = Dict("script" => "test", "time" => 1.5)
+    # every field round-trips, including NaN, the integers and the Float32 vectors
+    ss = SysState(kps4)
+    save_state(file, ss; meta_data, exclude=())
+    ss2, meta_data2 = load_state(file)
+    @test typeof(ss2) == typeof(ss)
+    @test all(isequal(getfield(ss2, name), getfield(ss, name)) for name in fieldnames(typeof(ss)))
+    @test meta_data2 == meta_data
+    # excluded fields keep their default values; KPS3 has fewer points and springs
+    kps3 = KPS3(deepcopy(set))
+    init!(kps3; prn=false)
+    ss = SysState(kps3)
+    save_state(file, ss; exclude=KiteModels.UNUSED_FIELDS_KPS3)
+    ss2, meta_data2 = load_state(file)
+    @test typeof(ss2) == typeof(ss)
+    @test ss2.X == ss.X && ss2.spring_force == ss.spring_force
+    @test isnan(ss2.bearing)
+    @test ss2.alpha3 == 0
+    @test isempty(meta_data2)
+    # a vector of the wrong length is rejected; the number of points is taken from X
+    write(file, replace(read(file, String), r"  Y: \[[^\]]*\]" => "  Y: [1.0]"))
+    @test_throws ArgumentError load_state(file)
+end
+
+@testset "init! from a loaded state" begin
+    run!(s, integ, steps) = for _ in 1:steps
+        set_depower_steering(s.kcu, 0.25, 0.2)
+        next_step!(s, integ; set_speed=0, dt=DT)
+    end
+    a = KPS4(deepcopy(set))
+    integ_a = init!(a; prn=false)
+    run!(a, integ_a, 40)
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    save_state(file, SysState(a))
+    b = KPS4(deepcopy(set))
+    integ_b = init!(b; initial_state=first(load_state(file)))
+    # the simulation continues at the same time and stays within a millimetre of the original
+    run!(a, integ_a, 20)
+    run!(b, integ_b, 20)
+    @test integ_b.t ≈ integ_a.t
+    @test maximum(norm.(a.pos .- b.pos)) < 1e-3
+    @test winch_force(b) ≈ winch_force(a) rtol=1e-4
+    @test_throws ArgumentError init!(KPS3(deepcopy(set)); initial_state=SysState(a))
+end
+
 @testset "update_sys_state! zoom" begin
     ss = SysState(kps4)
     zoomed = SysState(kps4, 2.0)

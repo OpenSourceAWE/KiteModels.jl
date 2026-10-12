@@ -1107,6 +1107,38 @@ const PRE_STRESS  = 0.9998   # Multiplier for the initial spring lengths.
 
 # Functions to calculate the initial state vector, the initial masses and initial springs
 
+# Set the model to the system state `ss`, which [`update_sys_state!`](@ref) wrote for a KPS4
+# with the same number of points: the positions and velocities of the particles, the tether
+# length, the reel-out speed and the actual and set values of depower and steering of the KCU.
+# Returns the state vector y0 and its derivative yd0. The SysState holds no accelerations, so
+# they are calculated from the residual for zero accelerations.
+function init_from_state!(s::KPS4, ss::SysState; upwind_dir)
+    P = length(s.pos)
+    length(ss.X) == P || throw(ArgumentError(
+        "the initial state has $(length(ss.X)) points, but the model has $P"))
+    for i in 1:P
+        s.pos[i] .= (ss.X[i], ss.Y[i], ss.Z[i])
+        s.vel[i] .= (ss.VX[i], ss.VY[i], ss.VZ[i])
+    end
+    s.l_tether   = ss.l_tether[1]
+    s.v_reel_out = ss.v_reelout[1]
+    s.kcu.depower      = ss.depower
+    s.kcu.set_depower  = ss.depower
+    s.kcu.steering     = ss.kcu_steering * s.set.cs_4p
+    s.kcu.set_steering = ss.set_steering
+    set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+    n   = 3 * (P - 1)
+    y0  = vcat(reduce(vcat, s.pos[2:P]), reduce(vcat, s.vel[2:P]), s.l_tether, s.v_reel_out)
+    yd0 = vcat(reduce(vcat, s.vel[2:P]), zeros(n), s.v_reel_out, 0.0)
+    # the residual of the accelerations is veld - acc, so for veld = 0 it is -acc
+    res = zeros(length(y0))
+    residual!(res, yd0, y0, s, 0.0)
+    yd0[n+1:2n] .= -res[n+1:2n]
+    yd0[end]     = -res[end]
+    y0, yd0
+end
+
 function init_springs!(s::KPS4)
     l_0     = s.set.l_tethers[1] / s.set.segments
     particles = KiteUtils.get_particles(s.set.height_k, s.set.h_bridle, s.set.width, s.set.m_k)
