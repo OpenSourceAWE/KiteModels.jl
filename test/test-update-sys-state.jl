@@ -41,6 +41,7 @@ end
     @test ss.AoA ≈ deg2rad(kps4.alpha_2)
     @test ss.alpha3 ≈ deg2rad(kps4.alpha_3)
     @test ss.alpha4 ≈ deg2rad(kps4.alpha_4)
+    @test ss.side_slip ≈ kps4.side_slip
     @test [ss.CL2, ss.CD2] ≈ collect(cl_cd(kps4))
 end
 
@@ -83,8 +84,10 @@ end
     ss = SysState(kps4)
     ss.depower = NaN
     file = joinpath(mktempdir(), "sys_state.yaml")
-    save_state(file, ss)
-    state = KiteUtils.YAML.load_file(file)
+    save_state(file, ss; meta_data=Dict("script" => "test", "time" => ss.time))
+    yaml = KiteUtils.YAML.load_file(file)
+    @test yaml["meta_data"] == Dict("script" => "test", "time" => ss.time)
+    state = yaml["sys_state"]
     @test !haskey(state, "flap_angle")
     @test length(state) == fieldcount(typeof(ss)) - length(KiteModels.UNUSED_FIELDS)
     @test isnan(state["depower"])
@@ -94,7 +97,14 @@ end
     @test Float32.(state["spring_force"]) == ss.spring_force
     @test state["elevation"] isa Float64
     save_state(file, ss; exclude=())
-    @test length(KiteUtils.YAML.load_file(file)) == fieldcount(typeof(ss))
+    yaml = KiteUtils.YAML.load_file(file)
+    @test isempty(yaml["meta_data"])
+    @test length(yaml["sys_state"]) == fieldcount(typeof(ss))
+    save_state(file, ss; exclude=KiteModels.UNUSED_FIELDS_KPS3)
+    state = KiteUtils.YAML.load_file(file)["sys_state"]
+    @test !haskey(state, "side_slip") && !haskey(state, "alpha3") && !haskey(state, "alpha4")
+    @test !haskey(state, "aero_moment_KA_x")
+    @test length(state) == fieldcount(typeof(ss)) - length(KiteModels.UNUSED_FIELDS_KPS3)
 end
 
 @testset "update_sys_state! zoom" begin
@@ -235,6 +245,7 @@ end
     step!()
     rot_1 = rot()
     ss = SysState(s)
+    side_slip = s.side_slip
     step!()
     rot_2 = rot()
     # central difference of the rotation matrix; Ω is the skew matrix of the body rates
@@ -243,6 +254,9 @@ end
     @test SVector(ss.turn_rate_x[1], ss.turn_rate_y[1], ss.turn_rate_z[1]) ≈ turn_rates rtol=0.01
     @test ss.turn_rates ≈ turn_rates rtol=0.01
     @test norm(turn_rates) > 0.1
+    # in a turn the apparent wind comes from the side
+    @test ss.side_slip ≈ side_slip
+    @test abs(ss.side_slip) > 0.01
 end
 
 @testset "update_sys_state! KPS3" begin
@@ -255,10 +269,14 @@ end
     @test ss.azimuth ≈ calc_azimuth(kps3)
     @test ss.heading ≈ calc_heading(kps3)
     @test ss.l_tether ≈ [kps3.l_tether]
-    # set_force, bearing and attractor are KPS4 only and keep their defaults here
-    @test ss.bearing == 0
-    @test ss.set_force ≈ [0]
-    @test ss.attractor ≈ [0, 0]
+    # side_slip, alpha3, alpha4, set_force, bearing and attractor are KPS4 only and marked as
+    # not available
+    @test isnan(ss.side_slip)
+    @test isnan(ss.alpha3)
+    @test isnan(ss.alpha4)
+    @test isnan(ss.bearing)
+    @test isnan(ss.set_force[1])
+    @test all(isnan, ss.attractor)
     @test SysState(kps3).spring_force ≈ spring_forces(kps3)
     # a point mass has no aerodynamic moment
     @test ss.aero_moment_KA_y ≈ [0]

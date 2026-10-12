@@ -34,9 +34,23 @@ set.v_wind = V_WIND # 25
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
 logger = Logger(set.segments + 1, STEPS; segments=n_springs(kps3))
-_ = KiteModels.init!(kps3; prn=STATISTIC, trim=true)
+integrator = KiteModels.init!(kps3; prn=STATISTIC, trim=true)
+t_sim = 0.0 # wall-clock time of the last time step [s]
+for _ in 1:80
+    global t_sim = @elapsed next_step!(kps3, integrator; set_speed=kps3.set.v_reel_out,
+                                       upwind_dir=deg2rad(set.upwind_dir), dt)
+end
 lift, drag = lift_drag(kps3)
 sys_state::SysState = KiteModels.SysState(kps3)
+sys_state.t_sim = t_sim
+
+output_dir = joinpath(dirname(@__DIR__), "output")
+mkpath(output_dir)
+script_name = splitext(basename(@__FILE__))[1]
+meta_data = Dict("script" => script_name, "time" => sys_state.time,
+                 "date_time" => Libc.strftime("%Y-%m-%d_%H:%M:%S", time()))
+save_state(joinpath(output_dir, "sys_state_$(script_name).yaml"), sys_state; meta_data,
+           exclude=KiteModels.UNUSED_FIELDS_KPS3)
 log!(logger, sys_state)
 elev = rad2deg(logger.elevation_vec[end])
 println("Lift: $lift, Drag: $drag, elev: $elev, Iterations: $(kps3.iter)")

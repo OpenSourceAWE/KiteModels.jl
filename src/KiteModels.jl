@@ -592,6 +592,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     if isa(s, KPS4)
         ss.alpha3 = deg2rad(s.alpha_3)
         ss.alpha4 = deg2rad(s.alpha_4)
+        ss.side_slip = s.side_slip
         ss.set_force[1] = something(s.set_force, NaN)
         if isnothing(s.bearing)
             ss.bearing = NaN
@@ -618,6 +619,15 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         end
         ss.turn_rates .= calc_turn_rates(s)
     else
+        # KPS3 has no side slip angle, no angles of attack alpha3 and alpha4, no set force,
+        # bearing or attractor; NaN marks them as not available, like the set values of KPS4
+        # when they are not set
+        ss.side_slip    = NaN
+        ss.alpha3       = NaN
+        ss.alpha4       = NaN
+        ss.set_force[1] = NaN
+        ss.bearing      = NaN
+        ss.attractor   .= NaN
         # KPS3: the kite is a point mass on the last particle, without an aerodynamic moment
         force = SVec3(s.lift_force) + SVec3(s.drag_force) + SVec3(s.steering_force)
         ss.aero_force_x[P], ss.aero_force_y[P], ss.aero_force_z[P] = force
@@ -699,24 +709,32 @@ n_springs(s::KPS3) = s.set.segments
 "fields of SysState that KPS3 and KPS4 do not use"
 const UNUSED_FIELDS = (:set_ext_force_x, :set_ext_force_y, :set_ext_force_z, :gamma_distribution,
                        :flap_angle, :twist_angles, :twist_vel, :pulley_len, :pulley_vel)
+"""fields of SysState that KPS3 does not use: `UNUSED_FIELDS`, the angles of the four-point kite
+and the aerodynamic moment, which is always zero for a point mass"""
+const UNUSED_FIELDS_KPS3 = (UNUSED_FIELDS..., :side_slip, :alpha3, :alpha4,
+                            :aero_moment_KA_x, :aero_moment_KA_y, :aero_moment_KA_z)
 
 """
-    save_state(filename, ss::SysState; exclude=KiteModels.UNUSED_FIELDS)
+    save_state(filename, ss::SysState; meta_data=Dict(), exclude=KiteModels.UNUSED_FIELDS)
 
-Write the fields of the system state `ss` to the YAML file `filename`, except the fields in
-`exclude`, by default the fields that KPS3 and KPS4 do not use. Scalars are written as numbers,
-vectors as YAML flow sequences, NaN and Inf as `.nan` and `.inf`.
+Write the system state `ss` to the YAML file `filename`: the entries of the dictionary
+`meta_data` under the key `meta_data`, and the fields of `ss` under the key `sys_state`, except
+the fields in `exclude`, by default the fields that KPS3 and KPS4 do not use. For KPS3, pass
+`exclude=KiteModels.UNUSED_FIELDS_KPS3` to also leave out `side_slip`, `alpha3` and `alpha4`,
+which it does not have, and the aerodynamic moment `aero_moment_KA_x/y/z`, which is always zero. Scalars are written as numbers, vectors as YAML flow sequences, NaN and
+Inf as `.nan` and `.inf`, all other values as quoted strings.
 
 Example:
 ```julia
 ss = SysState(kps4)
-save_state("output/sys_state.yaml", ss)
+save_state("output/sys_state.yaml", ss; meta_data=Dict("script" => "test_init_4p"))
 ```
 The file can be read with `YAML.load_file("output/sys_state.yaml")`, which returns a
-`Dict` with the field names as keys.
+`Dict` with the keys `meta_data` and `sys_state`; the latter has the field names as keys.
 """
-function save_state(filename, ss::SysState; exclude=UNUSED_FIELDS)
+function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIELDS)
     function yaml_num(x)
+        x isa Real || return repr(string(x))
         x isa AbstractFloat || return string(x)
         isnan(x) && return ".nan"
         isinf(x) && return x > 0 ? ".inf" : "-.inf"
@@ -726,9 +744,14 @@ function save_state(filename, ss::SysState; exclude=UNUSED_FIELDS)
     end
     yaml_val(x) = x isa AbstractVector ? "[" * join(yaml_num.(x), ", ") * "]" : yaml_num(x)
     open(filename, "w") do io
+        println(io, "meta_data:", isempty(meta_data) ? " {}" : "")
+        for key in sort!(collect(keys(meta_data)); by=string)
+            println(io, "  ", key, ": ", yaml_val(meta_data[key]))
+        end
+        println(io, "sys_state:")
         for name in fieldnames(typeof(ss))
             name in exclude && continue
-            println(io, name, ": ", yaml_val(getfield(ss, name)))
+            println(io, "  ", name, ": ", yaml_val(getfield(ss, name)))
         end
     end
     nothing
