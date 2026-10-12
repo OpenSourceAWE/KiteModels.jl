@@ -139,19 +139,27 @@ end
     @test_throws ArgumentError load_state(file)
 end
 
-@testset "init! from a loaded state" begin
+@testset "init! from a loaded state, $Model" for (Model, exclude) in
+        ((KPS4, KiteModels.UNUSED_FIELDS), (KPS3, KiteModels.UNUSED_FIELDS_KPS3))
     run!(s, integ, steps) = for _ in 1:steps
         set_depower_steering(s.kcu, 0.25, 0.2)
         next_step!(s, integ; set_speed=0, dt=DT)
     end
-    a = KPS4(deepcopy(set))
+    set_ = deepcopy(set)
+    if Model == KPS3
+        # with the default tolerance of 1e-3, a turning KPS3 is only accurate to about half a
+        # metre after one second, and the restarted solver takes different steps than the
+        # uninterrupted one; with 1e-6 both follow the exact solution within a millimetre
+        set_.rel_tol = set_.abs_tol = 1e-6
+    end
+    a = Model(deepcopy(set_))
     integ_a = init!(a; prn=false)
     run!(a, integ_a, 40)
     file = joinpath(mktempdir(), "sys_state.yaml")
     ss = SysState(a)
     ss.time = integ_a.t
-    save_state(file, ss)
-    b = KPS4(deepcopy(set))
+    save_state(file, ss; exclude)
+    b = Model(deepcopy(set_))
     integ_b = init!(b; initial_state=first(load_state(file)))
     # the simulation continues at the same time and stays within a millimetre of the original
     run!(a, integ_a, 20)
@@ -159,7 +167,9 @@ end
     @test integ_b.t ≈ integ_a.t
     @test maximum(norm.(a.pos .- b.pos)) < 1e-3
     @test winch_force(b) ≈ winch_force(a) rtol=1e-4
-    @test_throws ArgumentError init!(KPS3(deepcopy(set)); initial_state=SysState(a))
+    # a state with a different number of points is rejected
+    other = Model == KPS4 ? KPS3(deepcopy(set)) : KPS4(deepcopy(set))
+    @test_throws ArgumentError init!(other; initial_state=SysState(a))
 end
 
 @testset "update_sys_state! zoom" begin

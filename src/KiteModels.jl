@@ -835,6 +835,40 @@ function init_winch_state!(s::AKM)
     update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
 end
 
+# Set the model to the system state `ss`, which update_sys_state! wrote for a model of the same
+# type with the same number of points: the positions and velocities of the particles, the
+# tether length, the reel-out speed and the actual and set values of depower and steering of
+# the KCU. Returns the state vector y0 and its derivative yd0. The SysState holds no
+# accelerations, so they are calculated from the residual for zero accelerations.
+function init_from_state!(s::AKM, ss::SysState; upwind_dir)
+    P = length(s.pos)
+    length(ss.X) == P || throw(ArgumentError(
+        "the initial state has $(length(ss.X)) points, but the model has $P"))
+    for i in 1:P
+        s.pos[i] .= (ss.X[i], ss.Y[i], ss.Z[i])
+    end
+    s.l_tether   = ss.l_tether[1]
+    s.v_reel_out = ss.v_reelout[1]
+    s.kcu.depower      = ss.depower
+    s.kcu.set_depower  = ss.depower
+    s.kcu.steering     = ss.kcu_steering * s.set.cs_4p
+    s.kcu.set_steering = ss.set_steering
+    set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+    # the state vector holds the positions of the particles 2:P, then their velocities
+    n   = 3 * (P - 1)
+    pos = [Float64(c) for i in 2:P for c in (ss.X[i], ss.Y[i], ss.Z[i])]
+    vel = [Float64(c) for i in 2:P for c in (ss.VX[i], ss.VY[i], ss.VZ[i])]
+    y0  = vcat(pos, vel, s.l_tether, s.v_reel_out)
+    yd0 = vcat(vel, zeros(n), s.v_reel_out, 0.0)
+    # the residual of the accelerations is veld - acc, so for veld = 0 it is -acc
+    res = zeros(length(y0))
+    residual!(res, yd0, y0, s, 0.0)
+    yd0[n+1:2n] .= -res[n+1:2n]
+    yd0[end]     = -res[end]
+    y0, yd0
+end
+
 """
     init!(s::AKM; prn=false, steady_state=true, trim=false,
                   initial_state=nothing) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
@@ -853,13 +887,13 @@ Parameters:
 - trim: if `true`, the steady state is found at the natural elevation of the kite, where its
   lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. If no trim
   with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
-- initial_state: a `SysState`, for example from [`load_state`](@ref), to continue a simulation
-  from (KPS4 only). The model gets the positions and velocities of the particles, the tether
-  length, the reel-out speed and the depower and steering of the KCU from it, and
+- initial_state: a `SysState` to continue a simulation from, for example from
+  [`load_state`](@ref). The model gets the positions and velocities of the particles, the
+  tether length, the reel-out speed and the depower and steering of the KCU from it, and
   `steady_state` and `trim` are ignored. The integrator continues at `initial_state.time`,
   which must be the time of the state, `integrator.t` when it was saved; a `SysState` from
   `update_sys_state!` holds the start time of the last time step instead. The state of the
-  controllers of the caller and the pitch rate of the kite are not restored.
+  controllers of the caller and, for KPS4, the pitch rate of the kite are not restored.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
@@ -878,7 +912,6 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     s.stiffness_factor = 1.0
 
     y0, yd0 = if !isnothing(initial_state)
-        s isa KPS4 || throw(ArgumentError("init!: initial_state is only supported for KPS4"))
         init_from_state!(s, initial_state; upwind_dir)
     elseif steady_state
         try
