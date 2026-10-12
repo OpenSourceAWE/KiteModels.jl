@@ -121,5 +121,6 @@ Good: `norm1        ~ norm(segment)`
 
 The next steps:
 
-- add examples that use SymbolicAWEModels
-- add a Matlab/ Simulink wrapper similar to the Python wrapper [pykitemodels](https://github.com/ufechner7/pykitemodels)
+- add the possibility to use any initial state to be able to simulate sections of real flights
+- add an example that uses an electrical machine model for the winch to determine the electrical energy
+- add a Matlab/ Simulink wrapper using a REST interface
