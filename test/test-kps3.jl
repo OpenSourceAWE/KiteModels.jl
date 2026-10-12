@@ -391,7 +391,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         init_392(kps)
         KiteModels.set_depower_steering!(kps, 0.25, 0.0)
         # the solver must converge without warning; the kite is placed at the elevation from the settings
-        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; delta = 1e-6, prn = false)
+        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; prn = false)
         @test rad2deg(calc_elevation(kps)) ≈ 70.0 atol=1e-6
         # the tether particles are in equilibrium (x and z components of their accelerations)
         res = zeros(length(res1))
@@ -421,7 +421,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         local kps = KPS3(KCU(load_settings("system.yaml")))
         init_392(kps)
         KiteModels.set_depower_steering!(kps, 0.25, 0.0)
-        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; delta = 1e-6, upwind_dir)
+        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; upwind_dir)
         @test rad2deg(calc_elevation(kps)) ≈ 70.0 atol=1e-6
         @test winch_force(kps) ≈ 301.23463553992514 rtol = 1e-4   # independent of the wind direction
         # the tether lies in the vertical plane of the wind direction; take the components of the

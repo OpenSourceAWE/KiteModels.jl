@@ -93,7 +93,7 @@ function simulate(integrator, steps, plot=false)
     iter / steps
 end
 
-integrator = KiteModels.init!(kps4; delta=0.003, stiffness_factor=0.1, prn=STATISTIC)
+integrator = KiteModels.init!(kps4; prn=STATISTIC)
 metadata = topology_metadata(kps4)
 kps4.sync_speed = 0.0
 

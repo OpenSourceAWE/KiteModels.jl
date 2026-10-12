@@ -15,7 +15,7 @@ segment_points(definition) = [segment.points for segment in definition.segments]
 
 @testset "KPS4 definition holds the points and springs the model integrates" begin
     kps4 = KPS4(load_settings("system.yaml"))
-    init!(kps4; delta=0.001, prn=false)
+    init!(kps4; prn=false)
     definition = system_definition(kps4)
     segments = kps4.set.segments
     @test definition.metadata.n_points == length(kps4.pos) == segments + 5
@@ -35,7 +35,7 @@ end
 
 @testset "KPS3 definition is one tether from the winch to the kite" begin
     kps3 = KPS3(load_settings("system.yaml"))
-    init!(kps3; delta=0.001)
+    init!(kps3)
     definition = system_definition(kps3)
     segments = kps3.set.segments
     @test definition.metadata.n_points == length(kps3.pos) == segments + 1
@@ -46,7 +46,7 @@ end
 
 @testset "a saved log carries the KPS4 definition under topology" begin
     kps4 = KPS4(load_settings("system.yaml"))
-    init!(kps4; delta=0.001, prn=false)
+    init!(kps4; prn=false)
     logger = Logger(length(kps4.pos), 1)
     log!(logger, SysState(kps4))
     path = mktempdir()

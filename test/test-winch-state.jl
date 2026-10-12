@@ -15,7 +15,7 @@ winch_state(s) = (s.sync_speed, s.wm.brake, s.wm.last_set_speed)
 
 @testset "init! resets the winch state, $(nameof(Model))" for Model in (KPS3, KPS4)
     s = Model(KCU(load_settings("system.yaml")))
-    integrator = KiteModels.init!(s; stiffness_factor=0.04)
+    integrator = KiteModels.init!(s)
     @test !isnothing(integrator)
     initial = winch_state(s)
     @test initial[1] == s.set.v_reel_out
@@ -28,14 +28,14 @@ winch_state(s) = (s.sync_speed, s.wm.brake, s.wm.last_set_speed)
     # set the brake to a state inside the hysteresis band that differs from the initial one
     s.sync_speed = s.wm.v_min
     s.wm.brake = !initial[2]
-    integrator = KiteModels.init!(s; stiffness_factor=0.04)
+    integrator = KiteModels.init!(s)
     @test !isnothing(integrator)
     @test winch_state(s) == initial
 end
 
 @testset "residual! does not change the winch state, $(nameof(Model))" for Model in (KPS3, KPS4)
     s = Model(KCU(load_settings("system.yaml")))
-    integrator = KiteModels.init!(s; stiffness_factor=0.04)
+    integrator = KiteModels.init!(s)
     @test !isnothing(integrator)
     for set_speed in (0.0, 0.5s.wm.v_min, 10.0, -10.0)
         # a set speed that would switch the brake or move the rate limited set speed
@@ -51,7 +51,7 @@ end
 
 @testset "next_step! advances the winch state once, $(nameof(Model))" for Model in (KPS3, KPS4)
     s = Model(KCU(load_settings("system.yaml")))
-    integrator = KiteModels.init!(s; stiffness_factor=0.04)
+    integrator = KiteModels.init!(s)
     @test !isnothing(integrator)
     @test s.wm.brake            # the initial set speed is zero
     step = s.set.max_acc / s.set.sample_freq
