@@ -925,8 +925,15 @@ settings; for KPS3 and KPS4 only the first value of each vector is used:
   the lengths of all springs; the tether is not changed. A kite with a heading other than zero
   is not in equilibrium: it flies towards its nose. The one-point kite of KPS3 has no heading
   of its own, so the heading is ignored.
-- `elevation_rates`, `azimuth_rates`, `heading_rates` and `kite_distances` are ignored: apart
-  from reeling out, the kite is at rest.
+- `elevation_rates` and `azimuth_rates`: the tether and the kite rotate as a rigid body about
+  the winch, so that the elevation and the azimuth of the kite change with these rates [°/s].
+- `heading_rates` (KPS4 only): the kite also rotates about the line from the KCU to the kite,
+  so that its heading changes with this rate [°/s].
+  The rates only set the velocities, not the accelerations, so the initial state is not
+  consistent with them, which causes a transient during the first fraction of a second. For
+  example, with an elevation rate of -5 °/s the tether force of KPS4 drops from 502 N to 48 N
+  within 0.1 s. Without steering, the heading rate decays within about 0.1 s.
+- `kite_distances` is ignored.
 
 The steady state is solved with the steering applied; its symmetric forces are balanced, but a
 steering other than zero makes the kite turn.
@@ -969,7 +976,10 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
-    isnothing(initial_state) && set_initial_heading!(s, y0, yd0)
+    if isnothing(initial_state)
+        set_initial_heading!(s, y0, yd0)
+        set_initial_rates!(s, y0, yd0)
+    end
 
     if s.set.solver=="IDA"
         solver  = Sundials.IDA(linear_solver=Symbol(s.set.linear_solver), max_order = s.set.max_order)
@@ -993,13 +1003,60 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
-        s.pitch_rate = isnothing(initial_state) ? 0.0 : calc_pitch_rate(s)
+        rates = !isnothing(initial_state) || has_initial_rates(s)
+        s.pitch_rate = rates ? calc_pitch_rate(s) : 0.0
         s.pitch = pitch
-        isnothing(initial_state) && set_initial_velocity!(s)
+        rates || set_initial_velocity!(s)
     end
     isnothing(initial_state) && (s.v_reel_out = s.set.v_reel_out)
     s.integrator = integrator
     return integrator
+end
+
+# true if one of the initial rates of the settings that the model uses is not zero; the
+# one-point kite of KPS3 has no heading of its own, so it ignores the heading rate
+function has_initial_rates(s::AKM)
+    s.set.elevation_rate != 0 || s.set.azimuth_rate != 0 || (s isa KPS4 && s.set.heading_rate != 0)
+end
+
+# Add the velocities of the initial rates of the settings to the initial state y0 and its
+# derivative yd0: the tether and the kite rotate as a rigid body about the winch, so that the
+# elevation and the azimuth of the kite change with s.set.elevation_rate and s.set.azimuth_rate,
+# and for KPS4 the kite points A, C and D also rotate about the line from the KCU to the kite
+# (point B) with s.set.heading_rate. The accelerations are not changed, so the initial state is
+# not consistent with the rates, which causes a short transient. Afterwards the state of the
+# model is updated by evaluating the residual.
+function set_initial_rates!(s::AKM, y0, yd0)
+    has_initial_rates(s) || return nothing
+    P = length(s.pos)
+    n = 3 * (P - 1)                 # index offset of the velocities in y0
+    i0(i) = 3 * (i - 2)             # index offset of particle i (2 ≤ i ≤ P)
+    pos(i) = SVec3(y0[i0(i)+1], y0[i0(i)+2], y0[i0(i)+3])
+    function add_velocity!(i, v)
+        y0[n+i0(i)+1:n+i0(i)+3] .+= v
+        yd0[i0(i)+1:i0(i)+3]    .+= v
+    end
+    i_kite = s isa KPS4 ? P - 2 : P
+    kite = pos(i_kite)
+    z = SVec3(0, 0, 1)
+    e_h = normalize(SVec3(kite[1], kite[2], 0))   # horizontal direction from the winch to the kite
+    omega = deg2rad(s.set.elevation_rate) * (e_h × z) + deg2rad(s.set.azimuth_rate) * z
+    for i in 2:P
+        add_velocity!(i, omega × pos(i))
+    end
+    if s isa KPS4 && s.set.heading_rate != 0
+        # rotation of the kite as in heading_after_rotation!, scaled with the change of the
+        # heading per angle of rotation, so that the heading changes with s.set.heading_rate
+        rate = deg2rad(s.set.heading_rate) / heading_slope!(s, y0, yd0)
+        segments = s.set.segments
+        kcu  = pos(segments+1)
+        axis = normalize(kite - kcu)
+        for i in (segments+2, segments+4, segments+5)   # A, C and D
+            add_velocity!(i, rate * (axis × (pos(i) - kcu)))
+        end
+    end
+    residual!(zeros(SimFloat, length(y0)), yd0, y0, s, 0.0)
+    nothing
 end
 
 # Copy the acceleration of the kite from the derivative `du` of the state vector of the

@@ -1258,33 +1258,46 @@ function init_pos_vel_acc(s::KPS4, X=zeros(2 * (s.set.segments+KITE_PARTICLES)+1
     pos, vel, acc
 end
 
-# Turn the kite of the initial state y0 to the heading s.set.heading: the kite points A, C and D
-# are rotated about the line from the KCU to the kite (point B), so that the lengths of all
-# springs, the position of the kite and thus its elevation and azimuth stay the same. The angle
-# of rotation is solved for, so that calc_heading returns s.set.heading. Afterwards the state of
-# the model is updated by evaluating the residual. The tether is not changed, so the initial
-# state is not an equilibrium.
-function set_initial_heading!(s::KPS4, y0, yd0)
-    heading = deg2rad(s.set.heading)
-    heading == 0 && return nothing
+# Rotate the kite points A, C and D of the state y_ref about the line from the KCU to the kite
+# (point B) by angle [rad] and store the result in y. This keeps the lengths of all springs and
+# the position of the kite. Returns the heading of the kite of y; the state of the model is
+# updated by evaluating the residual.
+function heading_after_rotation!(s::KPS4, y, yd, y_ref, angle)
     segments = s.set.segments
     # index of the first element of the position of particle i (2 ≤ i) in the state vector
     i0(i) = 3*(i-2) + 1
-    pos(y, i) = SVec3(y[i0(i)], y[i0(i)+1], y[i0(i)+2])
-    kcu  = pos(y0, segments+1)
-    axis = normalize(pos(y0, segments+3) - kcu)
-    y_ref = copy(y0)
-    res = zeros(SimFloat, length(y0))
-    function heading_error(angle)
-        for i in (segments+2, segments+4, segments+5)   # A, C and D
-            v = pos(y_ref, i) - kcu
-            # Rodrigues' rotation formula
-            v_rot = v * cos(angle) + (axis × v) * sin(angle) + axis * (axis ⋅ v) * (1 - cos(angle))
-            y0[i0(i):i0(i)+2] .= kcu + v_rot
-        end
-        residual!(res, yd0, y0, s, 0.0)
-        wrap2pi(calc_heading(s) - heading)
+    pos(i) = SVec3(y_ref[i0(i)], y_ref[i0(i)+1], y_ref[i0(i)+2])
+    kcu  = pos(segments+1)
+    axis = normalize(pos(segments+3) - kcu)
+    for i in (segments+2, segments+4, segments+5)   # A, C and D
+        v = pos(i) - kcu
+        # Rodrigues' rotation formula
+        v_rot = v * cos(angle) + (axis × v) * sin(angle) + axis * (axis ⋅ v) * (1 - cos(angle))
+        y[i0(i):i0(i)+2] .= kcu + v_rot
     end
+    residual!(zeros(SimFloat, length(y)), yd, y, s, 0.0)
+    calc_heading(s)
+end
+
+# Derivative of the heading of the kite of the state y with respect to the angle of rotation of
+# heading_after_rotation!; the state of the model is updated for y.
+function heading_slope!(s::KPS4, y, yd; h=1e-6)
+    y_tmp = copy(y)
+    slope = wrap2pi(heading_after_rotation!(s, y_tmp, yd, y, h) -
+                    heading_after_rotation!(s, y_tmp, yd, y, -h)) / (2h)
+    residual!(zeros(SimFloat, length(y)), yd, y, s, 0.0)
+    slope
+end
+
+# Turn the kite of the initial state y0 to the heading s.set.heading with
+# heading_after_rotation!, which keeps the lengths of all springs and the position of the kite,
+# and thus its elevation and azimuth. The angle of rotation is solved for, so that calc_heading
+# returns s.set.heading. The tether is not changed, so the initial state is not an equilibrium.
+function set_initial_heading!(s::KPS4, y0, yd0)
+    heading = deg2rad(s.set.heading)
+    heading == 0 && return nothing
+    y_ref = copy(y0)
+    heading_error(angle) = wrap2pi(heading_after_rotation!(s, y0, yd0, y_ref, angle) - heading)
     # Newton iteration; the heading changes approximately like the angle of rotation
     angle = 0.0
     for _ in 1:20
