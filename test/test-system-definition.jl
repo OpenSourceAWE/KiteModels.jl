@@ -5,7 +5,7 @@ using Pkg
 if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
-using KiteModels, KiteUtils, Test, YAML
+using KiteModels, KiteUtils, Test
 using KiteModels: init!
 
 set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
@@ -31,6 +31,7 @@ segment_points(definition) = [segment.points for segment in definition.segments]
     @test sum(point.extra_mass for point in definition.points) ≈
           kps4.set.mass + kps4.set.kcu_mass
     @test all(segment.density == 0 for segment in definition.segments[(segments + 1):end])
+    @test definition.metadata.connectivity_sha == connectivity_sha(definition)
 end
 
 @testset "KPS3 definition is one tether from the winch to the kite" begin
@@ -51,7 +52,7 @@ end
     log!(logger, SysState(kps4))
     path = mktempdir()
     save_log(logger, "topology"; path, metadata=topology_metadata(kps4))
-    document = YAML.load(load_log("topology"; path).metadata["topology"])
-    @test structure_document(SystemDefinition(document)) ==
+    topology = load_log("topology"; path).metadata["topology"]
+    @test structure_document(KiteGeometry.definition(topology)) ==
           structure_document(system_definition(kps4))
 end

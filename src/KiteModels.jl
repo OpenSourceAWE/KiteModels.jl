@@ -25,7 +25,6 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using WinchModels
 @reexport using AtmosphericModels
 @reexport using KiteGeometry
-import YAML
 using Rotations
 import Base.zero
 import OrdinaryDiffEqCore.init

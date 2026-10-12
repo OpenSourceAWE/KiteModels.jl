@@ -50,8 +50,6 @@ the tether from the winch at point 1 to point `s.set.segments + 1`.
 function assemble_system_definition(s::AbstractKiteModel, segments, extra_masses)
     n_points = length(s.pos)
     tether_segments = s.set.segments
-    metadata = Metadata(string(nameof(typeof(s))), "", "", "1.0.0", "structure_schema.yml",
-                        n_points, "")
     points = [Point(; name=string(i), type=i == 1 ? STATIC : DYNAMIC, pos_ENU=s.pos[i],
                     extra_mass=extra_masses[i])
               for i in 1:n_points]
@@ -59,15 +57,21 @@ function assemble_system_definition(s::AbstractKiteModel, segments, extra_masses
                     segments=collect(1:tether_segments))
     winch = Winch(; name="winch", tethers=[1], winch_point=1, gear_ratio=s.set.gear_ratio,
                   drum_radius=s.set.drum_radius)
-    return SystemDefinition(; metadata, points, segments, tethers=[tether], winches=[winch])
+    tables = (; points, segments, tethers=[tether], winches=[winch])
+    name = string(nameof(typeof(s)))
+    metadata(sha) = Metadata(name, "", "", KiteGeometry.AWESIO_VERSION,
+                             "structure_schema.yml", n_points, sha)
+    sha = connectivity_sha(SystemDefinition(; metadata=metadata(""), tables...))
+    return SystemDefinition(; metadata=metadata(sha), tables...)
 end
 
 """
     topology_metadata(s::AbstractKiteModel)
 
-The table metadata that carries the structure document of `system_definition(s)` in a
-log, under the key `topology`: pass it as `save_log(logger, name; metadata)`.
+The table metadata that carries `system_definition(s)` in a log as JSON, under the key
+`topology` that `KiteGeometry.definition` reads. Pass it as
+`save_log(logger, name; metadata)`.
 """
 function topology_metadata(s::AbstractKiteModel)
-    return Dict("topology" => YAML.write(structure_document(system_definition(s))))
+    return Dict("topology" => to_json(system_definition(s)))
 end
