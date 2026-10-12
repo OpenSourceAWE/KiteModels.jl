@@ -912,6 +912,17 @@ Parameters:
   during the last time step, which `next_step!` uses otherwise. The state of the controllers
   of the caller is not restored.
 
+Without `initial_state`, the initial state is taken from the section `initial` of the
+settings; for KPS3 and KPS4 only the first value of each vector is used:
+- `l_tethers`, `v_reel_outs` and `depowers`: the tether length, the reel-out speed and the
+  depower setting.
+- `elevations`: the elevation of the kite; with `trim=true` only the start value of the search
+  for the natural elevation.
+- `azimuths`: the azimuth of the kite in the wind reference frame; see `find_steady_state!`.
+- `headings`, `steerings`, `elevation_rates`, `azimuth_rates`, `heading_rates` and
+  `kite_distances` are ignored: the heading of the kite is zero (relative to the vertical plane
+  of the tether), the steering is zero, and apart from reeling out the kite is at rest.
+
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
 
