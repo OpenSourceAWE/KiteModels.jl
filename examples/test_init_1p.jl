@@ -30,10 +30,10 @@ STATISTIC = false
 
 elev = set.elevation
 set.v_wind = V_WIND # 25
-logger = Logger(set.segments + 1, STEPS)
 
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
+logger = Logger(set.segments + 1, STEPS; segments=n_springs(kps3))
 _ = KiteModels.init!(kps3; prn=STATISTIC, trim=true)
 lift, drag = lift_drag(kps3)
 sys_state::SysState = KiteModels.SysState(kps3)

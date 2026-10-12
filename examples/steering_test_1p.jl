@@ -38,10 +38,10 @@ STATISTIC = false
 
 dt::Float64 = 1/set.sample_freq
 particles = set.segments + 1
-logger = Logger(particles, STEPS)
 
 kcu::KCU = KCU(set)
 kps3::KPS3 = KPS3(kcu)
+logger = Logger(particles, STEPS; segments=n_springs(kps3))
 
 if PLOT
     using Pkg

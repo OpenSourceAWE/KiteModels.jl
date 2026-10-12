@@ -37,7 +37,7 @@ export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
-export get_default_turbulence, set_default_turbulence, spring_forces, states, upwind_dir
+export get_default_turbulence, n_springs, set_default_turbulence, spring_forces, states, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -564,6 +564,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
+    orient_0 = SVector{4, SimFloat}(ss.orient)
     ss.orient .= fromKS2KA(calc_orient_quat(s))
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
@@ -585,6 +586,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.steering = s.steering/s.set.cs_4p
     ss.kcu_steering = s.kcu_steering/s.set.cs_4p
     ss.vel_kite .= s.vel_kite
+    ss.acc = norm(s.acc_kite)
     ss.t_sim = 0.0
     ss.AoA = deg2rad(s.alpha_2)
     if isa(s, KPS4)
@@ -601,15 +603,48 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         else
             ss.attractor = s.attractor
         end
+        force, moment = calc_aero_force_moment(s)
+        ss.aero_force_KA_x[1],  ss.aero_force_KA_y[1],  ss.aero_force_KA_z[1]  = force
+        ss.aero_moment_KA_x[1], ss.aero_moment_KA_y[1], ss.aero_moment_KA_z[1] = moment
+        i_A = s.set.segments + 2
+        for (i, f) in zip(i_A:i_A+3, aero_point_forces(s))
+            ss.aero_force_x[i], ss.aero_force_y[i], ss.aero_force_z[i] = f
+        end
+        for (i, f) in pairs(tether_drag_forces(s))
+            ss.drag_force_x[i], ss.drag_force_y[i], ss.drag_force_z[i] = f
+        end
+        for i in 1:P
+            ss.VX[i], ss.VY[i], ss.VZ[i] = s.vel[i]
+        end
+        ss.turn_rates .= calc_turn_rates(s)
+    else
+        # KPS3: the kite is a point mass on the last particle, without an aerodynamic moment
+        force = SVec3(s.lift_force) + SVec3(s.drag_force) + SVec3(s.steering_force)
+        ss.aero_force_x[P], ss.aero_force_y[P], ss.aero_force_z[P] = force
+        x, y, z = kite_ref_frame(s)
+        ss.aero_force_KA_x[1], ss.aero_force_KA_y[1], ss.aero_force_KA_z[1] =
+            fromKS2KA_body(SVec3(force ⋅ x, force ⋅ y, force ⋅ z))
+        for (i, f) in pairs(tether_drag_forces(s))
+            ss.drag_force_x[i], ss.drag_force_y[i], ss.drag_force_z[i] = f
+        end
+        for (i, v) in pairs(particle_velocities(s))
+            ss.VX[i], ss.VY[i], ss.VZ[i] = v
+        end
+        # KPS3 has no rigid kite frame with particle velocities, so the turn rates are the
+        # finite difference of the orientation since the last update
+        ss.turn_rates .= calc_turn_rates(orient_0, ss.orient, dt)
+    end
+    ss.turn_rate_x[1], ss.turn_rate_y[1], ss.turn_rate_z[1] = ss.turn_rates
+    # the spring forces are only stored if the SysState was created with room for them
+    if !isempty(ss.spring_force)
+        length(ss.spring_force) == n_springs(s) || throw(ArgumentError(
+            "the SysState has $(length(ss.spring_force)) spring forces, but the model has " *
+            "$(n_springs(s)) springs; create it with SysState(s; with_springs=true)"))
+        ss.spring_force .= s isa KPS4 ? spring_forces(s; prn=false) : spring_forces(s)
     end
     ss.set_steering = s.kcu.set_steering
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
-    # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
-    # psi_m = psi - phi_dot * cos(theta)
-    # This removes the effect of roll on the heading measurement
-    body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
-    ss.turn_rates .= fromKS2KA_body(SVec3(0, 0, body_rate))
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -620,18 +655,46 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
 end
 
 """
-    SysState(s::AKM, zoom=1.0)
+    calc_turn_rates(orient_0, orient_1, dt)
+
+Turn rates in the body frame of a kite that turned from the orientation `orient_0` to the
+orientation `orient_1` (quaternions `[w, x, y, z]`, `KA` convention) in the time `dt`. Zero if
+`dt` is not positive or `orient_0` is not set (all zero).
+
+Returns an `SVec3` in [rad/s].
+"""
+function calc_turn_rates(orient_0, orient_1, dt)
+    (dt > 0 && norm(orient_0) > 0.5) || return zero(SVec3)
+    rotation = RotationVec(QuatRotation(orient_0...)' * QuatRotation(orient_1...))
+    SVec3(rotation.sx, rotation.sy, rotation.sz) / dt
+end
+
+"""
+    SysState(s::AKM, zoom=1.0; with_springs=true)
 
 Constructor for creating a SysState object from a kite model (KPS3 or KPS4).
 The SysState object can be used either for logging or for displaying the
 system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
+
+The field `spring_force` holds the forces of all springs (see [`spring_forces`](@ref)), or is
+empty if `with_springs` is `false`. A `Logger` for this SysState must be created with the
+same number of segments: `Logger(P, steps; segments=n_springs(s))`, or `Logger(P, steps)`
+with `with_springs=false`.
 """
-function SysState(s::AKM, zoom=1.0)
-    ss = SysState(length(s.pos))
+function SysState(s::AKM, zoom=1.0; with_springs=true)
+    ss = SysState(length(s.pos); segments = with_springs ? n_springs(s) : 0)
     update_sys_state!(ss, s, zoom)
     ss
 end
+
+"""
+    n_springs(s::AKM)
+
+Number of springs of the model: the tether segments and, for KPS4, the springs of the kite.
+"""
+n_springs(s::KPS4) = length(s.springs)
+n_springs(s::KPS3) = s.set.segments
 
 function calc_pre_tension(s::AKM)
     forces = spring_forces(s)
@@ -747,6 +810,18 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     return integrator
 end
 
+# Copy the acceleration of the kite from the derivative `du` of the state vector of the
+# integrator, which holds the positions of the particles 2:P, then their velocities. Called
+# after each time step; not after init!, because without trim the accelerations of the
+# initial state are -g for KPS4 instead of the real ones, so acc_kite stays zero until then.
+function update_acc_kite!(s::AKM, du)
+    P = length(s.pos)
+    i_kite = s isa KPS4 ? P - 2 : P
+    i = 3 * (P - 1) + 3 * (i_kite - 2)
+    s.acc_kite .= (du[i+1], du[i+2], du[i+3])
+    nothing
+end
+
 
 """
     next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing
@@ -793,12 +868,18 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
     s.t_0 = integrator.t
     isnothing(s.wm) || update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
     set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
+    if isa(s, KPS3)
+        # heading for the correction of the influence of gravity on the turn rate, Eq. 30 of
+        # Fechner et al. (2015); kept constant during the time step
+        s.psi = calc_heading(s)
+    end
     s.iter = 0
     if s.set.solver == "IDA"
         Sundials.step!(integrator, dt, true)
     else
         OrdinaryDiffEqCore.step!(integrator, dt, true)
     end
+    update_acc_kite!(s, integrator.du)
     if s.stiffness_factor < 1.0
         s.stiffness_factor+=0.01
         if s.stiffness_factor > 1.0

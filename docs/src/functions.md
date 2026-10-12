@@ -51,6 +51,7 @@ cl_cd
 reel_out_speed
 winch_force
 spring_forces
+n_springs
 lift_drag
 lift_over_drag
 v_wind_kite

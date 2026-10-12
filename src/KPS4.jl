@@ -114,6 +114,8 @@ $(TYPEDFIELDS)
     vel::SVector{P, KVec3} = zeros(SVector{P, KVec3})
     "velocity vector of the kite"
     vel_kite::T =          zeros(S, 3)
+    "acceleration vector of the kite, updated once per time step by next_step!"
+    acc_kite::T =          zeros(S, 3)
     "unstressed segment length [m]"
     segment_length::S =           0.0
     "lift coefficient of the kite, depending on the angle of attack"
@@ -220,6 +222,7 @@ function clear!(s::KPS4)
     s.spring_force .= [0.0, 0, 0]
     s.last_force .= [0.0, 0, 0]
     s.vel_kite .= [0.0, 0, 0]
+    s.acc_kite .= [0.0, 0, 0]
     s.x .= [0.0, 0, 0]
     s.y .= [0.0, 0, 0]
     s.z .= [0.0, 0, 0]
@@ -288,6 +291,43 @@ function KPS4(set::Settings)
 end
 
 """
+    calc_drag_forces(s::KPS4, unit_vector, norm1, vel1, vel2, v_wind_tether, segments, d_tether,
+                     rho, i)
+
+Drag force of the tether segment or bridle line `i` with the direction `unit_vector` and the
+length `norm1`, half of which acts on each of its two particles, and the drag force of the KCU,
+which is zero except for the last tether segment (`i == segments`). Like `s.forces`, both have
+the opposite sign of the physical forces.
+
+Returns a tuple `(half_drag_force, kcu_drag_force)`.
+"""
+@inline function calc_drag_forces(s::KPS4, unit_vector, norm1, vel1, vel2, v_wind_tether, segments,
+                                  d_tether, rho, i)
+    v_apparent = v_wind_tether - 0.5 * (vel1 + vel2)
+    if s.set.version == 1
+        area = norm1 * d_tether
+    else
+        if i > segments
+            area = norm1 * s.set.d_line * 0.001 * s.bridle_factor # 6.0 = A_real/A_simulated
+        else
+            area = norm1 * d_tether
+        end
+    end
+
+    v_app_perp = v_apparent - v_apparent ⋅ unit_vector * unit_vector
+    half_drag_force = (-0.25 * rho * s.set.cd_tether * norm(v_app_perp) * area) * v_app_perp
+    if i == segments
+        v_app_kcu = v_wind_tether - vel2
+        v_app_perp_kcu = v_app_kcu - v_app_kcu ⋅ unit_vector * unit_vector
+        kcu_area = π * (s.set.kcu_diameter/2)^2
+        kcu_drag_force = (-0.25 * rho * s.set.cd_kcu * norm(v_app_perp_kcu) * kcu_area) * v_app_perp_kcu
+    else
+        kcu_drag_force = zero(SVec3)
+    end
+    half_drag_force, kcu_drag_force
+end
+
+"""
     calc_particle_forces!(s::KPS4, pos1, pos2, vel1, vel2, spring, segments, d_tether, rho, i)
 
 Calculate the drag force of the tether segment, defined by the parameters pos1, pos2, vel1 and vel2
@@ -321,23 +361,9 @@ The result is stored in the array s.forces.
     end
 
     s.v_apparent .= s.v_wind_tether - av_vel
-    v_app_kcu = s.v_wind_tether - vel2
-    if s.set.version == 1
-        area = norm1 * d_tether
-    else
-        if i > segments
-            area = norm1 * s.set.d_line * 0.001 * s.bridle_factor # 6.0 = A_real/A_simulated
-        else
-            area = norm1 * d_tether
-        end
-    end
-
-    v_app_perp = s.v_apparent - s.v_apparent ⋅ unit_vector * unit_vector
-    half_drag_force = (-0.25 * rho * s.set.cd_tether * norm(v_app_perp) * area) * v_app_perp
+    half_drag_force, kcu_drag_force = calc_drag_forces(s, unit_vector, norm1, vel1, vel2,
+                                                       SVec3(s.v_wind_tether), segments, d_tether, rho, i)
     if i == segments
-        v_app_perp_kcu = v_app_kcu - v_app_kcu ⋅ unit_vector * unit_vector
-        kcu_area = π * (s.set.kcu_diameter/2)^2
-        kcu_drag_force = (-0.25 * rho * s.set.cd_kcu * norm(v_app_perp_kcu) * kcu_area) * v_app_perp_kcu
         @inbounds s.forces[spring.p2] .+= kcu_drag_force
     end
 
@@ -348,21 +374,24 @@ The result is stored in the array s.forces.
 end
 
 """
-    calc_aero_forces!(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
+    calc_aero_forces(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
 
-Calculates the aerodynamic forces acting on the kite particles.
+Calculates the aerodynamic forces acting on the kite particles without changing `s`.
 
 Parameters:
 - pos:              vector of the particle positions
 - vel:              vector of the particle velocities
 - rho:              air density [kg/m^3]
-- rel_depower:      value between  0.0 and  1.0
 - alpha_depower:    depower angle [degrees]
 - rel_steering:     value between -1.0 and +1.0
 
-Updates the vector s.forces of the first parameter.
+Returns a named tuple with the kite reference frame `x`, `y`, `z`, the `side_slip`, the angles
+of attack `alphas` [degrees], the side lift coefficient `side_cl`, the lift forces `L2`, `L3`,
+`L4`, the drag forces `D2`, `D3`, `D4`, the pitch damping and steering forces `f_d` and `f_s`
+and the resulting forces on the kite particles `f_A`, `f_B`, `f_C` and `f_D`. Like `s.forces`,
+all forces have the opposite sign of the physical forces.
 """
-@inline function calc_aero_forces!(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
+@inline function calc_aero_forces(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
     rel_side_area = Float64(s.set.rel_side_area)/100.0   # defined in percent
     K = 1 - rel_side_area                        # correction factor for the drag
     # pos_B, pos_C, pos_D: position of the kite particles B, C, and D
@@ -376,7 +405,6 @@ Updates the vector s.forces of the first parameter.
     z = -normalize(delta)
     y = normalize(pos_C - pos_D)
     x = y × z
-    s.x .= x; s.y .= y; s.z .= z # save the kite reference frame in the state
 
     va_xz1 = va_1 - (va_1 ⋅ y) * y
     va_xz2 = va_2 - (va_2 ⋅ y) * y
@@ -385,14 +413,12 @@ Updates the vector s.forces of the first parameter.
 
     R_k_w = SMatrix{3,3}([x y z])
     va_k = R_k_w' * SVector{3}(va_2)
-    s.side_slip = atan(va_k[2], -va_k[1])
+    side_slip = atan(va_k[2], -va_k[1])
 
     alpha_2 = rad2deg(π - acos2(normalize(va_xz2) ⋅ x) - alpha_depower)     + Float64(s.set.alpha_zero)
     alpha_3 = rad2deg(π - acos2(normalize(va_xy3) ⋅ x) + rel_steering * s.ks) + Float64(s.set.alpha_ztip)
     alpha_4 = rad2deg(π - acos2(normalize(va_xy4) ⋅ x) - rel_steering * s.ks) + Float64(s.set.alpha_ztip)
-    s.alpha_2 = alpha_2
-    s.alpha_3 = alpha_3
-    s.alpha_4 = alpha_4
+    alphas = SVec3(alpha_2, alpha_3, alpha_4)
 
     # Wrap alpha values to [-180, 180] to stay within the CL/CD spline data range
     if alpha_2 > 180.0; alpha_2 -= 360.0; elseif alpha_2 < -180.0; alpha_2 += 360.0; end
@@ -408,27 +434,125 @@ Updates the vector s.forces of the first parameter.
     CL2, CD2 = s.calc_cl(alpha_2)::Float64, drag_corr * s.calc_cd(alpha_2)::Float64
     CL3, CD3 = s.calc_cl(alpha_3)::Float64, drag_corr * s.calc_cd(alpha_3)::Float64
     CL4, CD4 = s.calc_cl(alpha_4)::Float64, drag_corr * s.calc_cd(alpha_4)::Float64
-    s.side_cl = CL4 - CL3
     L2 = (-0.5 * rho * (norm(va_xz2))^2 * s.set.area * CL2) * normalize(va_2 × y)
     L3 = (-0.5 * rho * (norm(va_xy3))^2 * s.set.area * rel_side_area * CL3) * normalize(va_3 × z)
     L4 = (-0.5 * rho * (norm(va_xy4))^2 * s.set.area * rel_side_area * CL4) * normalize(z × va_4)
     D2 = (-0.5 * K * rho * norm(va_2) * s.set.area * CD2) * va_2
     D3 = (-0.5 * K * rho * norm(va_3) * s.set.area * rel_side_area * CD3) * va_3
     D4 = (-0.5 * K * rho * norm(va_4) * s.set.area * rel_side_area * CD4) * va_4
-    s.lift_force .= L2
+    f_d = (0.5 * rho * s.set.area * norm(va_xz1)^2 * s.set.cmq * s.pitch_rate * s.set.cord_length) * z
+    f_s = (0.5 * rho * s.set.area * (0.5*(norm(va_xy3)+norm(va_xy4)))^2 * s.set.smc * rel_steering * s.ks) * x
     if s.set.version == 3
-        s.drag_force .= D2
-        s.forces[s.set.segments + 3] .+= (L2 + D2-D3-D4)
+        f_B = L2 + D2 - D3 - D4
     else
-        s.drag_force .= D2 + D3 + D4
-        s.forces[s.set.segments + 3] .+= (L2 + D2)
+        f_B = L2 + D2
     end
-    s.f_d .= (0.5 * rho * s.set.area * norm(va_xz1)^2 * s.set.cmq * s.pitch_rate * s.set.cord_length) * s.z
-    s.f_s .= (0.5 * rho * s.set.area * (0.5*(norm(va_xy3)+norm(va_xy4)))^2 * s.set.smc * rel_steering * s.ks) * s.x
-    s.forces[s.set.segments + 2] .+= s.f_d
-    s.forces[s.set.segments + 4] .+= (L3 + D3 -0.5*s.f_d + 0.5*s.f_s)
-    s.forces[s.set.segments + 5] .+= (L4 + D4 -0.5*s.f_d - 0.5*s.f_s)
-    s.side_force .= (L3 + L4)
+    f_A = f_d
+    f_C = L3 + D3 - 0.5 * f_d + 0.5 * f_s
+    f_D = L4 + D4 - 0.5 * f_d - 0.5 * f_s
+    (; x, y, z, side_slip, alphas, side_cl = CL4 - CL3, L2, L3, L4, D2, D3, D4, f_d, f_s,
+       f_A, f_B, f_C, f_D)
+end
+
+"""
+    calc_aero_forces!(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
+
+Calculates the aerodynamic forces acting on the kite particles with `calc_aero_forces`
+and adds them to `s.forces`. Also stores the kite reference frame, the angles of attack and
+the lift, drag and side forces in `s`.
+"""
+@inline function calc_aero_forces!(s::KPS4, pos, vel, rho, alpha_depower, rel_steering)
+    a = calc_aero_forces(s, pos, vel, rho, alpha_depower, rel_steering)
+    s.x .= a.x; s.y .= a.y; s.z .= a.z # save the kite reference frame in the state
+    s.side_slip = a.side_slip
+    s.alpha_2, s.alpha_3, s.alpha_4 = a.alphas
+    s.side_cl = a.side_cl
+    s.lift_force .= a.L2
+    if s.set.version == 3
+        s.drag_force .= a.D2
+    else
+        s.drag_force .= a.D2 + a.D3 + a.D4
+    end
+    s.f_d .= a.f_d
+    s.f_s .= a.f_s
+    s.forces[s.set.segments + 2] .+= a.f_A
+    s.forces[s.set.segments + 3] .+= a.f_B
+    s.forces[s.set.segments + 4] .+= a.f_C
+    s.forces[s.set.segments + 5] .+= a.f_D
+    s.side_force .= a.L3 + a.L4
+end
+
+"""
+    aero_point_forces(s::KPS4)
+
+Aerodynamic forces on the kite particles A, B, C and D in ENU, including the pitch damping
+and steering couples, for the positions `s.pos` and velocities `s.vel`.
+
+Returns a tuple `(f_A, f_B, f_C, f_D)` of four `SVec3` in [N].
+"""
+function aero_point_forces(s::KPS4)
+    a = calc_aero_forces(s, s.pos, s.vel, s.rho, s.alpha_depower, s.steering)
+    # the force vectors of KPS4 have the opposite sign of the physical forces
+    -SVec3(a.f_A), -SVec3(a.f_B), -SVec3(a.f_C), -SVec3(a.f_D)
+end
+
+"""
+    calc_aero_force_moment(s::KPS4)
+
+Total aerodynamic force and moment acting on the kite, both resolved in the `KA` body
+frame (aft-right-up). The moment is taken about the centre of mass of the kite particles
+A, B, C and D and includes the pitch damping and steering couples. Uses the positions
+`s.pos`, the velocities `s.vel` and the kite reference frame of the last call of
+`calc_aero_forces!`.
+
+Returns a tuple `(force, moment)` of two `SVec3` in [N] and [Nm].
+"""
+function calc_aero_force_moment(s::KPS4)
+    i_A = s.set.segments + 2
+    pos_A, pos_B = SVec3(s.pos[i_A]),   SVec3(s.pos[i_A+1])
+    pos_C, pos_D = SVec3(s.pos[i_A+2]), SVec3(s.pos[i_A+3])
+    m_A, m_B, m_C, m_D = s.masses[i_A], s.masses[i_A+1], s.masses[i_A+2], s.masses[i_A+3]
+    centre = (m_A * pos_A + m_B * pos_B + m_C * pos_C + m_D * pos_D) / (m_A + m_B + m_C + m_D)
+
+    f_A, f_B, f_C, f_D = aero_point_forces(s)
+    force  = f_A + f_B + f_C + f_D
+    moment = (pos_A - centre) × f_A + (pos_B - centre) × f_B +
+             (pos_C - centre) × f_C + (pos_D - centre) × f_D
+
+    # project on the KS body axes (ENU), then flip to KA
+    x, y, z = SVec3(s.x), SVec3(s.y), SVec3(s.z)
+    force_KA  = fromKS2KA_body(SVec3(force ⋅ x,  force ⋅ y,  force ⋅ z))
+    moment_KA = fromKS2KA_body(SVec3(moment ⋅ x, moment ⋅ y, moment ⋅ z))
+    force_KA, moment_KA
+end
+
+"""
+    calc_turn_rates(s::KPS4)
+
+Angular velocity of the kite, resolved in the `KA` body frame (aft-right-up). It is calculated
+from the positions `s.pos` and velocities `s.vel` of the kite particles B, C and D, which define
+the kite reference frame.
+
+Returns an `SVec3` in [rad/s].
+"""
+function calc_turn_rates(s::KPS4)
+    i_B = s.set.segments + 3
+    pos_B, pos_C, pos_D = SVec3(s.pos[i_B]), SVec3(s.pos[i_B+1]), SVec3(s.pos[i_B+2])
+    vel_B, vel_C, vel_D = SVec3(s.vel[i_B]), SVec3(s.vel[i_B+1]), SVec3(s.vel[i_B+2])
+    # time derivative of the unit vector a / norm(a)
+    d_unit(a, da) = (da - (a ⋅ da) / (a ⋅ a) * a) / norm(a)
+    # the kite reference frame as in calc_aero_forces and its time derivative
+    span  = pos_C - pos_D
+    delta = pos_B - 0.5 * (pos_C + pos_D)
+    y, z  = normalize(span), -normalize(delta)
+    x     = y × z
+    yd    = d_unit(span, vel_C - vel_D)
+    zd    = -d_unit(delta, vel_B - 0.5 * (vel_C + vel_D))
+    xd    = yd × z + y × zd
+    # angular velocity in ENU; exact for a rigid frame, a least squares fit otherwise
+    ω = 0.5 * (x × xd + y × yd + z × zd)
+    # project on the KS body axes, then flip to KA
+    fromKS2KA_body(SVec3(ω ⋅ x, ω ⋅ y, ω ⋅ z))
 end
 
 """
@@ -457,6 +581,36 @@ Output:
         calc_particle_forces!(s, pos[p1], pos[p2], vel[p1], vel[p2], s.springs[i], segments, d_tether, rho, i)
     end
     nothing
+end
+
+"""
+    tether_drag_forces(s::KPS4)
+
+Drag forces of the tether, the bridle lines and the KCU on each particle in ENU, for the
+positions `s.pos` and velocities `s.vel`. The wind is calculated as in `inner_loop!`.
+
+Returns an `SVector` with one `SVec3` per particle in [N].
+"""
+function tether_drag_forces(s::KPS4{S, T, P}) where {S, T, P}
+    forces = zeros(MVector{P, SVec3})
+    segments = s.set.segments
+    d_tether = s.set.d_tether/1000.0
+    for (i, spring) in pairs(s.springs)
+        pos1, pos2 = SVec3(s.pos[spring.p1]), SVec3(s.pos[spring.p2])
+        vel1, vel2 = SVec3(s.vel[spring.p1]), SVec3(s.vel[spring.p2])
+        height = 0.5 * (pos1[3] + pos2[3])
+        rho = calc_rho(s.am, height)
+        height = max(height, 6)
+        v_wind_tether = calc_wind_factor(s.am, height) * SVec3(s.v_wind_gnd)
+        segment = pos1 - pos2
+        norm1 = norm(segment)
+        half_drag_force, kcu_drag_force = calc_drag_forces(s, segment / norm1, norm1, vel1, vel2,
+                                                           v_wind_tether, segments, d_tether, rho, i)
+        # the force vectors of KPS4 have the opposite sign of the physical forces
+        forces[spring.p1] -= half_drag_force
+        forces[spring.p2] -= half_drag_force + kcu_drag_force
+    end
+    SVector(forces)
 end
 
 """

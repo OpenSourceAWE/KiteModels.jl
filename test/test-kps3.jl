@@ -147,7 +147,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         KiteModels.loop(kps, pos, vel, posd, veld, res1, res2)
         @test sum(res1) ≈ [0.0, 0.0, 0.0]
         @test isapprox(res2[7], [-5.02874357e-02, -1.00574871e-01, -7.62063430e+02])
-        @test isapprox(res2[6], [-6.15356097e-03, -1.23071219e-02, 9.81000000e+00])
+        @test isapprox(res2[6], [-2.37861451e-03, -4.75722903e-03, 9.81000000e+00])
         @test isapprox(res2[5], [-2.38000593e-03, -4.76001187e-03, 9.81000000e+00])
         @test isapprox(
             res2[2],
@@ -409,11 +409,11 @@ const SEGMENTS = load_settings("system.yaml").segments
         @test pre_tension < 1.01
         @test unstretched_length(kps) ≈ 392.0                        # initial, unstretched tether length
         @test tether_length(kps) ≈ 392.2025410439266 rtol = 1e-5     # real, stretched tether length
-        @test winch_force(kps) ≈ 301.23463553992514 rtol = 3e-2      # initial force at the winch [N]
+        @test winch_force(kps) ≈ 306.73663152733974 rtol = 3e-2      # initial force at the winch [N]
         lift, drag = lift_drag(kps)
-        @test lift ≈ 327.30289678275346 rtol=2e-2                # initial lift force of the kite [N]
-        @test drag ≈ 73.01286087237223 rtol=2e-2                 # initial drag force of the kite [N]
-        @test lift_over_drag(kps) ≈ 4.482811560485004 rtol=2e-3      # initial lift-over-drag
+        @test lift ≈ 315.7822617990478 rtol=2e-2                # initial lift force of the kite [N]
+        @test drag ≈ 71.44409941779216 rtol=2e-2                 # initial drag force of the kite [N]
+        @test lift_over_drag(kps) ≈ 4.419990795214735 rtol=2e-3      # initial lift-over-drag
         @test norm(v_wind_kite(kps)) ≈ 9.107670173739065 rtol=1e-2   # initial wind speed at the height of the kite [m/s]
     end
 
@@ -423,7 +423,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         KiteModels.set_depower_steering!(kps, 0.25, 0.0)
         res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(kps; upwind_dir)
         @test rad2deg(calc_elevation(kps)) ≈ 70.0 atol=1e-6
-        @test winch_force(kps) ≈ 301.23463553992514 rtol = 1e-4   # independent of the wind direction
+        @test winch_force(kps) ≈ 306.73663152733974 rtol = 1e-4   # independent of the wind direction
         # the tether lies in the vertical plane of the wind direction; take the components of the
         # accelerations in this plane (horizontal and vertical) and normal to it
         turnangle = upwind_dir + π/2
@@ -439,6 +439,40 @@ const SEGMENTS = load_settings("system.yaml").segments
             j = 3*(i-1) + 3*segments
             @test abs(in_plane(res[j+1], res[j+2])) < 1e-5       # horizontal balance in the plane
             i < segments && @test abs(res[j+3]) < 1e-5            # vertical balance of the tether particles
+        end
+    end
+
+    @testset "test_gravity_correction" begin
+        # Steer the kite to the side, release the steering and return how far gravity turns
+        # it towards the ground (heading 180°) within 0.5 s.
+        function heading_change(steering; c2_cor)
+            set = deepcopy(load_settings("system.yaml"))
+            set.c2_cor = c2_cor
+            kps = KPS3(KCU(set))
+            integrator = KiteModels.init!(kps)
+            for i in 1:30
+                set_depower_steering(kps.kcu, 0.25, steering)
+                next_step!(kps, integrator; set_speed=0, dt=0.05)
+            end
+            heading_0 = calc_heading(kps)
+            set_depower_steering(kps.kcu, 0.25, 0.0)
+            next_step!(kps, integrator; set_speed=0, dt=0.05)
+            # next_step! uses the heading at the start of the time step for the correction
+            @test kps.psi ≈ heading_0
+            for i in 1:9
+                next_step!(kps, integrator; set_speed=0, dt=0.05)
+            end
+            rad2deg(atan(sin(calc_heading(kps) - heading_0), cos(calc_heading(kps) - heading_0)))
+        end
+        c2_cor = load_settings("system.yaml").c2_cor
+        @test c2_cor > 0
+        for steering in (0.3, -0.3)
+            uncorrected = heading_change(steering; c2_cor=0.0)
+            corrected   = heading_change(steering; c2_cor)
+            # gravity turns the kite towards the ground, the correction reduces this effect
+            @test abs(uncorrected) > 10
+            @test sign(corrected) == sign(uncorrected)
+            @test abs(corrected) < 0.95 * abs(uncorrected)
         end
     end
 
