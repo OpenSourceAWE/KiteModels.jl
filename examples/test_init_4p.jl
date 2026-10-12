@@ -1,7 +1,14 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# plot the lift and drag coefficients as function of angle of attack
+# Test the initialization of the four-point kite model (KPS4).
+# Initializes the model from a steady-state solution, runs it for 80 time steps and prints
+# the lift, drag, elevation, orientation, angles of attack and wind speeds of the kite.
+#
+# After 80 time steps, the system state is written to
+# output/sys_state_test_init_4p.yaml, with the script name, the simulation time and
+# the date and time of saving as meta data.
+
 using Printf
 using Pkg
 if dirname(Pkg.project().path) != @__DIR__
@@ -10,8 +17,6 @@ end
 using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
-
-using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
@@ -23,7 +28,6 @@ dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
-const PLOT = true
 STATISTIC = false
 UPWIND_DIR = -170.0 # Zero is at north; clockwise positive
 # end of user parameter section #

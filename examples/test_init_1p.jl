@@ -2,8 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 # Test the initialization of the one-point kite model (KPS3).
-# Initializes the model from a steady-state solution and verifies
-# that the kite reaches the expected elevation and tether force.
+# Initializes the model from a steady-state solution, runs it for 80 time steps and prints
+# the lift, drag, elevation, orientation, angle of attack and wind speeds of the kite.
+#
+# After 80 time steps, the system state is written to
+# output/sys_state_test_init_1p.yaml, with the script name, the simulation time and
+# the date and time of saving as meta data.
 
 using Printf
 using Pkg
@@ -14,8 +18,6 @@ using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
 
-using MakieControlPlots
-
 set.abs_tol=0.00006
 set.rel_tol=0.000001
 V_WIND = 14.5
@@ -25,7 +27,6 @@ dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
-const PLOT = true
 STATISTIC = false
 
 elev = set.elevation
