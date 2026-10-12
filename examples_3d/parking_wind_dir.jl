@@ -189,7 +189,7 @@ end
 function play_parking()
     saved_turbulence = kps4.set.use_turbulence
     kps4.set.use_turbulence = 0.0
-    integrator = KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.1)
+    integrator = KiteModels.init!(kps4)
     kps4.set.use_turbulence = saved_turbulence
     sys_state = SysState(kps4)
     if KiteUtils.PROJECT == "system.yaml"

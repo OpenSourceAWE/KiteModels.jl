@@ -13,7 +13,7 @@ kps4::KPS4 = KPS4(kcu)
 
 clear!(kps4)
 KiteModels.set_depower_steering!(kps4, kps4.set.depower_offset/100.0, 0.0)
-@time KiteModels.init!(kps4; delta=0.001, stiffness_factor=0.5, prn=false)
+@time KiteModels.init!(kps4; prn=false)
 
 println("\nlift, drag    [N]  : $(KiteModels.lift_drag(kps4))")
 println("\nSpring forces:")
