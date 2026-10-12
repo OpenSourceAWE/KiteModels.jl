@@ -51,8 +51,8 @@ end
     logger = Logger(length(kps4.pos), 1)
     log!(logger, SysState(kps4))
     path = mktempdir()
-    save_log(logger, "topology"; path, metadata=topology_metadata(kps4))
-    topology = load_log("topology"; path).metadata["topology"]
-    @test structure_document(KiteGeometry.definition(topology)) ==
-          structure_document(system_definition(kps4))
+    definition = system_definition(kps4)
+    save_log(logger, definition, "topology"; path)
+    @test structure_document(KiteGeometry.definition(load_log("topology"; path))) ==
+          structure_document(definition)
 end

@@ -63,18 +63,18 @@ SysState
 
 ## System definition
 
-A `SystemDefinition` from [KiteGeometry](https://github.com/OpenSourceAWE/KiteGeometry.jl) describes the points, segments, tether and winch of a model, so a log can be drawn by anything that reads a definition. Build it after `init!` and pass it to `save_log`:
+A `SystemDefinition` from [KiteGeometry](https://github.com/OpenSourceAWE/KiteGeometry.jl) describes the points, segments, tether and winch of a model, so a log can be drawn by anything that reads a definition. Build it after `init!` and pass it to `save_log`, which stores it in the log; `KiteGeometry.definition` reads it back from the loaded log:
 
 ```julia
 integrator = init!(s)
-metadata = topology_metadata(s)
+definition = system_definition(s)
 # ... simulate and log! ...
-save_log(logger, "sim_log"; metadata)
+save_log(logger, definition, "sim_log")
+KiteGeometry.definition(load_log("sim_log"))
 ```
 
 ```@docs
 system_definition
-topology_metadata
 ```
 
 ## High level simulation interface

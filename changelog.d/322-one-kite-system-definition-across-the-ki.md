@@ -4,5 +4,5 @@ SPDX-License-Identifier: MIT
 -->
 ### Added
 - `system_definition(s)` builds a KiteGeometry `SystemDefinition` of a KPS3 or KPS4 model: its points, the springs it integrates as segments, the tether and the winch.
-- `topology_metadata(s)` carries that definition in a log: `save_log(logger, name; metadata)` writes it as JSON under the key `topology`, which `KiteGeometry.definition` reads.
+- `save_log(logger, system_definition(s), name)` stores that definition in the log, and `KiteGeometry.definition(load_log(name))` reads it back.
 - KiteGeometry is re-exported.

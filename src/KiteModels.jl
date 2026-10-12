@@ -39,7 +39,7 @@ export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretc
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
 export get_default_turbulence, set_default_turbulence, spring_forces, states, upwind_dir
-export system_definition, topology_metadata
+export system_definition
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small

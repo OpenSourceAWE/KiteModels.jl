@@ -64,14 +64,3 @@ function assemble_system_definition(s::AbstractKiteModel, segments, extra_masses
     sha = connectivity_sha(SystemDefinition(; metadata=metadata(""), tables...))
     return SystemDefinition(; metadata=metadata(sha), tables...)
 end
-
-"""
-    topology_metadata(s::AbstractKiteModel)
-
-The table metadata that carries `system_definition(s)` in a log as JSON, under the key
-`topology` that `KiteGeometry.definition` reads. Pass it as
-`save_log(logger, name; metadata)`.
-"""
-function topology_metadata(s::AbstractKiteModel)
-    return Dict("topology" => to_json(system_definition(s)))
-end
