@@ -172,6 +172,37 @@ end
     @test_throws ArgumentError init!(other; initial_state=SysState(a))
 end
 
+@testset "init! from a loaded state during a winch ramp" begin
+    step!(s, integ, v_set) = next_step!(s, integ; set_speed=v_set, dt=DT)
+    a = KPS4(deepcopy(set))
+    integ_a = init!(a; prn=false)
+    for _ in 1:40
+        step!(a, integ_a, 0)
+    end
+    # save while the rate limit of the winch is still ramping up the set speed
+    for _ in 1:3
+        step!(a, integ_a, 4)
+    end
+    @test 0 < a.wm.last_set_speed < 4
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    ss = SysState(a)
+    ss.time = integ_a.t
+    save_state(file, ss)
+    b = KPS4(deepcopy(set))
+    integ_b = init!(b; initial_state=first(load_state(file)))
+    # var_13 and set_speed are Float32
+    @test b.wm.last_set_speed ≈ a.wm.last_set_speed rtol=1e-6
+    @test b.wm.brake == a.wm.brake
+    @test b.sync_speed ≈ a.sync_speed rtol=1e-6
+    # without the state of the winch, the tether length would differ by half a metre
+    for _ in 1:20
+        step!(a, integ_a, 4)
+        step!(b, integ_b, 4)
+    end
+    @test b.l_tether ≈ a.l_tether atol=1e-3
+    @test b.v_reel_out ≈ a.v_reel_out atol=1e-3
+end
+
 @testset "update_sys_state! zoom" begin
     ss = SysState(kps4)
     zoomed = SysState(kps4, 2.0)

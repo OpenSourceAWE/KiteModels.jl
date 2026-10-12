@@ -5,8 +5,8 @@
 #
 # After 16 s simulation time, the system state is written to
 # output/sys_state_parking_wind_dir.yaml, with the script name, the simulation time and
-# the date and time of saving as meta data. If LOAD_SYS_STATE is true, the simulation
-# continues from that file instead of starting at zero, and the state is not saved.
+# the date and time of saving as meta data. If LOAD_SYS_STATE is true and that file exists,
+# the simulation continues from it instead of starting at zero, and the state is not saved.
 
 using Pkg
 if dirname(Pkg.project().path) != @__DIR__
@@ -84,7 +84,7 @@ UPWIND_DIR2       = -pi/2+deg2rad(90)     # Zero is at north; clockwise positive
 INTERPOLATE       = true  # interpolate the turbulence between the grid points of the wind field
 SAVE_TIME         = 16    # simulation time [s] after which the system state is saved
 PLOT_HEADING_RATE = false
-LOAD_SYS_STATE    = true  # continue from the state saved at SAVE_TIME instead of starting at zero
+LOAD_SYS_STATE    = true  # continue from the state saved at SAVE_TIME, if it exists
 # end of user parameter section #
 
 viewer::Viewer3D = Viewer3D(SHOW_KITE, "WinchON")
@@ -173,7 +173,7 @@ function sim_parking(integrator, initial_state)
             t_gc_tot += @elapsed GC.gc(false)
         end
         update_sys_state!(sys_state, kps4)
-        if !LOAD_SYS_STATE && i == round(Int, SAVE_TIME/dt)
+        if isnothing(initial_state) && i == round(Int, SAVE_TIME/dt)
             save_sys_state(sys_state, t_sim, integrator.t)
         end
         T[i] = dt * i
@@ -218,7 +218,14 @@ end
 
 # returns the first step of the simulation
 function play_parking()
-    initial_state = LOAD_SYS_STATE ? first(load_state(STATE_FILE)) : nothing
+    initial_state = nothing
+    if LOAD_SYS_STATE
+        if isfile(STATE_FILE)
+            initial_state = first(load_state(STATE_FILE))
+        else
+            println("No saved state in $STATE_FILE, starting at zero; it is saved after $SAVE_TIME s.")
+        end
+    end
     saved_turbulence = kps4.set.use_turbulence
     kps4.set.use_turbulence = 0.0
     integrator = KiteModels.init!(kps4; initial_state)

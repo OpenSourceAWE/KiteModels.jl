@@ -658,6 +658,9 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.set_steering = s.kcu.set_steering
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
+    # internal state of the winch, needed to continue a simulation from this state
+    ss.var_13 = isnothing(s.wm) ? NaN : s.wm.last_set_speed
+    ss.var_14 = isnothing(s.wm) ? NaN : s.wm.brake
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -691,7 +694,10 @@ system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
 
 The field `spring_force` holds the forces of all springs (see [`spring_forces`](@ref)), or is
-empty if `with_springs` is `false`. A `Logger` for this SysState must be created with the
+empty if `with_springs` is `false`. The free fields `var_13` and `var_14` hold the internal
+state of the winch, the rate limited set speed `wm.last_set_speed` and the state of the
+brake `wm.brake` (0 or 1), so that [`init!`](@ref) can continue a simulation from the
+`SysState`; they are `NaN` without a winch model. A `Logger` for this SysState must be created with the
 same number of segments: `Logger(P, steps; segments=n_springs(s))`, or `Logger(P, steps)`
 with `with_springs=false`.
 """
@@ -780,7 +786,8 @@ tuple `(sys_state, meta_data)` of a new `SysState` and the `Dict` of the meta da
 
 The number of points and of springs of the `SysState` is taken from the length of the fields
 `X` and `spring_force` in the file. Fields that are not in the file, for example because they
-were excluded when saving, keep the default value of `SysState`, which is zero.
+were excluded when saving, keep the default values of `SysState`: zero, except for the
+orientation, which is the unit quaternion.
 
 Example:
 ```julia
@@ -837,8 +844,8 @@ end
 
 # Set the model to the system state `ss`, which update_sys_state! wrote for a model of the same
 # type with the same number of points: the positions and velocities of the particles, the
-# tether length, the reel-out speed and the actual and set values of depower and steering of
-# the KCU. Returns the state vector y0 and its derivative yd0. The SysState holds no
+# tether length, the reel-out speed, the set values and the internal state of the winch and
+# the actual and set values of depower and steering of the KCU. Returns the state vector y0 and its derivative yd0. The SysState holds no
 # accelerations, so they are calculated from the residual for zero accelerations.
 function init_from_state!(s::AKM, ss::SysState; upwind_dir)
     P = length(s.pos)
@@ -849,6 +856,13 @@ function init_from_state!(s::AKM, ss::SysState; upwind_dir)
     end
     s.l_tether   = ss.l_tether[1]
     s.v_reel_out = ss.v_reelout[1]
+    # the set values and the internal state of the winch; init! has reset them
+    s.sync_speed = isnan(ss.set_speed[1])  ? nothing : Float64(ss.set_speed[1])
+    s.set_torque = isnan(ss.set_torque[1]) ? nothing : Float64(ss.set_torque[1])
+    if !isnothing(s.wm) && !isnan(ss.var_13)
+        s.wm.last_set_speed = ss.var_13
+        s.wm.brake          = ss.var_14 != 0
+    end
     s.kcu.depower      = ss.depower
     s.kcu.set_depower  = ss.depower
     s.kcu.steering     = ss.kcu_steering * s.set.cs_4p
@@ -889,11 +903,12 @@ Parameters:
   with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
 - initial_state: a `SysState` to continue a simulation from, for example from
   [`load_state`](@ref). The model gets the positions and velocities of the particles, the
-  tether length, the reel-out speed and the depower and steering of the KCU from it, and
-  `steady_state` and `trim` are ignored. The integrator continues at `initial_state.time`,
-  which must be the time of the state, `integrator.t` when it was saved; a `SysState` from
-  `update_sys_state!` holds the start time of the last time step instead. The state of the
-  controllers of the caller and, for KPS4, the pitch rate of the kite are not restored.
+  tether length, the reel-out speed, the set values and the internal state of the winch and
+  the depower and steering of the KCU from it, and `steady_state` and `trim` are ignored.
+  The integrator continues at `initial_state.time`, which must be the time of the state,
+  `integrator.t` when it was saved; a `SysState` from `update_sys_state!` holds the start
+  time of the last time step instead. The state of the controllers of the caller and, for
+  KPS4, the pitch rate of the kite are not restored.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
