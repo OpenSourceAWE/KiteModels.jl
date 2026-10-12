@@ -6,6 +6,8 @@ SPDX-License-Identifier: MIT
 #### Changed
 - `bin/install` runs the test suite only if the new option `--test` is passed. Before, it always ran the tests, including the benchmarks, which can take up to an hour. `bin/update_default_manifest` passes `--test`, so a new default manifest is only written if all tests pass.
 - the link checker no longer checks the Zenodo DOI, which often fails with 504 Gateway Timeout, and uses the default timeout of 20 s again
+#### Fixed
+- `find_steady_state!(s; trim=true)` (KPS3 and KPS4) could accept a trim with the kite below the horizon. For example, KPS3 with `system.yaml`, a wind speed of 6 m/s, a tether length of 1000 m and `set.elevation = 40°` returned a trim at an elevation of -78°, with the tether hanging below the ground. Such a trim is now rejected like a trim in deep stall, so the solver restarts at other elevations; in this example it finds the natural elevation of 53.9°.
 
 ### KiteModels v0.12.1 2026-10-12
 #### Added

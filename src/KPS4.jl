@@ -774,7 +774,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
         s.set.elevation = el_start
         results, converged = solve()
         converged && ((y00, yd00) = steady_state(results.zero))
-        stalled = trim && converged && s.alpha_2 > alpha_stall
+        stalled = trim && converged && (s.alpha_2 > alpha_stall || !above_horizon(s))
         if trim && (stalled || !converged)
             # Restart from other elevations: the solver converges from above the natural
             # elevation, but diverges or finds a deep stall trim from far below it.
@@ -785,7 +785,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
                 r, conv = solve(restart=true)
                 conv || continue
                 y, yd = steady_state(r.zero)
-                if s.alpha_2 <= alpha_stall
+                if s.alpha_2 <= alpha_stall && above_horizon(s)
                     prn && println("find_steady_state!: trimmed steady state found, starting at $(el)°")
                     results, converged, stalled = r, true, false
                     y00, yd00 = y, yd
