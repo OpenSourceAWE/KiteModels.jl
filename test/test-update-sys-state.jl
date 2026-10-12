@@ -161,6 +161,12 @@ end
     save_state(file, ss; exclude)
     b = Model(deepcopy(set_))
     integ_b = init!(b; initial_state=first(load_state(file)))
+    if Model == KPS4
+        # the pitch rate from the velocities is close to the change of the pitch angle during
+        # the last time step, which the uninterrupted simulation uses
+        @test b.pitch_rate ≈ KiteModels.calc_pitch_rate(a) rtol=1e-4
+        @test b.pitch_rate ≈ a.pitch_rate rtol=0.1
+    end
     # the simulation continues at the same time and stays within a millimetre of the original
     run!(a, integ_a, 20)
     run!(b, integ_b, 20)

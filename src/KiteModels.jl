@@ -907,8 +907,10 @@ Parameters:
   the depower and steering of the KCU from it, and `steady_state` and `trim` are ignored.
   The integrator continues at `initial_state.time`, which must be the time of the state,
   `integrator.t` when it was saved; a `SysState` from `update_sys_state!` holds the start
-  time of the last time step instead. The state of the controllers of the caller and, for
-  KPS4, the pitch rate of the kite are not restored.
+  time of the last time step instead. For KPS4, the pitch rate of the kite is calculated from
+  the velocities of the particles; it differs by O(dt) from the change of the pitch angle
+  during the last time step, which `next_step!` uses otherwise. The state of the controllers
+  of the caller is not restored.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
@@ -971,7 +973,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
-        s.pitch_rate = 0
+        s.pitch_rate = isnothing(initial_state) ? 0.0 : calc_pitch_rate(s)
         s.pitch = pitch
         isnothing(initial_state) && set_initial_velocity!(s)
     end
