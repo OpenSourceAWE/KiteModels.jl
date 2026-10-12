@@ -77,6 +77,38 @@ Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
 
+# Perturbations of the initial state, tried in this order by the steady state solvers: delta
+# shifts all particles sideways by delta [m] and gives them the velocity delta [m/s]. A perturbed
+# start can help the nonlinear solver, but the returned steady state is never perturbed.
+const STEADY_STATE_DELTAS = (0.0, 0.001)
+
+# With trim=true, the KPS4 steady state solver starts at this elevation [°], or at
+# set.elevation if it is higher: the solver converges from above the natural elevation,
+# but often diverges or finds a deep stall trim from far below it.
+const TRIM_START_ELEVATION = 80.0
+
+# If no trim with attached flow is found from the start elevation, the steady state solvers
+# restart at higher and lower elevations, in steps of TRIM_RESTART_STEP [°]
+const TRIM_RESTART_STEP = 10.0
+
+# The steady state solvers can converge to a trim with the kite below the horizon (with the
+# tether hanging below the ground); such a trim is rejected like a trim in deep stall
+above_horizon(s::AKM) = 0.0 < calc_elevation(s) < pi/2
+
+function warn_delta_deprecated(delta, f)
+    isnothing(delta) || Base.depwarn("The keyword argument `delta` of `$f` is deprecated and " *
+        "ignored: the steady state is solved without perturbation (with a small perturbation " *
+        "only as fallback) and returned without perturbation.", f)
+    nothing
+end
+
+function warn_stiffness_factor_deprecated(stiffness_factor, f)
+    isnothing(stiffness_factor) || Base.depwarn("The keyword argument `stiffness_factor` of `$f` is " *
+        "deprecated and ignored: the steady state is always solved for the full tether stiffness " *
+        "(with a reduced stiffness only as an internal start value).", f)
+    nothing
+end
+
 function __init__()
     if isdir(joinpath(pwd(), "data")) && isfile(joinpath(pwd(), "data", "system.yaml"))
         set_data_path(joinpath(pwd(), "data"))
@@ -314,6 +346,11 @@ function orient_euler(s::AKM; one_point=false)
     SVector(roll, pitch, yaw)
 end
 
+"""
+    calc_orient_quat(s::AKM; viewer=false, one_point=false)
+
+Orientation of the kite as a quaternion in the `KS` convention (against NED).
+"""
 function calc_orient_quat(s::AKM; viewer=false, one_point=false)
     if viewer
         x, _, z = kite_ref_frame(s)
@@ -323,9 +360,9 @@ function calc_orient_quat(s::AKM; viewer=false, one_point=false)
         rotation = rot(pos_kite_, pos_before, -x)
     else
         x, y, z = kite_ref_frame(s; one_point) # in ENU reference
-        x = enu2ned(x)
-        y = enu2ned(y)
-        z = enu2ned(z)
+        x = fromENU2NED(x)
+        y = fromENU2NED(y)
+        z = fromENU2NED(z)
 
         # reference frame for the orientation: NED (north, east, down)
         ax = @SVector [1, 0, 0]
@@ -394,7 +431,7 @@ end
 Determine the heading angle of the kite in radian.
 """
 function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_point=false, respos=true)
-    orientation = orient_euler(s; one_point)
+    attitude = fromKS2KA(calc_orient_quat(s; one_point))
     elevation = calc_elevation(s)
     # use azimuth in wind reference frame
     if neg_azimuth
@@ -402,7 +439,7 @@ function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_
     else
         azimuth = calc_azimuth(s)
     end
-    calc_heading(orientation, elevation, azimuth; upwind_dir=upwind_dir_, respos)
+    calc_heading(attitude, elevation, azimuth; upwind_dir=upwind_dir_, respos)
 end
 
 """
@@ -527,14 +564,14 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
-    ss.orient .= calc_orient_quat(s)
+    ss.orient .= fromKS2KA(calc_orient_quat(s))
     ss.elevation = calc_elevation(s)
     new_azimuth = calc_azimuth(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
     ss.azimuth_rate = d_az / dt
     ss.azimuth = new_azimuth
-    ss.winch_force .= [winch_force(s); 0; 0; 0]
+    ss.winch_force[1] = winch_force(s)
     new_heading = calc_heading(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
@@ -542,8 +579,8 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.heading = new_heading
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
-    ss.l_tether .= [s.l_tether; 0; 0; 0]
-    ss.v_reelout .= [s.v_reel_out; 0; 0; 0]
+    ss.l_tether[1] = s.l_tether
+    ss.v_reelout[1] = s.v_reel_out
     ss.depower = s.depower
     ss.steering = s.steering/s.set.cs_4p
     ss.kcu_steering = s.kcu_steering/s.set.cs_4p
@@ -553,11 +590,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     if isa(s, KPS4)
         ss.alpha3 = deg2rad(s.alpha_3)
         ss.alpha4 = deg2rad(s.alpha_4)
-        if isnothing(s.set_force)
-            ss.set_force .= [NaN, 0, 0, 0]
-        else
-            ss.set_force .= [s.set_force, 0, 0, 0]
-        end
+        ss.set_force[1] = something(s.set_force, NaN)
         if isnothing(s.bearing)
             ss.bearing = NaN
         else
@@ -570,22 +603,13 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         end
     end
     ss.set_steering = s.kcu.set_steering
-    if isnothing(s.set_torque)
-        ss.set_torque .= [NaN, 0, 0, 0]
-    else
-        ss.set_torque .= [s.set_torque, 0, 0, 0]
-    end
-    if isnothing(s.sync_speed)
-        ss.set_speed .= [NaN, 0, 0, 0]
-    else
-        ss.set_speed .= [s.sync_speed, 0, 0, 0]
-    end
-    ss.roll, ss.pitch, ss.yaw = orient_euler(s)
+    ss.set_torque[1] = something(s.set_torque, NaN)
+    ss.set_speed[1] = something(s.sync_speed, NaN)
     # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
     # psi_m = psi - phi_dot * cos(theta)
     # This removes the effect of roll on the heading measurement
     body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
-    ss.turn_rates .= [0, 0, body_rate]
+    ss.turn_rates .= fromKS2KA_body(SVec3(0, 0, body_rate))
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -604,7 +628,7 @@ system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
 """
 function SysState(s::AKM, zoom=1.0)
-    ss = SysState{length(s.pos)}()
+    ss = SysState(length(s.pos))
     update_sys_state!(ss, s, zoom)
     ss
 end
@@ -622,16 +646,30 @@ function calc_pre_tension(s::AKM)
     return res + 1.0
 end
 
+# KPS3 always uses the brake of the winch, KPS4 for the AsyncMachine or if the set speed is zero
+function use_brake(s::AKM)
+    s isa KPS4 || return true
+    s.wm isa AsyncMachine || (!isnothing(s.sync_speed) && s.sync_speed == 0.0)
+end
+
+# reset the state of the winch (brake, rate limited set speed) to the state after construction
+# and the initial set speed, so that repeated calls of init! give the same result
+function init_winch_state!(s::AKM)
+    isnothing(s.wm) && return nothing
+    s.sync_speed = s.set.v_reel_out
+    s.wm.brake = true
+    s.wm.last_set_speed = s.sync_speed
+    update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+end
+
 """
-    init!(s::AKM; stiffness_factor=0.5, delta=0.005,
-                      prn=false, steady_state=true) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+    init!(s::AKM; prn=false, steady_state=true,
+                      trim=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
 Parameters:
 - s:     an instance of an abstract kite model
-- stiffness_factor: factor applied to the tether stiffness during initialization
-- delta: initial stretch of the tether during the steady state calculation
 - prn: if set to true, print the detailed solver results
 - steady_state: if `true` (default), call `find_steady_state!` to solve for an equilibrium
   before constructing the integrator. If `false`, skip the steady-state solver and initialise
@@ -639,29 +677,39 @@ Parameters:
   produces a non-equilibrium starting point, which is useful when the caller has already
   set up a consistent state or when the steady-state solver is known to struggle (e.g.
   unusual wind conditions). Returns `nothing` if steady-state solving fails.
+- trim: if `true`, the steady state is found at the natural elevation of the kite, where its
+  lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. If no trim
+  with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
+
+The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
+`steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
 
 Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
-function init!(s::AKM; stiffness_factor=0.5, delta=0.005, prn=false, steady_state=true)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, steady_state=true,
+               trim=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+    warn_delta_deprecated(delta, :init!)
+    warn_stiffness_factor_deprecated(stiffness_factor, :init!)
     clear!(s)
+    init_winch_state!(s)
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
-    s.stiffness_factor = stiffness_factor
+    s.stiffness_factor = 1.0
 
     y0, yd0 = if steady_state
         try
-            KiteModels.find_steady_state!(s; stiffness_factor, delta, upwind_dir, prn)
+            KiteModels.find_steady_state!(s; upwind_dir, prn, trim)
         catch e
             if e isa AssertionError || (e isa ErrorException && startswith(e.msg, "find_steady_state!:"))
-                println("ERROR: Failure to find initial steady state in find_steady_state! function!\n"*
-                        "Try to increase the delta parameter or to decrease the stiffness_factor of the init! function.")
+                println("ERROR: Failure to find initial steady state in find_steady_state! function!")
+                e isa ErrorException && println(e.msg)
                 return nothing
             else
                 rethrow(e)
             end
         end
     else
-        y0, yd0 = KiteModels.init(s; delta, upwind_dir)
+        y0, yd0 = KiteModels.init(s; upwind_dir)
         set_v_wind_ground!(s, calc_height(s),
             s.set.v_wind; upwind_dir)
         y0, yd0
@@ -743,6 +791,7 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
         s.attractor = attractor
     end
     s.t_0 = integrator.t
+    isnothing(s.wm) || update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
     set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
     s.iter = 0
     if s.set.solver == "IDA"

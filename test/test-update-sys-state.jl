@@ -17,7 +17,7 @@ wrap(delta) = atan(sin(delta), cos(delta))
 set = deepcopy(load_settings("system.yaml"))
 set.upwind_dir = rad2deg(-pi/2)
 kps4::KPS4 = KPS4(deepcopy(set))
-integrator = init!(kps4; stiffness_factor=0.5, delta=0.005, prn=false)
+integrator = init!(kps4; prn=false)
 DT = 1/set.sample_freq
 # `next_step!` stores the time of the *previous* step in `t_0`, so two steps are needed
 # before `s.t_0 > 0` and the rate calculation sees a non-zero time difference
@@ -50,16 +50,15 @@ end
     @test ss.X ≈ [pos[1] for pos in kps4.pos]
     @test ss.Y ≈ [pos[2] for pos in kps4.pos]
     @test ss.Z ≈ [pos[3] for pos in kps4.pos]
-    @test ss.orient ≈ calc_orient_quat(kps4)
-    @test [ss.roll, ss.pitch, ss.yaw] ≈ orient_euler(kps4)
+    @test ss.orient ≈ fromKS2KA(calc_orient_quat(kps4))
+    @test SVector(euler_KS(ss.orient)) ≈ orient_euler(kps4)
     @test ss.vel_kite ≈ kps4.vel_kite
     @test ss.v_wind_gnd ≈ kps4.v_wind_gnd
     @test ss.v_wind_kite ≈ kps4.v_wind
     @test ss.v_wind_200m ≈ kps4.v_wind_gnd * calc_wind_factor(kps4.am, 200.0)
-    # the winch quantities are scalars on a single-tether model, in slot 1 of a 4-tether vector
-    @test ss.winch_force ≈ [winch_force(kps4), 0, 0, 0]
-    @test ss.l_tether ≈ [kps4.l_tether, 0, 0, 0]
-    @test ss.v_reelout ≈ [kps4.v_reel_out, 0, 0, 0]
+    @test ss.winch_force ≈ [winch_force(kps4)]
+    @test ss.l_tether ≈ [kps4.l_tether]
+    @test ss.v_reelout ≈ [kps4.v_reel_out]
 end
 
 @testset "update_sys_state! zoom" begin
@@ -75,7 +74,7 @@ end
     ss = SysState(kps4)
     next_step!(kps4, integrator; set_speed=0.5, dt=DT)
     update_sys_state!(ss, kps4)
-    @test ss.set_speed ≈ [0.5, 0, 0, 0]
+    @test ss.set_speed ≈ [0.5]
     # a set value of `nothing` is logged as NaN, not as zero
     @test isnan(ss.set_torque[1])
     @test isnan(ss.set_force[1])
@@ -89,8 +88,8 @@ end
     kps4.attractor  = SVector(0.1, 0.7)
     update_sys_state!(ss, kps4)
     @test isnan(ss.set_speed[1])
-    @test ss.set_torque ≈ [-20.0, 0, 0, 0]
-    @test ss.set_force ≈ [1200.0, 0, 0, 0]
+    @test ss.set_torque ≈ [-20.0]
+    @test ss.set_force ≈ [1200.0]
     @test ss.bearing ≈ 0.3
     @test ss.attractor ≈ [0.1, 0.7]
 end
@@ -107,7 +106,8 @@ end
     @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt
     @test ss.heading_rate ≈ wrap(heading_1 - heading_0) / dt
     # Erhard and Strauch (2013): the roll contribution is removed from the heading rate
-    @test ss.turn_rates ≈ [0, 0, ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)]
+    @test fromKA2KS_body(ss.turn_rates) ≈
+          [0, 0, ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)]
 end
 
 @testset "update_sys_state! rates at the wrap boundary" begin
@@ -124,17 +124,17 @@ end
 
 @testset "update_sys_state! KPS3" begin
     kps3 = KPS3(deepcopy(set))
-    integrator3 = init!(kps3; stiffness_factor=0.5, delta=0.0001, prn=false)
+    integrator3 = init!(kps3; prn=false)
     next_step!(kps3, integrator3; set_speed=0, dt=DT)
     ss = SysState(kps3)
     @test length(ss.X) == length(kps3.pos)
     @test ss.elevation ≈ calc_elevation(kps3)
     @test ss.azimuth ≈ calc_azimuth(kps3)
     @test ss.heading ≈ calc_heading(kps3)
-    @test ss.l_tether ≈ [kps3.l_tether, 0, 0, 0]
+    @test ss.l_tether ≈ [kps3.l_tether]
     # set_force, bearing and attractor are KPS4 only and keep their defaults here
     @test ss.bearing == 0
-    @test ss.set_force ≈ [0, 0, 0, 0]
+    @test ss.set_force ≈ [0]
     @test ss.attractor ≈ [0, 0]
 
     azimuth_0, heading_0, time_0 = ss.azimuth, ss.heading, ss.time

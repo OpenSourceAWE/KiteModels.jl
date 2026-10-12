@@ -88,7 +88,7 @@ function simulate(integrator, steps, plot = PLOT)
         end
         update_sys_state!(sys_state, kps4)
         heading_rate[i] = sys_state.heading_rate
-        body_rate[i] = sys_state.turn_rates[3]
+        body_rate[i] = fromKA2KS_body(sys_state.turn_rates)[3]
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale = 3)
         if i == 1
             bring_viewer_to_front()
@@ -98,7 +98,7 @@ function simulate(integrator, steps, plot = PLOT)
 end
 toc()
 
-integrator = KiteModels.init!(kps4, delta = 0.001, stiffness_factor = 0.1, prn = STATISTIC)
+integrator = KiteModels.init!(kps4, prn = STATISTIC)
 toc()
 
 println("\nStarting simulation...")
