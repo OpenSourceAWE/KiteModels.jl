@@ -2,6 +2,11 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels Unreleased
+#### Changed
+- `bin/install` runs the test suite only if the new option `--test` is passed. Before, it always ran the tests, including the benchmarks, which can take up to an hour. `bin/update_default_manifest` passes `--test`, so a new default manifest is only written if all tests pass.
+- the link checker no longer checks the Zenodo DOI, which often fails with 504 Gateway Timeout, and uses the default timeout of 20 s again
+
 ### KiteModels v0.12.1 2026-10-12
 #### Added
 - `find_steady_state!(s; trim=true)` (KPS3 and KPS4): instead of prescribing `set.elevation`, the vertical force balance of the kite is solved too, so the kite is placed at the elevation where its lift matches gravity (its natural elevation); `set.elevation` is only the start value. For KPS4 all forces including gravity are balanced in this case (with `trim=false`, the accelerations in `yd0` are `-g`, so gravity is not balanced), and the returned accelerations are zero. A second, fully balanced trim exists at low elevations with the kite in deep stall. Solutions with an angle of attack beyond the angle of maximum lift (from `alpha_cl`/`cl_list`) are therefore rejected, and if no valid trim is found from `set.elevation`, the solver is restarted at higher and then at lower elevations, in steps of 10°, with a cheaper solve (no perturbation, no last-resort continuation). If no trim with attached flow is found, an error is thrown instead of returning a deep stall or non-converged state; with `system.yaml` and the Maasvlakte wind profile at 4 m/s this takes 7 s (KPS3) and 11 s (KPS4). The default `trim=false` keeps the previous behaviour.
