@@ -91,4 +91,5 @@ calc_particle_forces!
 inner_loop!
 loop!
 make_jac
+nl_solve
 ```
