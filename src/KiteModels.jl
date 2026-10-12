@@ -723,8 +723,10 @@ Write the system state `ss` to the YAML file `filename`: the entries of the dict
 `meta_data` under the key `meta_data`, and the fields of `ss` under the key `sys_state`, except
 the fields in `exclude`, by default the fields that KPS3 and KPS4 do not use. For KPS3, pass
 `exclude=KiteModels.UNUSED_FIELDS_KPS3` to also leave out `side_slip`, `alpha3` and `alpha4`,
-which it does not have, and the aerodynamic moment `aero_moment_KA_x/y/z`, which is always zero. Scalars are written as numbers, vectors as YAML flow sequences, NaN and
-Inf as `.nan` and `.inf`, all other values as quoted strings.
+which it does not have, and the aerodynamic moment `aero_moment_KA_x/y/z`, which is always zero.
+Scalars are written as numbers, vectors as YAML flow sequences, NaN and Inf as `.nan` and
+`.inf`, all other values as quoted strings. The keys of `meta_data` are written as strings,
+quoted unless they are plain identifiers.
 
 Example:
 ```julia
@@ -735,8 +737,19 @@ The file can be read with `YAML.load_file("output/sys_state.yaml")`, which retur
 `Dict` with the keys `meta_data` and `sys_state`; the latter has the field names as keys.
 """
 function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIELDS)
+    # double-quoted YAML string; escape_string only writes escapes that YAML knows too, e.g.
+    # \n, \" and \e, unlike repr, which writes \$
+    yaml_str(x) = "\"" * escape_string(string(x), ('"',)) * "\""
+    # keys that are plain identifiers are written as they are, all others are quoted, also the
+    # words that YAML reads as a boolean or null
+    function yaml_key(key)
+        str = string(key)
+        plain = occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", str) &&
+                lowercase(str) ∉ ("true", "false", "yes", "no", "on", "off", "y", "n", "null")
+        plain ? str : yaml_str(str)
+    end
     function yaml_num(x)
-        x isa Real || return repr(string(x))
+        x isa Real || return yaml_str(x)
         x isa AbstractFloat || return string(x)
         isnan(x) && return ".nan"
         isinf(x) && return x > 0 ? ".inf" : "-.inf"
@@ -748,7 +761,7 @@ function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIE
     open(filename, "w") do io
         println(io, "meta_data:", isempty(meta_data) ? " {}" : "")
         for key in sort!(collect(keys(meta_data)); by=string)
-            println(io, "  ", key, ": ", yaml_val(meta_data[key]))
+            println(io, "  ", yaml_key(key), ": ", yaml_val(meta_data[key]))
         end
         println(io, "sys_state:")
         for name in fieldnames(typeof(ss))

@@ -105,6 +105,12 @@ end
     @test !haskey(state, "side_slip") && !haskey(state, "alpha3") && !haskey(state, "alpha4")
     @test !haskey(state, "aero_moment_KA_x")
     @test length(state) == fieldcount(typeof(ss)) - length(KiteModels.UNUSED_FIELDS_KPS3)
+    # keys and values that YAML would misread without quoting
+    meta_data = Dict("a: b" => 1, "# comment" => 2, "true" => 3, "- item" => 4, :symbol => 5,
+                     "text" => "cost \$5, \"quoted\", back\\slash\nnew line")
+    save_state(file, ss; meta_data)
+    @test KiteUtils.YAML.load_file(file)["meta_data"] ==
+          Dict(string(key) => value for (key, value) in meta_data)
 end
 
 @testset "update_sys_state! zoom" begin
