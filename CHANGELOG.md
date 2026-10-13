@@ -5,6 +5,8 @@ SPDX-License-Identifier: MIT
 ### KiteModels Unreleased
 #### Changed
 - `bin/install` runs the test suite only if the new option `--test` is passed. Before, it always ran the tests, including the benchmarks, which can take up to an hour. `bin/update_default_manifest` passes `--test`, so a new default manifest is only written if all tests pass.
+- The `examples` and `test` projects allow DSP 0.8 (#318). `create_filter` in `examples/filters.jl`, used by `calc_spectrum.jl` and `plot_pitch_stability.jl`, normalizes the cut-off frequency itself instead of passing `fs` to `Lowpass`, which DSP 0.8 removed; this works with DSP 0.7 and 0.8 and gives the same filter.
+- The default manifests for Julia 1.12 and 1.13 use DSP 0.8.6, Colors 0.13.3 and MatrixEquations 2.7.0.
 - the link checker no longer checks the Zenodo DOI, which often fails with 504 Gateway Timeout, and uses the default timeout of 20 s again
 #### Fixed
 - `find_steady_state!(s; trim=true)` (KPS3 and KPS4) could accept a trim with the kite below the horizon. For example, KPS3 with `system.yaml`, a wind speed of 6 m/s, a tether length of 1000 m and `set.elevation = 40°` returned a trim at an elevation of -78°, with the tether hanging below the ground. Such a trim is now rejected like a trim in deep stall, so the solver restarts at other elevations; in this example it finds the natural elevation of 53.9°.

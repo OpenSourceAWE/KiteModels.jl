@@ -33,9 +33,10 @@ function ema_filter(measurement, last_measurement, cut_off_freq, dt)
     return filtered_value
 end
 
-# Design the filter
+# Design the filter; the cut-off frequency is normalized to the Nyquist frequency 1/(2dt), which
+# works with DSP 0.7 and 0.8 (DSP 0.8 removed the keyword argument fs of Lowpass)
 function create_filter(cut_off_freq; order=4, dt)
-    Filters.digitalfilter(Filters.Lowpass(cut_off_freq; fs=1/dt), Filters.Butterworth(order))
+    Filters.digitalfilter(Filters.Lowpass(2 * cut_off_freq * dt), Filters.Butterworth(order))
 end
 
 # Apply the filter
