@@ -35,5 +35,6 @@ makedocs(;
 deploydocs(;
     repo="github.com/OpenSourceAWE/KiteModels.jl",
     devbranch="main",
-    push_preview=true,
+    # dependabot runs get a read-only token and no secrets, so pushing a preview would fail
+    push_preview=get(ENV, "GITHUB_ACTOR", "") != "dependabot[bot]",
 )
