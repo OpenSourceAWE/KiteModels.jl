@@ -10,6 +10,8 @@ SPDX-License-Identifier: MIT
 - the link checker no longer checks the Zenodo DOI, which often fails with 504 Gateway Timeout, and uses the default timeout of 20 s again
 #### Fixed
 - `find_steady_state!(s; trim=true)` (KPS3 and KPS4) could accept a trim with the kite below the horizon. For example, KPS3 with `system.yaml`, a wind speed of 6 m/s, a tether length of 1000 m and `set.elevation = 40°` returned a trim at an elevation of -78°, with the tether hanging below the ground. Such a trim is now rejected like a trim in deep stall, so the solver restarts at other elevations; in this example it finds the natural elevation of 53.9°.
+- `update_sys_state!` returned an `azimuth_rate` and a `heading_rate` of `Inf` or `NaN` (and therefore also `turn_rates`) in the first call after `init!`, because the time step was zero; these rates are now zero in this case.
+- `examples_3d/parking_4p.jl` initialized the kite with an upwind direction of -90°, but simulated with -80°. The sudden change of the wind direction caused heading oscillations in the first 3 s and a drift of the heading before steering started; now the kite is initialized with the upwind direction of the simulation.
 
 ### KiteModels v0.12.1 2026-10-12
 #### Added
