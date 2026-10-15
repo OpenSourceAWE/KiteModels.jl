@@ -103,6 +103,7 @@ calc_aero_forces
 calc_aero_force_moment
 aero_point_forces
 calc_turn_rates
+calc_pitch_rate
 calc_particle_forces!
 calc_spring_force
 calc_drag_forces
