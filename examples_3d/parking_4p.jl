@@ -38,6 +38,9 @@ SHOW_KITE = true
 UPWIND_DIR2       = -pi/2+deg2rad(10)     # Zero is at north; clockwise positive
 # end of user parameter section #
 
+# initialize with the same wind direction that is used during the simulation
+set.upwind_dir = rad2deg(UPWIND_DIR2)
+
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
 viewer::Viewer3D = Viewer3D(SHOW_KITE)
