@@ -62,17 +62,17 @@ jobs:
           
       - uses: julia-actions/cache@v3
         continue-on-error: true
+        with:
+          # packing the many small files of the compiled cache takes about 30 min on Windows
+          cache-compiled: ${{ runner.os != 'Windows' }}
       - uses: julia-actions/julia-buildpkg@v1
       - name: Resolve and instantiate test environment
         shell: bash
+        # julia-runtest precompiles with its own flags (--check-bounds=yes), so precompiling
+        # here with the default flags would compile all dependencies twice
+        env:
+          JULIA_PKG_PRECOMPILE_AUTO: 0
         run: |
-          JULIA_VERSION=$(julia --version | awk '{print $3}' | cut -d'.' -f1,2)
-          TEST_MANIFEST="test/Manifest-v${JULIA_VERSION}.toml"
-          TEST_TARGET="test/Manifest.toml"
-          if [ -f "$TEST_MANIFEST" ] && [ ! -f "$TEST_TARGET" ]; then
-            cp "$TEST_MANIFEST" "$TEST_TARGET"
-            echo "Copied $TEST_MANIFEST to $TEST_TARGET"
-          fi
           julia --project=test -e "using Pkg; Pkg.resolve(); Pkg.instantiate()"
       
       - uses: julia-actions/julia-runtest@v1
@@ -88,7 +88,7 @@ jobs:
       fail-fast: false
       matrix:
         julia_version:
-          - "1.12"
+          - "1.13"
         julia_arch:
           - x64
         os:
@@ -126,14 +126,11 @@ jobs:
     - uses: julia-actions/julia-buildpkg@v1
     - name: Resolve and instantiate test environment
       shell: bash
+      # julia-runtest precompiles with its own flags (--check-bounds=yes), so precompiling
+      # here with the default flags would compile all dependencies twice
+      env:
+        JULIA_PKG_PRECOMPILE_AUTO: 0
       run: |
-        JULIA_VERSION=$(julia --version | awk '{print $3}' | cut -d'.' -f1,2)
-        TEST_MANIFEST="test/Manifest-v${JULIA_VERSION}.toml"
-        TEST_TARGET="test/Manifest.toml"
-        if [ -f "$TEST_MANIFEST" ] && [ ! -f "$TEST_TARGET" ]; then
-          cp "$TEST_MANIFEST" "$TEST_TARGET"
-          echo "Copied $TEST_MANIFEST to $TEST_TARGET"
-        fi
         julia --project=test -e "using Pkg; Pkg.resolve(); Pkg.instantiate()"
     
     - uses: julia-actions/julia-runtest@v1
