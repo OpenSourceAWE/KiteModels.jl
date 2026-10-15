@@ -7,4 +7,4 @@ if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi
 
-jetls check --root=. src/
+jetls check .
