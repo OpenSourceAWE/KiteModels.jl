@@ -116,6 +116,16 @@ $(TYPEDFIELDS)
     vel_kite::T =          zeros(S, 3)
     "acceleration vector of the kite, updated once per time step by next_step!"
     acc_kite::T =          zeros(S, 3)
+    "time of the last update of the rates by update_sys_state! [s]; -Inf before the first one"
+    t_last::S =            -Inf
+    "azimuth [rad] at the time `t_last`"
+    azimuth_last::S =      zero(S)
+    "heading [rad] at the time `t_last`"
+    heading_last::S =      zero(S)
+    "azimuth rate [rad/s], updated by update_sys_state!"
+    azimuth_rate::S =      zero(S)
+    "heading rate [rad/s], updated by update_sys_state!"
+    heading_rate::S =      zero(S)
     "unstressed segment length [m]"
     segment_length::S =           0.0
     "lift coefficient of the kite, depending on the angle of attack"
@@ -223,6 +233,9 @@ function clear!(s::KPS4)
     s.last_force .= [0.0, 0, 0]
     s.vel_kite .= [0.0, 0, 0]
     s.acc_kite .= [0.0, 0, 0]
+    s.t_last = -Inf
+    s.azimuth_rate = 0.0
+    s.heading_rate = 0.0
     s.x .= [0.0, 0, 0]
     s.y .= [0.0, 0, 0]
     s.z .= [0.0, 0, 0]
@@ -328,6 +341,28 @@ Returns a tuple `(half_drag_force, kcu_drag_force)`.
 end
 
 """
+    calc_spring_force(s::KPS4, spring, norm1, spring_vel, segments, i; damping=true)
+
+Scalar force of the spring `i` with the length `norm1` [m] and the elongation rate
+`spring_vel` [m/s], positive for tension: the elastic force, with a reduced stiffness under
+compression, plus the damping force. The residual and [`spring_forces`](@ref) use it.
+"""
+@inline function calc_spring_force(s::KPS4, spring, norm1, spring_vel, segments, i; damping=true)
+    l_0 = spring.length                             # Unstressed length
+    k = spring.axial_stiffness * s.stiffness_factor # Spring constant
+    c = damping ? spring.axial_damping : zero(spring.axial_damping) # Damping coefficient
+    if (norm1 - l_0) > 0.0
+        # kite springs are damped more
+        c_t = i > segments ? s.set.rel_damping * c : c
+        return k * (norm1 - l_0) + c_t * spring_vel
+    elseif i > segments # kite spring
+        return s.set.rel_compr_stiffness * k * (norm1 - l_0) + c * spring_vel
+    else                # tether spring
+        return 0.1 * k * (norm1 - l_0) + c * spring_vel
+    end
+end
+
+"""
     calc_particle_forces!(s::KPS4, pos1, pos2, vel1, vel2, spring, segments, d_tether, rho, i)
 
 Calculate the drag force of the tether segment, defined by the parameters pos1, pos2, vel1 and vel2
@@ -335,30 +370,14 @@ and distribute it equally on the two particles, that are attached to the segment
 The result is stored in the array s.forces.
 """
 @inline function calc_particle_forces!(s::KPS4, pos1, pos2, vel1, vel2, spring, segments, d_tether, rho, i)
-    l_0 = spring.length # Unstressed length
-    k = spring.axial_stiffness * s.stiffness_factor  # Spring constant
-    c = spring.axial_damping                        # Damping coefficient
     segment = pos1 - pos2
     rel_vel = vel1 - vel2
     av_vel = 0.5 * (vel1 + vel2)
     norm1 = norm(segment)
     unit_vector = segment / norm1
 
-    k1 = s.set.rel_compr_stiffness * k # compression stiffness kite springs
-    k2 = 0.1 * k                       # compression stiffness tether springs
-    c1 = s.set.rel_damping * c         # axial_damping kite springs
     spring_vel   = unit_vector ⋅ rel_vel
-    if (norm1 - l_0) > 0.0
-        if i > segments  # kite springs
-             s.spring_force .= (k *  (norm1 - l_0) + (c1 * spring_vel)) * unit_vector
-        else
-             s.spring_force .= (k *  (norm1 - l_0) + (c * spring_vel)) * unit_vector
-        end
-    elseif i > segments # kite spring
-        s.spring_force .= (k1 *  (norm1 - l_0) + (c * spring_vel)) * unit_vector
-    else
-        s.spring_force .= (k2 *  (norm1 - l_0) + (c * spring_vel)) * unit_vector
-    end
+    s.spring_force .= calc_spring_force(s, spring, norm1, spring_vel, segments, i) * unit_vector
 
     s.v_apparent .= s.v_wind_tether - av_vel
     half_drag_force, kcu_drag_force = calc_drag_forces(s, unit_vector, norm1, vel1, vel2,
@@ -500,8 +519,8 @@ end
     calc_aero_force_moment(s::KPS4)
 
 Total aerodynamic force and moment acting on the kite, both resolved in the `KA` body
-frame (aft-right-up). The moment is taken about the centre of mass of the kite particles
-A, B, C and D and includes the pitch damping and steering couples. Uses the positions
+frame (aft-right-up). The moment is taken about the origin of the `KA` (and `KS`) frame, the
+centre between the kite particles C and D, and includes the pitch damping and steering couples. Uses the positions
 `s.pos`, the velocities `s.vel` and the kite reference frame of the last call of
 `calc_aero_forces!`.
 
@@ -511,8 +530,7 @@ function calc_aero_force_moment(s::KPS4)
     i_A = s.set.segments + 2
     pos_A, pos_B = SVec3(s.pos[i_A]),   SVec3(s.pos[i_A+1])
     pos_C, pos_D = SVec3(s.pos[i_A+2]), SVec3(s.pos[i_A+3])
-    m_A, m_B, m_C, m_D = s.masses[i_A], s.masses[i_A+1], s.masses[i_A+2], s.masses[i_A+3]
-    centre = (m_A * pos_A + m_B * pos_B + m_C * pos_C + m_D * pos_D) / (m_A + m_B + m_C + m_D)
+    centre = 0.5 * (pos_C + pos_D) # origin of the KA and KS frames
 
     f_A, f_B, f_C, f_D = aero_point_forces(s)
     force  = f_A + f_B + f_C + f_D
@@ -828,32 +846,26 @@ end
 
 # ==================== end of getter functions ================================================
 
-function spring_forces(s::KPS4; prn=true)
-    forces = zeros(SimFloat, s.set.segments+KITE_SPRINGS)
-    for i in 1:s.set.segments
-        forces[i] =  s.springs[i].axial_stiffness * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length) * s.stiffness_factor
-        if forces[i] > s.set.max_force && prn
-            println("Tether raptures for segment $i !")
-        end
-    end
-    for i in 1:KITE_SPRINGS
-        p1 = s.springs[i+s.set.segments].p1  # First point nr.
-        p2 = s.springs[i+s.set.segments].p2  # Second point nr.
-        pos1, pos2 = s.pos[p1], s.pos[p2]
-        spring = s.springs[i+s.set.segments]
-        l_0 = spring.length # Unstressed length
-        k = spring.axial_stiffness * s.stiffness_factor       # Spring constant
-        segment = pos1 - pos2
+"""
+    spring_forces(s::KPS4; prn=true, damping=true)
+
+Return the scalar forces of all springs [N], positive for tension: first the tether segments,
+then the springs of the kite. They are the forces of the residual for the positions `s.pos`
+and velocities `s.vel`, including the damping force, unless `damping=false`. With `prn=true`,
+a warning is printed if a force exceeds the breaking force.
+"""
+function spring_forces(s::KPS4; prn=true, damping=true)
+    segments = s.set.segments
+    forces = zeros(SimFloat, segments+KITE_SPRINGS)
+    for (i, spring) in pairs(s.springs)
+        segment = s.pos[spring.p1] - s.pos[spring.p2]
         norm1 = norm(segment)
-        k1 = 0.25 * k # compression stiffness kite segments
-        if (norm1 - l_0) > 0.0
-            spring_force = k *  (norm1 - l_0)
-        else
-            spring_force = k1 *  (norm1 - l_0)
-        end
-        forces[i+s.set.segments] = spring_force
-        if norm(s.spring_force) > 4000.0
-            println("Bridle brakes for spring $i !")
+        spring_vel = (segment / norm1) ⋅ (s.vel[spring.p1] - s.vel[spring.p2])
+        forces[i] = calc_spring_force(s, spring, norm1, spring_vel, segments, i; damping)
+        if prn && i <= segments && forces[i] > s.set.max_force
+            println("Tether raptures for segment $i !")
+        elseif prn && i > segments && forces[i] > 4000.0
+            println("Bridle brakes for spring $(i - segments) !")
         end
     end
     forces
