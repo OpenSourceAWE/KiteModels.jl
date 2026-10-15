@@ -26,7 +26,8 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using AtmosphericModels
 using Rotations
 import Base.zero
-import OrdinaryDiffEqCore.init
+import DiffEqBase
+import DiffEqBase.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
 export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
@@ -735,7 +736,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
 
     differential_vars = ones(Bool, length(y0))
     prob    = DAEProblem{true}((res, yd, y, p, t) -> Base.invokelatest(residual!, res, yd, y, p, t), yd0, y0, tspan, s; differential_vars)
-    integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
+    integrator = DiffEqBase.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
