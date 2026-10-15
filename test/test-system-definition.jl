@@ -32,6 +32,13 @@ segment_points(definition) = [segment.points for segment in definition.segments]
           kps4.set.mass + kps4.set.kcu_mass
     @test all(segment.density == 0 for segment in definition.segments[(segments + 1):end])
     @test definition.metadata.connectivity_sha == connectivity_sha(definition)
+    kcu = segments + 1
+    kite_springs = kps4.springs[(segments + 1):end]
+    @test [segment.name for segment in definition.segments] ==
+          [["tether_$i" for i in 1:segments];
+           [kcu in (spring.p1, spring.p2) ? "bridle_$i" : "strut_$i"
+            for (i, spring) in enumerate(kite_springs)]]
+    @test count(startswith("strut"), segment.name for segment in definition.segments) == 6
 end
 
 @testset "KPS3 definition is one tether from the winch to the kite" begin
@@ -42,6 +49,8 @@ end
     @test definition.metadata.n_points == length(kps3.pos) == segments + 1
     @test segment_points(definition) == [(i, i + 1) for i in 1:segments]
     @test only(definition.tethers).segments == 1:segments
+    @test [segment.name for segment in definition.segments] ==
+          ["tether_$i" for i in 1:segments]
     @test definition.points[end].extra_mass ≈ kps3.set.mass + kps3.set.kcu_mass
 end
 

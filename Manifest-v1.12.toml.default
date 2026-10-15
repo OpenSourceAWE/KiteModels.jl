@@ -1398,7 +1398,9 @@ version = "0.6.12"
 
 [[deps.KiteGeometry]]
 deps = ["JSON", "KiteUtils", "LinearAlgebra", "OrderedCollections", "SHA", "StaticArrays", "YAML"]
-git-tree-sha1 = "b8275ab0560bdce0372eeef4a422dabc106b658b"
+git-tree-sha1 = "0a7bb23a083dbeb91b19a0fb601f15a340e18862"
+repo-rev = "50b05ac2eaaa0fa5143aab7eb6127b92539ef0ce"
+repo-url = "https://github.com/OpenSourceAWE/KiteGeometry.jl"
 uuid = "941ca69c-4b42-4a27-9601-abc4d37bf99e"
 version = "0.1.1"
 

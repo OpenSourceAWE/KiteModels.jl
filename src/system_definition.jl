@@ -5,23 +5,39 @@
     system_definition(s::KPS4)
 
 The `SystemDefinition` of the four-point model: its points where they are now, and as
-segments the tether and bridle springs it integrates, at full stiffness. The bridle
-segments are massless. Call it after `init!` for the initial pose.
+segments the springs it integrates, at full stiffness. Segments are named `tether_i`, and
+the massless kite springs `bridle_i` where they end at the KCU and `strut_i` where they join
+two kite points. Call it after `init!` for the initial pose.
 """
 function system_definition(s::KPS4)
     tether_segments = s.set.segments
     extra_masses = zeros(length(s.pos))
     extra_masses[tether_segments + 1] = s.set.kcu_mass
     extra_masses[(tether_segments + 2):end] .= s.masses[(tether_segments + 2):end]
-    bridle_segments = length(s.springs) - tether_segments
-    diameters = [fill(s.set.d_tether, tether_segments); fill(s.set.d_line, bridle_segments)]
-    densities = [fill(s.set.rho_tether, tether_segments); zeros(bridle_segments)]
-    segments = [Segment(; name=string(i), points=(Int(spring.p1), Int(spring.p2)),
+    kite_springs = length(s.springs) - tether_segments
+    diameters = [fill(s.set.d_tether, tether_segments); fill(s.set.d_line, kite_springs)]
+    densities = [fill(s.set.rho_tether, tether_segments); zeros(kite_springs)]
+    segments = [Segment(; name=spring_name(s, i, spring), points=(Int(spring.p1), Int(spring.p2)),
                         l0=spring.length, diameter=diameters[i] / 1000,
                         density=densities[i],
                         unit_stiffness=spring.axial_stiffness * spring.length)
                 for (i, spring) in enumerate(s.springs)]
     return assemble_system_definition(s, segments, extra_masses)
+end
+
+"""
+    spring_name(s::KPS4, i, spring)
+
+The segment name of `spring`, the `i`-th of `s.springs`: `tether_i` for a tether spring,
+then, numbered from 1, `bridle_j` for a kite spring ending at the KCU and `strut_j` for one
+joining two kite points.
+"""
+function spring_name(s::KPS4, i, spring)
+    tether_segments = s.set.segments
+    i <= tether_segments && return "tether_$i"
+    kcu = tether_segments + 1
+    role = kcu in (spring.p1, spring.p2) ? "bridle" : "strut"
+    return "$(role)_$(i - tether_segments)"
 end
 
 """
@@ -34,7 +50,7 @@ it after `init!` for the initial pose.
 function system_definition(s::KPS3)
     extra_masses = zeros(length(s.pos))
     extra_masses[end] = s.set.mass + s.set.kcu_mass
-    segments = [Segment(; name=string(i), points=(i, i + 1), l0=s.segment_length,
+    segments = [Segment(; name="tether_$i", points=(i, i + 1), l0=s.segment_length,
                         diameter=s.set.d_tether / 1000, density=s.set.rho_tether,
                         unit_stiffness=s.axial_stiffness * s.segment_length)
                 for i in 1:s.set.segments]
@@ -59,8 +75,7 @@ function assemble_system_definition(s::AbstractKiteModel, segments, extra_masses
                   drum_radius=s.set.drum_radius)
     tables = (; points, segments, tethers=[tether], winches=[winch])
     name = string(nameof(typeof(s)))
-    metadata(sha) = Metadata(name, "", "", KiteGeometry.AWESIO_VERSION,
-                             "structure_schema.yml", n_points, sha)
-    sha = connectivity_sha(SystemDefinition(; metadata=metadata(""), tables...))
-    return SystemDefinition(; metadata=metadata(sha), tables...)
+    draft = SystemDefinition(; metadata=Metadata(; name, n_points), tables...)
+    metadata = Metadata(; name, n_points, connectivity_sha=connectivity_sha(draft))
+    return SystemDefinition(; metadata, tables...)
 end

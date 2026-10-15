@@ -37,6 +37,9 @@ Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
 
+[sources]
+KiteGeometry = {url = "https://github.com/OpenSourceAWE/KiteGeometry.jl", rev = "50b05ac2eaaa0fa5143aab7eb6127b92539ef0ce"}
+
 [compat]
 AtmosphericModels = "0.3.8"
 Dierckx = "0.5.4"
