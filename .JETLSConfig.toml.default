@@ -1,7 +1,10 @@
 formatter = "JuliaFormatter"
 
 [full_analysis]
-auto_instantiate = false            # boolean, default: true
+auto_instantiate = "never"          # "always", "prompt" or "never", default: "prompt"
+
+[inlay_hint.types]
+enabled = false                     # boolean, default: true
 
 [diagnostic]
 all_files = false                   # boolean, default: true
