@@ -80,6 +80,41 @@ end
     log!(Logger(length(kps4.pos), 2), ss)
 end
 
+@testset "update_sys_state! spring forces include damping" begin
+    s = KPS4(deepcopy(set))
+    integ = init!(s; prn=false)
+    for _ in 1:20
+        next_step!(s, integ; set_speed=1.0, dt=DT)
+    end
+    ss = SysState(s)
+    damping = ss.spring_force - spring_forces(s; prn=false, damping=false)
+    # the tether segments are in tension, so their damping force is c * elongation rate
+    for i in 1:set.segments
+        spring = s.springs[i]
+        segment = s.pos[spring.p1] - s.pos[spring.p2]
+        spring_vel = normalize(segment) ⋅ (s.vel[spring.p1] - s.vel[spring.p2])
+        @test norm(segment) > spring.length
+        @test damping[i] ≈ spring.axial_damping * spring_vel rtol=1e-4
+    end
+    @test maximum(abs, damping[1:set.segments]) > 1.0
+
+    kps3 = KPS3(deepcopy(set))
+    integ3 = init!(kps3; prn=false)
+    for _ in 1:20
+        next_step!(kps3, integ3; set_speed=1.0, dt=DT)
+    end
+    ss3 = SysState(kps3)
+    vel = KiteModels.particle_velocities(kps3)
+    damping = ss3.spring_force - spring_forces(kps3; damping=false)
+    for i in 1:set.segments
+        segment = kps3.pos[i+1] - kps3.pos[i]
+        spring_vel = normalize(segment) ⋅ (vel[i+1] - vel[i])
+        @test norm(segment) > kps3.segment_length
+        @test damping[i] ≈ kps3.axial_damping * spring_vel rtol=1e-4
+    end
+    @test maximum(abs, damping) > 1.0
+end
+
 @testset "save_state" begin
     ss = SysState(kps4)
     ss.depower = NaN

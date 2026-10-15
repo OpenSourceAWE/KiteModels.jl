@@ -351,6 +351,24 @@ function pos_kite(s::KPS3)
     s.pos[end]
 end
 
+"""
+    calc_spring_force(s::KPS3, norm1, spring_vel; damping=true)
+
+Scalar force of a tether segment with the length `norm1` [m] and the elongation rate
+`spring_vel` [m/s], positive for tension: the elastic force, with a reduced stiffness under
+compression, plus the damping force. The residual and [`spring_forces`](@ref) use it.
+"""
+@inline function calc_spring_force(s::KPS3, norm1, spring_vel; damping=true)
+    k = s.axial_stiffness * s.stiffness_factor
+    c = damping ? s.axial_damping : zero(s.axial_damping)
+    if norm1 - s.segment_length > 0.0
+        return k * (norm1 - s.segment_length) + c * spring_vel
+    else
+        k2 = 0.05 * k # compression stiffness tether segments
+        return k2 * ((norm1 - s.segment_length) + c * spring_vel)
+    end
+end
+
 # Calculate the vector res1, that depends on the velocity and the acceleration.
 # The drag force of each segment is distributed equally on both particles.
 function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
@@ -365,12 +383,7 @@ function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
     # # calculate the relative velocity in the direction of the spring (=segment)
     spring_vel = s.unit_vector ⋅ rel_vel
 
-    k2 = 0.05 * s.axial_stiffness * s.stiffness_factor             # compression stiffness tether segments
-    if norm1 - s.segment_length > 0.0
-        s.spring_force .= (s.axial_stiffness * s.stiffness_factor * (norm1 - s.segment_length) + s.axial_damping * spring_vel) .* s.unit_vector
-    else
-        s.spring_force .= k2 * ((norm1 - s.segment_length) + (s.axial_damping * spring_vel)) .* s.unit_vector
-    end
+    s.spring_force .= calc_spring_force(s, norm1, spring_vel) .* s.unit_vector
     s.seg_area = norm1 * s.set.d_tether/1000.0
     s.last_v_app_norm_tether = calc_drag(s, s.av_vel, s.unit_vector, rho, s.v_app_perp, s.seg_area)
     half_drag = 0.5 * SVec3(s.last_tether_drag)
@@ -607,14 +620,20 @@ function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=no
 end
 
 """
-    spring_forces(s::AKM)
+    spring_forces(s::AKM; damping=true)
 
-Return an array of the scalar spring forces of all tether segments.
+Return an array of the scalar spring forces of all tether segments [N], positive for tension,
+and for KPS4 also of the springs of the kite. They are the forces of the residual for the
+current positions and velocities, including the damping force, unless `damping=false`.
 """
-function spring_forces(s::KPS3)
+function spring_forces(s::KPS3; damping=true)
+    vel = particle_velocities(s)
     forces = zeros(SimFloat, s.set.segments)
     for i in 1:s.set.segments
-        forces[i] =  s.axial_stiffness * s.stiffness_factor * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length)
+        segment = s.pos[i+1] - s.pos[i]
+        norm1 = norm(segment)
+        spring_vel = (segment / norm1) ⋅ (vel[i+1] - vel[i])
+        forces[i] = calc_spring_force(s, norm1, spring_vel; damping)
     end
     forces
 end

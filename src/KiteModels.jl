@@ -775,7 +775,8 @@ function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIE
 end
 
 function calc_pre_tension(s::AKM)
-    forces = spring_forces(s)
+    # the pre-tension is the elastic stretch, so the damping force is left out
+    forces = spring_forces(s; damping=false)
     av_force = 0.0
     for i in 1:s.set.segments
         av_force += forces[i]
