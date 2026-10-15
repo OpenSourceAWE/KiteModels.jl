@@ -703,7 +703,7 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
         j = 3*(segments-1)
         x_kite = horizontal(y0[j+1], y0[j+2])
         z_kite = y0[j+3]
-        F[2segments] = (atan(z_kite, x_kite) - deg2rad(s.set.elevation)) * hypot(x_kite, z_kite)
+        F[2segments] = (atan(z_kite, x_kite) - deg2rad(s.set.elevations[1])) * hypot(x_kite, z_kite)
         return nothing
     end
 
