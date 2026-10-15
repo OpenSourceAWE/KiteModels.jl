@@ -557,7 +557,8 @@ end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # the positions, velocities and forces of the model must belong to the accepted state
-    isnothing(s.integrator) || update_caches!(s, s.integrator)
+    integrator = s.integrator
+    isnothing(integrator) || update_caches!(s, integrator)
     ss.time = s.t_0
     pos = s.pos
     P = length(pos)
@@ -577,7 +578,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # the angles belong to the accepted state at the time of the integrator; t_0 is the start
     # time of the last step. The rates use the angles in full precision, not the Float32 ones
     # of the SysState.
-    t = isnothing(s.integrator) ? s.t_0 : s.integrator.t
+    t = isnothing(integrator) ? s.t_0 : integrator.t
     update_rates!(s, azimuth, heading, orient, t)
     ss.azimuth_rate = s.azimuth_rate
     ss.heading_rate = s.heading_rate
@@ -718,7 +719,7 @@ same number of segments: `Logger(P, steps; segments=n_springs(s))`, or `Logger(P
 with `with_springs=false`.
 """
 function SysState(s::AKM, zoom=1.0; with_springs=true)
-    ss = SysState(length(s.pos); segments = with_springs ? n_springs(s) : 0)
+    ss = SysState(length(s.pos)::Int; segments = with_springs ? n_springs(s) : 0)
     update_sys_state!(ss, s, zoom)
     ss
 end
@@ -818,11 +819,12 @@ end
 # reset the state of the winch (brake, rate limited set speed) to the state after construction
 # and the initial set speed, so that repeated calls of init! give the same result
 function init_winch_state!(s::AKM)
-    isnothing(s.wm) && return nothing
+    wm = s.wm
+    isnothing(wm) && return nothing
     s.sync_speed = s.set.v_reel_out
-    s.wm.brake = true
-    s.wm.last_set_speed = s.sync_speed
-    update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+    wm.brake = true
+    wm.last_set_speed = s.sync_speed
+    update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
 end
 
 """
@@ -979,7 +981,8 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
         s.attractor = attractor
     end
     s.t_0 = integrator.t
-    isnothing(s.wm) || update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+    wm = s.wm
+    isnothing(wm) || update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
     # KPS3: the wind and the heading below belong to the accepted state, not to the last trial
     # state of the solver
     isa(s, KPS3) && update_kite_state!(s, integrator.u)
