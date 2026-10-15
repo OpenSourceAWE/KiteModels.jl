@@ -82,7 +82,7 @@ for depower in DEPOWER
     global elev, i, kps4
     local cl, cd, aoa, kcu
 
-    logger = Logger(set.segments + 5, STEPS)
+    logger = Logger(set.segments + 5, STEPS; segments=n_springs(kps4))
     DEP[i] = depower
     set.depower = 100*depower
     set.depower_gain = 5

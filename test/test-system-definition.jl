@@ -48,7 +48,7 @@ end
 @testset "a saved log carries the KPS4 definition under topology" begin
     kps4 = KPS4(load_settings("system.yaml"))
     init!(kps4; prn=false)
-    logger = Logger(length(kps4.pos), 1)
+    logger = Logger(length(kps4.pos), 1; segments=n_springs(kps4))
     log!(logger, SysState(kps4))
     path = mktempdir()
     definition = system_definition(kps4)

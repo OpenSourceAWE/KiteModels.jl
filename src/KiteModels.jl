@@ -39,7 +39,7 @@ export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
-export get_default_turbulence, set_default_turbulence, spring_forces, states, upwind_dir
+export get_default_turbulence, n_springs, save_state, set_default_turbulence, spring_forces, states, upwind_dir
 export system_definition
 import LinearAlgebra: norm
 
@@ -559,7 +559,8 @@ end
 # end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
-    dt = s.t_0 - ss.time
+    # the positions, velocities and forces of the model must belong to the accepted state
+    isnothing(s.integrator) || update_caches!(s, s.integrator)
     ss.time = s.t_0
     pos = s.pos
     P = length(pos)
@@ -568,20 +569,21 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
-    ss.orient .= fromKS2KA(calc_orient_quat(s))
+    orient = fromKS2KA(calc_orient_quat(s))
+    ss.orient .= orient
     ss.elevation = calc_elevation(s)
-    new_azimuth = calc_azimuth(s)
-    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
-    d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
-    # dt is zero in the first call after init!, because s.t_0 is the start time of the last step
-    ss.azimuth_rate = dt > 0 ? d_az / dt : 0.0
-    ss.azimuth = new_azimuth
+    azimuth = calc_azimuth(s)
+    ss.azimuth = azimuth
     ss.winch_force[1] = winch_force(s)
-    new_heading = calc_heading(s)
-    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
-    d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
-    ss.heading_rate = dt > 0 ? d_psi / dt : 0.0
-    ss.heading = new_heading
+    heading = calc_heading(s)
+    ss.heading = heading
+    # the angles belong to the accepted state at the time of the integrator; t_0 is the start
+    # time of the last step. The rates use the angles in full precision, not the Float32 ones
+    # of the SysState.
+    t = isnothing(s.integrator) ? s.t_0 : s.integrator.t
+    update_rates!(s, azimuth, heading, orient, t)
+    ss.azimuth_rate = s.azimuth_rate
+    ss.heading_rate = s.heading_rate
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
     ss.l_tether[1] = s.l_tether
@@ -590,11 +592,13 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.steering = s.steering/s.set.cs_4p
     ss.kcu_steering = s.kcu_steering/s.set.cs_4p
     ss.vel_kite .= s.vel_kite
+    ss.acc = norm(s.acc_kite)
     ss.t_sim = 0.0
     ss.AoA = deg2rad(s.alpha_2)
     if isa(s, KPS4)
         ss.alpha3 = deg2rad(s.alpha_3)
         ss.alpha4 = deg2rad(s.alpha_4)
+        ss.side_slip = s.side_slip
         ss.set_force[1] = something(s.set_force, NaN)
         if isnothing(s.bearing)
             ss.bearing = NaN
@@ -606,15 +610,57 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         else
             ss.attractor = s.attractor
         end
+        force, moment = calc_aero_force_moment(s)
+        ss.aero_force_KA_x[1],  ss.aero_force_KA_y[1],  ss.aero_force_KA_z[1]  = force
+        ss.aero_moment_KA_x[1], ss.aero_moment_KA_y[1], ss.aero_moment_KA_z[1] = moment
+        i_A = s.set.segments + 2
+        for (i, f) in zip(i_A:i_A+3, aero_point_forces(s))
+            ss.aero_force_x[i], ss.aero_force_y[i], ss.aero_force_z[i] = f
+        end
+        for (i, f) in pairs(tether_drag_forces(s))
+            ss.drag_force_x[i], ss.drag_force_y[i], ss.drag_force_z[i] = f
+        end
+        for i in 1:P
+            ss.VX[i], ss.VY[i], ss.VZ[i] = s.vel[i]
+        end
+        ss.turn_rates .= calc_turn_rates(s)
+    else
+        # KPS3 has no side slip angle, no angles of attack alpha3 and alpha4, no set force,
+        # bearing or attractor; NaN marks them as not available, like the set values of KPS4
+        # when they are not set
+        ss.side_slip    = NaN
+        ss.alpha3       = NaN
+        ss.alpha4       = NaN
+        ss.set_force[1] = NaN
+        ss.bearing      = NaN
+        ss.attractor   .= NaN
+        # KPS3: the kite is a point mass on the last particle, without an aerodynamic moment
+        force = SVec3(s.lift_force) + SVec3(s.drag_force) + SVec3(s.steering_force)
+        ss.aero_force_x[P], ss.aero_force_y[P], ss.aero_force_z[P] = force
+        x, y, z = kite_ref_frame(s)
+        ss.aero_force_KA_x[1], ss.aero_force_KA_y[1], ss.aero_force_KA_z[1] =
+            fromKS2KA_body(SVec3(force ⋅ x, force ⋅ y, force ⋅ z))
+        for (i, f) in pairs(tether_drag_forces(s))
+            ss.drag_force_x[i], ss.drag_force_y[i], ss.drag_force_z[i] = f
+        end
+        for (i, v) in pairs(particle_velocities(s))
+            ss.VX[i], ss.VY[i], ss.VZ[i] = v
+        end
+        # KPS3 has no rigid kite frame with particle velocities, so the turn rates are the
+        # finite difference of the orientation, calculated by update_rates!
+        ss.turn_rates .= s.turn_rates
+    end
+    ss.turn_rate_x[1], ss.turn_rate_y[1], ss.turn_rate_z[1] = ss.turn_rates
+    # the spring forces are only stored if the SysState was created with room for them
+    if !isempty(ss.spring_force)
+        length(ss.spring_force) == n_springs(s) || throw(ArgumentError(
+            "the SysState has $(length(ss.spring_force)) spring forces, but the model has " *
+            "$(n_springs(s)) springs; create it with SysState(s; with_springs=true)"))
+        ss.spring_force .= s isa KPS4 ? spring_forces(s; prn=false) : spring_forces(s)
     end
     ss.set_steering = s.kcu.set_steering
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
-    # Calculate body turn rate around z-axis using Erhard and Strauch (2013) formula
-    # psi_m = psi - phi_dot * cos(theta)
-    # This removes the effect of roll on the heading measurement
-    body_rate = ss.heading_rate - ss.azimuth_rate * sin(ss.elevation)
-    ss.turn_rates .= fromKS2KA_body(SVec3(0, 0, body_rate))
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -624,22 +670,137 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     nothing
 end
 
+# Rates of the azimuth, the heading and, for KPS3, the orientation `orient`: the finite
+# difference of the values at the time `t` and the values of the last update with a smaller
+# time, which are kept in the model. A new SysState in each time step therefore gives the same
+# rates as a reused one, and further updates in the same time step keep the rates. On the
+# first update after init! the rates are zero.
+function update_rates!(s::AKM, azimuth, heading, orient, t)
+    t > s.t_last || return nothing
+    dt = t - s.t_last # Inf on the first update
+    # use the shortest-angle difference to avoid artificial spikes at wrap boundaries
+    wrap(delta) = atan(sin(delta), cos(delta))
+    s.azimuth_rate = isfinite(dt) ? wrap(azimuth - s.azimuth_last) / dt : 0.0
+    s.heading_rate = isfinite(dt) ? wrap(heading - s.heading_last) / dt : 0.0
+    if s isa KPS3
+        s.turn_rates .= calc_turn_rates(s.orient_last, orient, dt)
+        s.orient_last .= orient
+    end
+    s.azimuth_last = azimuth
+    s.heading_last = heading
+    s.t_last = t
+    nothing
+end
+
 """
-    SysState(s::AKM, zoom=1.0)
+    calc_turn_rates(orient_0, orient_1, dt)
+
+Turn rates in the body frame of a kite that turned from the orientation `orient_0` to the
+orientation `orient_1` (quaternions `[w, x, y, z]`, `KA` convention) in the time `dt`. Zero if
+`dt` is not positive or `orient_0` is not set (all zero).
+
+Returns an `SVec3` in [rad/s].
+"""
+function calc_turn_rates(orient_0, orient_1, dt)
+    (dt > 0 && norm(orient_0) > 0.5) || return zero(SVec3)
+    rotation = RotationVec(QuatRotation(orient_0...)' * QuatRotation(orient_1...))
+    SVec3(rotation.sx, rotation.sy, rotation.sz) / dt
+end
+
+"""
+    SysState(s::AKM, zoom=1.0; with_springs=true)
 
 Constructor for creating a SysState object from a kite model (KPS3 or KPS4).
 The SysState object can be used either for logging or for displaying the
 system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
+
+The field `spring_force` holds the forces of all springs (see [`spring_forces`](@ref)), or is
+empty if `with_springs` is `false`. A `Logger` for this SysState must be created with the
+same number of segments: `Logger(P, steps; segments=n_springs(s))`, or `Logger(P, steps)`
+with `with_springs=false`.
 """
-function SysState(s::AKM, zoom=1.0)
-    ss = SysState(length(s.pos))
+function SysState(s::AKM, zoom=1.0; with_springs=true)
+    ss = SysState(length(s.pos); segments = with_springs ? n_springs(s) : 0)
     update_sys_state!(ss, s, zoom)
     ss
 end
 
+"""
+    n_springs(s::AKM)
+
+Number of springs of the model: the tether segments and, for KPS4, the springs of the kite.
+"""
+n_springs(s::KPS4) = length(s.springs)
+n_springs(s::KPS3) = s.set.segments
+
+"fields of SysState that KPS3 and KPS4 do not use"
+const UNUSED_FIELDS = (:set_ext_force_x, :set_ext_force_y, :set_ext_force_z, :gamma_distribution,
+                       :flap_angle, :twist_angles, :twist_vel, :pulley_len, :pulley_vel)
+"""fields of SysState that KPS3 does not use: `UNUSED_FIELDS`, the angles of the four-point kite
+and the aerodynamic moment, which is always zero for a point mass"""
+const UNUSED_FIELDS_KPS3 = (UNUSED_FIELDS..., :side_slip, :alpha3, :alpha4,
+                            :aero_moment_KA_x, :aero_moment_KA_y, :aero_moment_KA_z)
+
+"""
+    save_state(filename, ss::SysState; meta_data=Dict(), exclude=KiteModels.UNUSED_FIELDS)
+
+Write the system state `ss` to the YAML file `filename`: the entries of the dictionary
+`meta_data` under the key `meta_data`, and the fields of `ss` under the key `sys_state`, except
+the fields in `exclude`, by default the fields that KPS3 and KPS4 do not use. For KPS3, pass
+`exclude=KiteModels.UNUSED_FIELDS_KPS3` to also leave out `side_slip`, `alpha3` and `alpha4`,
+which it does not have, and the aerodynamic moment `aero_moment_KA_x/y/z`, which is always zero.
+Scalars are written as numbers, vectors as YAML flow sequences, NaN and Inf as `.nan` and
+`.inf`, all other values as quoted strings. The keys of `meta_data` are written as strings,
+quoted unless they are plain identifiers.
+
+Example:
+```julia
+ss = SysState(kps4)
+save_state("output/sys_state.yaml", ss; meta_data=Dict("script" => "test_init_4p"))
+```
+The file can be read with `YAML.load_file("output/sys_state.yaml")`, which returns a
+`Dict` with the keys `meta_data` and `sys_state`; the latter has the field names as keys.
+"""
+function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIELDS)
+    # double-quoted YAML string; escape_string only writes escapes that YAML knows too, e.g.
+    # \n, \" and \e, unlike repr, which writes \$
+    yaml_str(x) = "\"" * escape_string(string(x), ('"',)) * "\""
+    # keys that are plain identifiers are written as they are, all others are quoted, also the
+    # words that YAML reads as a boolean or null
+    function yaml_key(key)
+        str = string(key)
+        plain = occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", str) &&
+                lowercase(str) ∉ ("true", "false", "yes", "no", "on", "off", "y", "n", "null")
+        plain ? str : yaml_str(str)
+    end
+    function yaml_num(x)
+        x isa Real || return yaml_str(x)
+        x isa AbstractFloat || return string(x)
+        isnan(x) && return ".nan"
+        isinf(x) && return x > 0 ? ".inf" : "-.inf"
+        # shortest representation that round-trips, without the type suffix; for Float32 the
+        # exponent is written as f, e.g. 1.0f-5
+        replace(sprint(show, x; context=:typeinfo=>typeof(x)), 'f' => 'e')
+    end
+    yaml_val(x) = x isa AbstractVector ? "[" * join(yaml_num.(x), ", ") * "]" : yaml_num(x)
+    open(filename, "w") do io
+        println(io, "meta_data:", isempty(meta_data) ? " {}" : "")
+        for key in sort!(collect(keys(meta_data)); by=string)
+            println(io, "  ", yaml_key(key), ": ", yaml_val(meta_data[key]))
+        end
+        println(io, "sys_state:")
+        for name in fieldnames(typeof(ss))
+            name in exclude && continue
+            println(io, "  ", name, ": ", yaml_val(getfield(ss, name)))
+        end
+    end
+    nothing
+end
+
 function calc_pre_tension(s::AKM)
-    forces = spring_forces(s)
+    # the pre-tension is the elastic stretch, so the damping force is left out
+    forces = spring_forces(s; damping=false)
     av_force = 0.0
     for i in 1:s.set.segments
         av_force += forces[i]
@@ -752,6 +913,31 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     return integrator
 end
 
+# Copy the acceleration of the kite from the derivative `du` of the state vector of the
+# integrator, which holds the positions of the particles 2:P, then their velocities. Called
+# after each time step; not after init!, because without trim the accelerations of the
+# initial state are -g for KPS4 instead of the real ones, so acc_kite stays zero until then.
+function update_acc_kite!(s::AKM, du)
+    P = length(s.pos)
+    i_kite = s isa KPS4 ? P - 2 : P
+    i = 3 * (P - 1) + 3 * (i_kite - 2)
+    s.acc_kite .= (du[i+1], du[i+2], du[i+3])
+    nothing
+end
+
+
+# Evaluate the residual for the accepted state of the integrator. The solver evaluates it
+# for trial states too, so without this the positions, velocities, forces and the apparent
+# wind stored in the model could belong to a rejected trial state; the number of iterations
+# s.iter is not changed. Called by update_sys_state!, not by next_step!, because it costs
+# about 15 % of a time step.
+function update_caches!(s::AKM, integrator)
+    iter = s.iter
+    u = Vector{SimFloat}(integrator.u)
+    residual!(similar(u), Vector{SimFloat}(integrator.du), u, s, integrator.t)
+    s.iter = iter
+    nothing
+end
 
 """
     next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing
@@ -797,13 +983,24 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
     end
     s.t_0 = integrator.t
     isnothing(s.wm) || update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+    # KPS3: the wind and the heading below belong to the accepted state, not to the last trial
+    # state of the solver
+    isa(s, KPS3) && update_kite_state!(s, integrator.u)
     set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
+    if isa(s, KPS3)
+        # heading for the correction of the influence of gravity on the turn rate, Eq. 30 of
+        # Fechner et al. (2015); kept constant during the time step. The kite frame of KPS3
+        # is built from the apparent wind, so it must be the one of the new wind.
+        s.v_apparent .= s.v_wind - s.vel_kite
+        s.psi = calc_heading(s)
+    end
     s.iter = 0
     if s.set.solver == "IDA"
         Sundials.step!(integrator, dt, true)
     else
         OrdinaryDiffEqCore.step!(integrator, dt, true)
     end
+    update_acc_kite!(s, integrator.du)
     if s.stiffness_factor < 1.0
         s.stiffness_factor+=0.01
         if s.stiffness_factor > 1.0
