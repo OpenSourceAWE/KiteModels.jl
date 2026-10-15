@@ -246,6 +246,11 @@ end
     i_A = set.segments + 2
     @test all(iszero, aero_force[1:i_A-1])
     @test sum(aero_force[i_A:i_A+3]) ≈ R_KA * force rtol=1e-5
+    # the moment is taken about the origin of the KA frame, the centre between C and D
+    pos = [SVector{3}(p) for p in kps4.pos]
+    centre = 0.5 * (pos[i_A+2] + pos[i_A+3])
+    moment_ENU = sum((pos[i] - centre) × aero_force[i] for i in i_A:i_A+3)
+    @test R_KA * moment ≈ moment_ENU rtol=1e-4
 end
 
 @testset "update_sys_state! drag forces" begin

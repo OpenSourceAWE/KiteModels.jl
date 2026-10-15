@@ -506,8 +506,8 @@ end
     calc_aero_force_moment(s::KPS4)
 
 Total aerodynamic force and moment acting on the kite, both resolved in the `KA` body
-frame (aft-right-up). The moment is taken about the centre of mass of the kite particles
-A, B, C and D and includes the pitch damping and steering couples. Uses the positions
+frame (aft-right-up). The moment is taken about the origin of the `KA` (and `KS`) frame, the
+centre between the kite particles C and D, and includes the pitch damping and steering couples. Uses the positions
 `s.pos`, the velocities `s.vel` and the kite reference frame of the last call of
 `calc_aero_forces!`.
 
@@ -517,8 +517,7 @@ function calc_aero_force_moment(s::KPS4)
     i_A = s.set.segments + 2
     pos_A, pos_B = SVec3(s.pos[i_A]),   SVec3(s.pos[i_A+1])
     pos_C, pos_D = SVec3(s.pos[i_A+2]), SVec3(s.pos[i_A+3])
-    m_A, m_B, m_C, m_D = s.masses[i_A], s.masses[i_A+1], s.masses[i_A+2], s.masses[i_A+3]
-    centre = (m_A * pos_A + m_B * pos_B + m_C * pos_C + m_D * pos_D) / (m_A + m_B + m_C + m_D)
+    centre = 0.5 * (pos_C + pos_D) # origin of the KA and KS frames
 
     f_A, f_B, f_C, f_D = aero_point_forces(s)
     force  = f_A + f_B + f_C + f_D
