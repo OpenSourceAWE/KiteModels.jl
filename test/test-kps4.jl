@@ -181,7 +181,9 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
             )
         end
         # @test bytes == 0
-        # Python output
+        # Python output for the tether particles; the forces on the KCU and the kite particles
+        # (last five rows) differ from it, because the kite springs, which are compressed here,
+        # now use rel_damping in compression too
         res=[
             [18550.4729309395152086 18550.6132232745367219 18550.6305627766196267]
             [-0.1986161147506209 0.0819685552924057 0.1166475594582153]
@@ -189,11 +191,11 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
             [-0.1986161147506209 0.0819685552924057 0.1166475594582153]
             [-0.1986161147506209 0.0819685552924057 0.1166475594582153]
             [-0.1986161147506209 0.0819685552924057 0.1166475594582153]
-            [-32417.6381463687685027 -32417.0769770286824496 -32417.0076190203544684]
-            [-20528.0512582440096594 -20527.4900889039272442 -20527.420730895599263]
-            [12986.35257788861054 12986.7734548936750798 12986.8254733999201562]
-            [23289.9810739697131794 23290.5422433097955945 23290.6116013181235758]
-            [-1883.1033393325606085 -1882.5421699924754648 -1882.4728119841502121]
+            [-32029.409822137 -32028.84865279691 -32028.77929478859]
+            [-19253.606487142213 -19253.04531780213 -19252.975959793803]
+            [12537.30578881751 12537.726665822574 12537.778684328818]
+            [22206.46946156257 22207.030630902656 22207.09998891098]
+            [-2013.2180331878835 -2012.6568638477984 -2012.5875058394731]
         ]
         for i = 1:(kps4.set.segments+KiteModels.KITE_PARTICLES+1)
             @test all(res[i, :] .≈ kps4.forces[i])
@@ -627,6 +629,28 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         ]
         for i = 1:(kps4.set.segments+KiteModels.KITE_PARTICLES+1)
             @test isapprox(forces[i], ref_forces[i], atol = 1e-6, rtol = 1e-4)
+        end
+    end
+
+    @testset "test_calc_spring_force" begin
+        local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+        kps4.stiffness_factor = 1.0
+        segments = kps4.set.segments
+        spring = KiteModels.SP(1, 2, 10.0, 1000.0, 2.0)
+        k, c, l_0 = spring.axial_stiffness, spring.axial_damping, spring.length
+        r_c, r_d = kps4.set.rel_compr_stiffness, kps4.set.rel_damping
+        force(norm1, i; damping=true) =
+            KiteModels.calc_spring_force(kps4, spring, norm1, 0.3, segments, i; damping)
+        # tether spring
+        @test force(10.5, 1) ≈ k * 0.5 + c * 0.3
+        @test force(9.5, 1) ≈ 0.1 * k * (-0.5) + c * 0.3
+        # kite spring: higher damping in tension and in compression
+        @test force(10.5, segments + 1) ≈ k * 0.5 + r_d * c * 0.3
+        @test force(9.5, segments + 1) ≈ r_c * k * (-0.5) + r_d * c * 0.3
+        @test force(9.5, segments + 1; damping=false) ≈ r_c * k * (-0.5)
+        # the force is continuous at the unstressed length
+        for i in (1, segments + 1)
+            @test force(l_0 + 1e-9, i) ≈ force(l_0 - 1e-9, i) atol=1e-5
         end
     end
 
