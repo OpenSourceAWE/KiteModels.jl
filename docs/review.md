@@ -9,7 +9,7 @@ Review of the files in `src/` at commit `6fd4c1fe` (2026-10-16), with a focus on
 
 ## Correctness
 
-1. **Compression damping is scaled by the stiffness in KPS3** (`src/KPS3.jl:388`). In the compression branch of `calc_spring_force(::KPS3)`, the code computes `k2 * ((norm1 - L) + c * spring_vel)`, which multiplies the damping term by `0.05 * k`. It should almost certainly be `k2 * (norm1 - L) + c * spring_vel`, which is what KPS4 does. A slack segment closing at 1 m/s gets a damping force that is orders of magnitude too large. The bug dates back to at least v0.8, but `spring_forces` now also reports this value in `SysState.spring_force`. Fixing it may shift reference results.
+1. **Fixed:** **Compression damping is scaled by the stiffness in KPS3** (`src/KPS3.jl:388`). In the compression branch of `calc_spring_force(::KPS3)`, the code computes `k2 * ((norm1 - L) + c * spring_vel)`, which multiplies the damping term by `0.05 * k`. It should almost certainly be `k2 * (norm1 - L) + c * spring_vel`, which is what KPS4 does. A slack segment closing at 1 m/s gets a damping force that is orders of magnitude too large. The bug dates back to at least v0.8, but `spring_forces` now also reports this value in `SysState.spring_force`. Fixing it may shift reference results.
 
 2. **Kite-spring damping jumps at the unstressed length in KPS4** (`src/KPS4.jl:353-361`). A stretched kite spring uses `rel_damping * c`, a compressed one plain `c`. With `rel_damping = 6`, the force is discontinuous at `norm1 == l_0`, which hurts the step control of the DAE solver. This may be intentional, but should be a deliberate choice.
 
