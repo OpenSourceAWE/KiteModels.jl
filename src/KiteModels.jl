@@ -78,6 +78,53 @@ Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
 
+"""
+    struct CubicSpline
+
+Cubic B-spline, created from a `Dierckx.Spline1D` of degree 3 with the boundary condition
+"nearest" (the default), and evaluated in Julia instead of in Fortran, which is about 7 times
+faster. It is used for the lift and drag coefficients `calc_cl` and `calc_cd` of KPS3 and
+KPS4. A `Spline1D` is converted automatically when it is assigned to one of these fields.
+
+Usage:
+```julia
+calc_cl = CubicSpline(Spline1D(set.alpha_cl, set.cl_list))
+cl = calc_cl(5.0)
+```
+"""
+struct CubicSpline
+    "knots"
+    t::Vector{SimFloat}
+    "B-spline coefficients"
+    c::Vector{SimFloat}
+end
+function CubicSpline(spline::Spline1D)
+    spline.k == 3 || throw(ArgumentError("CubicSpline needs a spline of degree 3, not $(spline.k)"))
+    spline.bc == 3 || throw(ArgumentError("CubicSpline needs a spline with the boundary condition \"nearest\""))
+    CubicSpline(copy(spline.t), copy(spline.c))
+end
+Base.convert(::Type{CubicSpline}, spline::Spline1D) = CubicSpline(spline)
+
+# Evaluate the spline at x with the algorithm of de Boor. Outside of the knots, the value at the
+# nearest knot is returned, like Dierckx does with the boundary condition "nearest".
+function (sp::CubicSpline)(x::Real)
+    t, c = sp.t, sp.c
+    n = length(t)
+    x = clamp(SimFloat(x), t[4], t[n-3])
+    # index of the knot interval with t[l] <= x < t[l+1]
+    l = clamp(searchsortedlast(t, x), 4, n - 4)
+    @inbounds begin
+        d0, d1, d2, d3 = c[l-3], c[l-2], c[l-1], c[l]
+        a3 = (x - t[l])   / (t[l+3] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+        a2 = (x - t[l-1]) / (t[l+2] - t[l-1]); d2 = (1 - a2) * d1 + a2 * d2
+        a1 = (x - t[l-2]) / (t[l+1] - t[l-2]); d1 = (1 - a1) * d0 + a1 * d1
+        a3 = (x - t[l])   / (t[l+2] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+        a2 = (x - t[l-1]) / (t[l+1] - t[l-1]); d2 = (1 - a2) * d1 + a2 * d2
+        a3 = (x - t[l])   / (t[l+1] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+    end
+    d3
+end
+
 # Perturbations of the initial state, tried in this order by the steady state solvers: delta
 # shifts all particles sideways by delta [m] and gives them the velocity delta [m/s]. A perturbed
 # start can help the nonlinear solver, but the returned steady state is never perturbed.

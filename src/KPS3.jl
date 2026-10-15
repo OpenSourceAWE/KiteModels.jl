@@ -40,9 +40,9 @@ $(TYPEDFIELDS)
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
     "Function for calculation the lift coefficient, using a spline based on the provided value pairs."
-    calc_cl::Spline1D
+    calc_cl::CubicSpline
     "Function for calculation the drag coefficient, using a spline based on the provided value pairs."
-    calc_cd::Spline1D
+    calc_cd::CubicSpline
     "wind vector at the height of the kite" 
     v_wind::T =           zeros(S, 3)
     "wind vector at reference height" 
