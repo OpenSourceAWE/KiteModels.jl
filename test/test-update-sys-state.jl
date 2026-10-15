@@ -122,6 +122,18 @@ end
     @test ss.azimuth_rate ≈ -0.2 / DT
 end
 
+@testset "update_sys_state! rates without time step" begin
+    # Directly after `init!` (and after the first `next_step!`) `t_0` is zero, so the time
+    # difference is zero; the rates must then be zero instead of Inf or NaN.
+    ss = SysState(kps4)
+    ss.heading -= 0.1
+    ss.azimuth += 0.2
+    update_sys_state!(ss, kps4)
+    @test ss.heading_rate == 0
+    @test ss.azimuth_rate == 0
+    @test all(iszero, ss.turn_rates)
+end
+
 @testset "update_sys_state! KPS3" begin
     kps3 = KPS3(deepcopy(set))
     integrator3 = init!(kps3; prn=false)

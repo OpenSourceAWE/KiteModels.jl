@@ -27,7 +27,8 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using KiteGeometry
 using Rotations
 import Base.zero
-import OrdinaryDiffEqCore.init
+import DiffEqBase
+import DiffEqBase.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
 export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
@@ -572,13 +573,14 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     new_azimuth = calc_azimuth(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
-    ss.azimuth_rate = d_az / dt
+    # dt is zero in the first call after init!, because s.t_0 is the start time of the last step
+    ss.azimuth_rate = dt > 0 ? d_az / dt : 0.0
     ss.azimuth = new_azimuth
     ss.winch_force[1] = winch_force(s)
     new_heading = calc_heading(s)
     # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
     d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
-    ss.heading_rate = d_psi / dt
+    ss.heading_rate = dt > 0 ? d_psi / dt : 0.0
     ss.heading = new_heading
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
@@ -737,7 +739,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
 
     differential_vars = ones(Bool, length(y0))
     prob    = DAEProblem{true}((res, yd, y, p, t) -> Base.invokelatest(residual!, res, yd, y, p, t), yd0, y0, tspan, s; differential_vars)
-    integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
+    integrator = DiffEqBase.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
