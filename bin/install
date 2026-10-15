@@ -5,6 +5,7 @@
 _yes_to_all=false
 update=false
 run_tests=false
+_desired_julia=""
 
 print_usage() {
     echo "Usage:"
@@ -15,6 +16,7 @@ print_usage() {
     echo "./install --update -y"
     echo "./install --test"
     echo "./install --update -y --test"
+    echo "./install --version 1.12 | --version 1.13 | +1.12 | +1.13"
     echo "./install -h"
     echo "./install --help"
 }
@@ -36,6 +38,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --test)
             run_tests=true
+            shift
+            ;;
+        --version)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --version requires a value (e.g. --version 1.12)"
+                exit 1
+            fi
+            _desired_julia="$2"
+            shift 2
+            ;;
+        +*)
+            _desired_julia="${1#+}"
             shift
             ;;
         *)
@@ -82,49 +96,57 @@ if (( _available_kb < _required_kb )); then
 fi
 unset _required_kb _available_kb _available_gb
 
-# Ask which Julia version to use
-# Default to 1.13 if it is already installed and is the current default, otherwise 1.12
-if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
-    _default_choice=2
-    _default_julia="1.13"
+if [[ -n "$_desired_julia" ]]; then
+    # Explicit version: use it for this run only, leave the juliaup default unchanged
+    echo "Installing Julia ${_desired_julia} (juliaup default left unchanged)..."
+    juliaup add "${_desired_julia}"
+    echo
 else
-    _default_choice=1
-    _default_julia="1.12"
-fi
+    # Ask which Julia version to use
+    # Default to 1.13 if it is already installed and is the current default, otherwise 1.12
+    if juliaup status 2>/dev/null | grep '^\s*\*' | grep -q '1\.13'; then
+        _default_choice=2
+        _default_julia="1.13"
+    else
+        _default_choice=1
+        _default_julia="1.12"
+    fi
 
-if [[ $_yes_to_all == true ]]; then
-    _julia_choice=""
-    echo "Using Julia version: ${_default_julia}"
-else
-    echo "Which Julia version do you want to use?"
-    echo "  1) Julia 1.12"
-    echo "  2) Julia 1.13"
-    read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
-fi
+    if [[ $_yes_to_all == true ]]; then
+        _julia_choice=""
+        echo "Using Julia version: ${_default_julia}"
+    else
+        echo "Which Julia version do you want to use?"
+        echo "  1) Julia 1.12"
+        echo "  2) Julia 1.13"
+        read -rp "Enter 1 or 2 [default: ${_default_choice}]: " _julia_choice
+    fi
 
-case "${_julia_choice}" in
-    1)
-        _desired_julia="1.12"
-        ;;
-    2)
-        _desired_julia="1.13"
-        ;;
-    "")
-        _desired_julia="${_default_julia}"
-        ;;
-    *)
-        echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
-        exit 1
-        ;;
-esac
-echo "Installing and activating Julia ${_desired_julia}..."
-juliaup add "${_desired_julia}"
-juliaup default "${_desired_julia}"
-echo "Julia ${_desired_julia} is now the default."
-echo
+    case "${_julia_choice}" in
+        1)
+            _desired_julia="1.12"
+            ;;
+        2)
+            _desired_julia="1.13"
+            ;;
+        "")
+            _desired_julia="${_default_julia}"
+            ;;
+        *)
+            echo "Invalid choice: '${_julia_choice}'. Please enter 1 or 2."
+            exit 1
+            ;;
+    esac
+    echo "Installing and activating Julia ${_desired_julia}..."
+    juliaup add "${_desired_julia}"
+    juliaup default "${_desired_julia}"
+    echo "Julia ${_desired_julia} is now the default."
+    echo
+fi
+JULIA="julia +${_desired_julia}"
 
 # Detect Julia version
-julia_version=$(julia --version | awk '{print($3)}')
+julia_version=$($JULIA --version | awk '{print($3)}')
 julia_major=${julia_version:0:3}
 if [[ $julia_major == "1.1" ]]; then
     julia_major=${julia_version:0:4} 
@@ -143,7 +165,7 @@ if Base.find_package("Revise") === nothing
 end
 '
 
-julia --startup-file=no -e "$_revise_code"
+$JULIA --startup-file=no -e "$_revise_code"
 unset _revise_code
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -213,7 +235,7 @@ if [[ $update == true ]]; then
 else
     echo "Instantiating project..."
 fi
-_ec=0; KITEMODELS_INSTALL_UPDATE="$update" julia --project -e '
+_ec=0; KITEMODELS_INSTALL_UPDATE="$update" $JULIA --project -e '
 using Pkg
 # Resolve in normal mode, update in --update mode. Both paths regenerate a manifest
 # for the current Julia version and avoid stale/cross-version manifest issues.
@@ -275,7 +297,7 @@ run_precompile() {
     local _plog
     _plog=$(mktemp)
     set +e
-    julia ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
+    $JULIA ${_proj} -e 'using Pkg; Pkg.precompile()' 2>&1 | tee "$_plog"
     # Save PIPESTATUS[0] without 'local' to avoid resetting PIPESTATUS
     _precompile_rc=${PIPESTATUS[0]}
     set -e
@@ -305,7 +327,7 @@ echo "Julia $julia_major: instantiating all sub-projects..."
 # Resolve sub-projects independently to avoid version conflicts when the main
 # manifest contains versions newer than the local registry snapshot.
 rm -f examples/Manifest*.toml test/Manifest*.toml examples_3d/Manifest*.toml
-_ec=0; julia --project=examples -e '
+_ec=0; $JULIA --project=examples -e '
 using Pkg
 try
     Pkg.resolve()
@@ -327,7 +349,7 @@ if [[ $_ec -eq 2 ]]; then RETRIED_RESOLVES+=("examples (1.12)")
 elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples (1.12)"); fi
 echo "Precompiling examples project..."
 run_precompile "--project=examples"
-_ec=0; julia --project=test -e '
+_ec=0; $JULIA --project=test -e '
 using Pkg
 try
     Pkg.resolve()
@@ -351,13 +373,13 @@ echo "Precompiling test project..."
 run_precompile "--project=test"
 if [[ $run_tests == true ]]; then
     echo "Running the tests..."
-    if ! julia --project -e 'using Pkg; Pkg.test()'; then
+    if ! $JULIA --project -e 'using Pkg; Pkg.test()'; then
         echo "ERROR: Tests failed. Aborting install."
         exit 1
     fi
 fi
 echo "Precompiling examples_3d project..."
-_ec=0; julia --project=examples_3d -e '
+_ec=0; $JULIA --project=examples_3d -e '
 using Pkg
 try
     Pkg.resolve()
@@ -380,7 +402,7 @@ elif [[ $_ec -ne 0 ]]; then FAILED_RESOLVES+=("examples_3d (1.12)"); fi
 run_precompile "--project=examples_3d"
 # Docs resolves independently (different dep tree; seeding from main causes missing extensions)
 rm -f docs/Manifest*.toml
-_ec=0; julia --project=docs -e '
+_ec=0; $JULIA --project=docs -e '
 using Pkg
 try
     Pkg.resolve()
@@ -418,9 +440,9 @@ if [ -f "docs/Manifest.toml" ]; then
     mv docs/Manifest.toml docs/Manifest-v${julia_major}.toml
     echo "Renamed docs/Manifest.toml to docs/Manifest-v${julia_major}.toml"
 fi
-julia --project=examples -e 'using MakieControlPlots, DSP' || true
-julia --project=examples_3d -e 'using MakieControlPlots' || true
-julia --project=examples_3d -e 'using KiteViewers' || true
+$JULIA --project=examples -e 'using MakieControlPlots, DSP' || true
+$JULIA --project=examples_3d -e 'using MakieControlPlots' || true
+$JULIA --project=examples_3d -e 'using KiteViewers' || true
 
 echo
 if [[ ${#FAILED_RESOLVES[@]} -eq 0 && ${#RETRIED_RESOLVES[@]} -eq 0 ]]; then
