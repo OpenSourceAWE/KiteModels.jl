@@ -174,6 +174,20 @@ end
     @test ss.azimuth_rate ≈ -0.2 / DT
 end
 
+@testset "update_sys_state! rates without time step" begin
+    # Directly after `init!` (and after the first `next_step!`) `t_0` is zero, so the time
+    # difference is zero; the rates must then be zero instead of Inf or NaN.
+    ss = SysState(kps4)
+    ss.heading -= 0.1
+    ss.azimuth += 0.2
+    update_sys_state!(ss, kps4)
+    @test ss.heading_rate == 0
+    @test ss.azimuth_rate == 0
+    # KPS4: the turn rates are the angular velocity of the kite frame, which needs no time step
+    @test ss.turn_rates ≈ KiteModels.calc_turn_rates(kps4)
+    @test all(isfinite, ss.turn_rates)
+end
+
 @testset "update_sys_state! aerodynamic force and moment" begin
     kps4.steering = 0.0
     next_step!(kps4, integrator; set_speed=0, dt=DT)
