@@ -102,11 +102,11 @@ end
 elev = set.elevation
 depower = DEPOWER
 
-logger = Logger(set.segments + 5, STEPS)
 set.depower = 100*depower
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
+logger = Logger(set.segments + 5, STEPS; segments=n_springs(kps4))
 set.elevations[1] += 5
 set.v_wind = V_WIND_200
 integrator = KiteModels.init!(kps4; prn=STATISTIC)

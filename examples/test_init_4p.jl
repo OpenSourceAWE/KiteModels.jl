@@ -1,7 +1,14 @@
 # Copyright (c) 2022, 2024 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# plot the lift and drag coefficients as function of angle of attack
+# Test the initialization of the four-point kite model (KPS4).
+# Initializes the model from a steady-state solution, runs it for 80 time steps and prints
+# the lift, drag, elevation, orientation, angles of attack and wind speeds of the kite.
+#
+# After 80 time steps, the system state is written to
+# output/sys_state_test_init_4p.yaml, with the script name, the simulation time and
+# the date and time of saving as meta data.
+
 using Printf
 using Pkg
 if dirname(Pkg.project().path) != @__DIR__
@@ -10,8 +17,6 @@ end
 using KiteModels, KitePodModels, LinearAlgebra, Rotations
 
 set::Settings = deepcopy(load_settings("system.yaml"))
-
-using MakieControlPlots
 
 set.abs_tol=0.00006
 set.rel_tol=0.000001
@@ -23,7 +28,6 @@ dt::Float64 = 0.05
 set.solver="DFBDF" # IDA or DFBDF
 set.v_reel_out = 1.0 # initial reel-out speed [m/s]
 STEPS = 1
-const PLOT = true
 STATISTIC = false
 UPWIND_DIR = -170.0 # Zero is at north; clockwise positive
 # end of user parameter section #
@@ -31,16 +35,28 @@ UPWIND_DIR = -170.0 # Zero is at north; clockwise positive
 elev = set.elevation
 set.v_wind = V_WIND # 25
 set.upwind_dir = UPWIND_DIR
-logger = Logger(set.segments + 5, STEPS)
 
 kcu::KCU = KCU(set)
 kps4::KPS4 = KPS4(kcu)
+logger = Logger(set.segments + 5, STEPS; segments=n_springs(kps4))
 integrator = KiteModels.init!(kps4; prn=STATISTIC, trim=true)
+t_sim = 0.0 # wall-clock time of the last time step [s]
 for _ in 1:80
-    next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out, upwind_dir=deg2rad(UPWIND_DIR), dt)
+    global t_sim = @elapsed next_step!(kps4, integrator; set_speed=kps4.set.v_reel_out,
+                                       upwind_dir=deg2rad(UPWIND_DIR), dt)
 end
 lift, drag = lift_drag(kps4)
 sys_state::SysState = KiteModels.SysState(kps4)
+sys_state.t_sim = t_sim
+# SysState.time is the start time of the last time step; save the time of the state
+sys_state.time = integrator.t
+
+output_dir = joinpath(dirname(@__DIR__), "output")
+mkpath(output_dir)
+script_name = splitext(basename(@__FILE__))[1]
+meta_data = Dict("script" => script_name, "time" => sys_state.time,
+                 "date_time" => Libc.strftime("%Y-%m-%d_%H:%M:%S", time()))
+save_state(joinpath(output_dir, "sys_state_$(script_name).yaml"), sys_state; meta_data)
 log!(logger, sys_state)
 elev = rad2deg(logger.elevation_vec[end])
 println("Lift: $lift, Drag: $drag, elev: $elev, Iterations: $(kps4.iter)")

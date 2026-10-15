@@ -98,11 +98,11 @@ function simulate(kps4, integrator, logger, steps, f_ex, sin_amplitude)
 end
 
 function sim_and_plot(set; depower=DEPOWER, f_ex)
-    logger = Logger(set.segments + 5, STEPS)
     set.depower = 100*depower
     set.elevation = 67.0
     kcu = KCU(set)
     kps4::KPS4 = KPS4(kcu)
+    logger = Logger(set.segments + 5, STEPS; segments=n_springs(kps4))
     integrator = KiteModels.init!(kps4; prn=STATISTIC)
     set_depower_steering(kps4.kcu, depower, 0.0)
     # scale excitation amplitude to the steady-state winch torque for any kite size

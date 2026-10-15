@@ -36,7 +36,7 @@ if PLOT
     using MakieControlPlots
 end
 
-logger = Logger(set.segments + 5, STEPS)
+logger = Logger(set.segments + 5, STEPS; segments=n_springs(kps4))
 
 function simulate(integrator, steps, plot=false)
     iter = 0

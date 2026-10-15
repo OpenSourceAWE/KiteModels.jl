@@ -89,6 +89,22 @@ $(TYPEDFIELDS)
     pos::SVector{P, KVec3} = zeros(SVector{P, KVec3})
     "velocity vector of the kite"
     vel_kite::T =          zeros(S, 3)
+    "acceleration vector of the kite, updated once per time step by next_step!"
+    acc_kite::T =          zeros(S, 3)
+    "time of the last update of the rates by update_sys_state! [s]; -Inf before the first one"
+    t_last::S =            -Inf
+    "azimuth [rad] at the time `t_last`"
+    azimuth_last::S =      zero(S)
+    "heading [rad] at the time `t_last`"
+    heading_last::S =      zero(S)
+    "orientation of the kite (quaternion, KA convention) at the time `t_last`"
+    orient_last::MVector{4, S} = zeros(MVector{4, S})
+    "azimuth rate [rad/s], updated by update_sys_state!"
+    azimuth_rate::S =      zero(S)
+    "heading rate [rad/s], updated by update_sys_state!"
+    heading_rate::S =      zero(S)
+    "turn rates of the kite in the KA body frame [rad/s], updated by update_sys_state!"
+    turn_rates::T =        zeros(S, 3)
     "area of one tether segment [m²]"
     seg_area::S =         zero(S)
     "total actual bridle area [m²]"
@@ -107,7 +123,7 @@ $(TYPEDFIELDS)
     param_cd::S =         1.0
     "correction term for the steering, in paper named i_(s,c), Eq. 30"
     cor_steering::S =     zero(S)
-    "azimuth angle in radian; initial value is zero"
+    "heading angle in radian, updated once per time step by next_step!; initial value is zero"
     psi::S =              zero(S)
     "elevation angle in radian; initial value about 70 degrees"
     beta::S =             deg2rad(se().elevation)
@@ -157,6 +173,13 @@ function clear!(s::KPS3)
     s.v_wind_tether .= [Float64(s.set.v_wind), 0, 0]
     s.v_wind_vert   = 0.0
     s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
+    s.acc_kite      .= [0.0, 0, 0]
+    s.t_last = -Inf
+    s.orient_last   .= 0.0
+    s.azimuth_rate = 0.0
+    s.heading_rate = 0.0
+    s.turn_rates    .= 0.0
+    s.psi = 0.0
     height = sin(deg2rad(s.set.elevation::Float64)) * s.set.l_tether::Float64
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
     s.alpha_depower = 0.0
@@ -202,18 +225,97 @@ function KPS3(set::Settings)
 end
 
 """
-    calc_drag(s::KPS3, v_segment, unit_vector, rho, last_tether_drag, v_app_perp)
+    calc_drag(s::KPS3, v_segment, unit_vector, rho, v_app_perp, area)
 
-Calculate the drag of one tether segment, result stored in parameter `last_tether_drag`.
-Return the norm of the apparent wind velocity.
+Calculate the drag of one tether segment, result stored in `s.last_tether_drag` and
+`v_app_perp`. Return the norm of the apparent wind velocity of the segment.
 """
-function calc_drag(s::KPS3, v_segment, unit_vector, rho, v_app_perp, area)
-    s.v_apparent .= s.v_wind_tether - v_segment
-    v_app_norm = norm(s.v_apparent)
-    v_app_perp .= s.v_apparent .- s.v_apparent ⋅ unit_vector .* unit_vector
-    s.last_tether_drag .= -0.5 * s.set.cd_tether * rho * norm(v_app_perp) * area .* v_app_perp
-    v_app_norm
-end 
+@inline function calc_drag(s::KPS3, v_segment, unit_vector, rho, v_app_perp, area)
+    # s.v_apparent is not changed; it is the apparent wind at the kite from calc_aero_forces
+    drag, v_apparent, v_app_perp_ = calc_drag_force(s, v_segment, unit_vector, rho, area)
+    v_app_perp .= v_app_perp_
+    s.last_tether_drag .= drag
+    norm(v_apparent)
+end
+
+"""
+    calc_drag_force(s::KPS3, v_segment, unit_vector, rho, area)
+
+Calculate the drag of one tether segment or of the bridle without changing `s`. Like
+`s.forces`, the drag force has the opposite sign of the physical force.
+
+Returns a tuple `(drag, v_apparent, v_app_perp)` of the drag force, the apparent wind velocity
+and its component perpendicular to `unit_vector`.
+"""
+@inline function calc_drag_force(s::KPS3, v_segment, unit_vector, rho, area)
+    v_apparent = SVec3(s.v_wind_tether) - SVec3(v_segment)
+    unit_vector = SVec3(unit_vector)
+    v_app_perp = v_apparent - v_apparent ⋅ unit_vector * unit_vector
+    drag = -0.5 * s.set.cd_tether * rho * norm(v_app_perp) * area * v_app_perp
+    drag, v_apparent, v_app_perp
+end
+
+"""
+    particle_velocities(s::KPS3)
+
+Velocities of the particles in ENU from the state vector of the integrator; zero before
+`init!`.
+
+Returns an `SVector` with one `SVec3` per particle in [m/s].
+"""
+function particle_velocities(s::KPS3{S, T, P}) where {S, T, P}
+    isnothing(s.integrator) && return zeros(SVector{P, SVec3})
+    u = s.integrator.u
+    # the state vector holds the positions of the particles 2:P, then their velocities
+    vel(i) = i == 1 ? zero(SVec3) : SVec3(u[3*(P-1)+3*(i-2)+1], u[3*(P-1)+3*(i-2)+2],
+                                          u[3*(P-1)+3*(i-2)+3])
+    SVector{P, SVec3}(ntuple(vel, Val(P)))
+end
+
+# Set the positions of the particles and the velocity of the kite from the state vector `u`
+# of the integrator. Between two calls of residual! they belong to the last trial state of
+# the solver.
+function update_kite_state!(s::KPS3{S, T, P}, u) where {S, T, P}
+    # the state vector holds the positions of the particles 2:P, then their velocities
+    for i in 2:P
+        s.pos[i] .= (u[3*(i-2)+1], u[3*(i-2)+2], u[3*(i-2)+3])
+    end
+    i_vel = 3*(P-1) + 3*(P-2)
+    s.vel_kite .= (u[i_vel+1], u[i_vel+2], u[i_vel+3])
+    nothing
+end
+
+"""
+    tether_drag_forces(s::KPS3)
+
+Drag forces of the tether and the bridle on each particle in ENU, for the positions `s.pos`
+and the velocities of `particle_velocities`, distributed on the particles as in
+`residual!`.
+
+Returns an `SVector` with one `SVec3` per particle in [N].
+"""
+function tether_drag_forces(s::KPS3{S, T, P}) where {S, T, P}
+    forces = zeros(MVector{P, SVec3})
+    vel = particle_velocities(s)
+    for i in P:-1:2
+        pos1, pos2 = SVec3(s.pos[i]), SVec3(s.pos[i-1])
+        segment = pos1 - pos2
+        norm1 = norm(segment)
+        unit_vector = segment / norm1
+        rho = calc_rho(s.am, 0.5 * (pos1[3] + pos2[3]))
+        av_vel = 0.5 * (vel[i] + vel[i-1])
+        drag, _, _ = calc_drag_force(s, av_vel, unit_vector, rho, norm1 * s.set.d_tether/1000.0)
+        # the force vectors of KPS3 have the opposite sign of the physical forces
+        forces[i]   -= 0.5 * drag
+        forces[i-1] -= 0.5 * drag
+        if i == P
+            bridle_area = s.set.l_bridle * s.set.d_line/1000.0
+            bridle_drag, _, _ = calc_drag_force(s, av_vel, unit_vector, rho, bridle_area)
+            forces[i] -= bridle_drag
+        end
+    end
+    SVector(forces)
+end
 
 #     pos_kite:     position of the kite
 #     rho:          air density [kg/m^3]
@@ -268,6 +370,24 @@ function pos_kite(s::KPS3)
     s.pos[end]
 end
 
+"""
+    calc_spring_force(s::KPS3, norm1, spring_vel; damping=true)
+
+Scalar force of a tether segment with the length `norm1` [m] and the elongation rate
+`spring_vel` [m/s], positive for tension: the elastic force, with a reduced stiffness under
+compression, plus the damping force. The residual and [`spring_forces`](@ref) use it.
+"""
+@inline function calc_spring_force(s::KPS3, norm1, spring_vel; damping=true)
+    k = s.axial_stiffness * s.stiffness_factor
+    c = damping ? s.axial_damping : zero(s.axial_damping)
+    if norm1 - s.segment_length > 0.0
+        return k * (norm1 - s.segment_length) + c * spring_vel
+    else
+        k2 = 0.05 * k # compression stiffness tether segments
+        return k2 * ((norm1 - s.segment_length) + c * spring_vel)
+    end
+end
+
 # Calculate the vector res1, that depends on the velocity and the acceleration.
 # The drag force of each segment is distributed equally on both particles.
 function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
@@ -282,15 +402,11 @@ function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
     # # calculate the relative velocity in the direction of the spring (=segment)
     spring_vel = s.unit_vector ⋅ rel_vel
 
-    k2 = 0.05 * s.axial_stiffness * s.stiffness_factor             # compression stiffness tether segments
-    if norm1 - s.segment_length > 0.0
-        s.spring_force .= (s.axial_stiffness * s.stiffness_factor * (norm1 - s.segment_length) + s.axial_damping * spring_vel) .* s.unit_vector
-    else
-        s.spring_force .= k2 * ((norm1 - s.segment_length) + (s.axial_damping * spring_vel)) .* s.unit_vector
-    end
+    s.spring_force .= calc_spring_force(s, norm1, spring_vel) .* s.unit_vector
     s.seg_area = norm1 * s.set.d_tether/1000.0
     s.last_v_app_norm_tether = calc_drag(s, s.av_vel, s.unit_vector, rho, s.v_app_perp, s.seg_area)
-    s.force .= s.spring_force + 0.5 * s.last_tether_drag
+    half_drag = 0.5 * SVec3(s.last_tether_drag)
+    s.force .= s.spring_force + half_drag
 
     if i == s.set.segments+1 # add the drag of the bridle lines
         s.bridle_area =  s.set.l_bridle * s.set.d_line/1000.0
@@ -299,7 +415,7 @@ function calc_res(s::KPS3, pos1, pos2, vel1, vel2, mass, veld, result, i)
     end
    
     s.total_forces .= s.force + s.last_force
-    s.last_force .= 0.5 * s.last_tether_drag - s.spring_force
+    s.last_force .= half_drag - s.spring_force
     s.forces[i] .= s.total_forces
     acc = s.total_forces ./ mass # create the vector of the spring acceleration
     # result .= veld - (s.acc + SVector(0,0, -G_EARTH)) # Python code, wrong
@@ -443,7 +559,6 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
     else
         res[end] = v_reel_outd
     end
-    s.vel_kite .= vel[end-2]
     s.v_reel_out = v_reel_out
     # @assert ! isnan(norm(res))
     s.iter += 1
@@ -524,14 +639,20 @@ function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=no
 end
 
 """
-    spring_forces(s::AKM)
+    spring_forces(s::AKM; damping=true)
 
-Return an array of the scalar spring forces of all tether segments.
+Return an array of the scalar spring forces of all tether segments [N], positive for tension,
+and for KPS4 also of the springs of the kite. They are the forces of the residual for the
+current positions and velocities, including the damping force, unless `damping=false`.
 """
-function spring_forces(s::KPS3)
+function spring_forces(s::KPS3; damping=true)
+    vel = particle_velocities(s)
     forces = zeros(SimFloat, s.set.segments)
     for i in 1:s.set.segments
-        forces[i] =  s.axial_stiffness * s.stiffness_factor * (norm(s.pos[i+1] - s.pos[i]) - s.segment_length)
+        segment = s.pos[i+1] - s.pos[i]
+        norm1 = norm(segment)
+        spring_vel = (segment / norm1) ⋅ (vel[i+1] - vel[i])
+        forces[i] = calc_spring_force(s, norm1, spring_vel; damping)
     end
     forces
 end

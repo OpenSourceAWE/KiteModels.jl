@@ -51,6 +51,7 @@ cl_cd
 reel_out_speed
 winch_force
 spring_forces
+n_springs
 lift_drag
 lift_over_drag
 v_wind_kite
@@ -59,6 +60,16 @@ orient_euler
 calc_orient_quat
 states
 SysState
+```
+
+## Saving the system state
+
+The system state of one time step can be saved as human-readable YAML file, for example to
+inspect it or to compare two simulations. To log a whole simulation, use a `Logger` from
+KiteUtils instead.
+
+```@docs
+save_state
 ```
 
 ## High level simulation interface
@@ -87,7 +98,18 @@ calc_drag
 calculate_rotational_inertia!
 calc_set_cl_cd!
 calc_aero_forces!
+calc_aero_forces
+calc_aero_force_moment
+aero_point_forces
+calc_turn_rates
 calc_particle_forces!
+calc_spring_force
+calc_drag_forces
+calc_drag_force
+tether_drag_forces
+particle_velocities
+UNUSED_FIELDS
+UNUSED_FIELDS_KPS3
 inner_loop!
 loop!
 make_jac
