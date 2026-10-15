@@ -116,6 +116,16 @@ $(TYPEDFIELDS)
     vel_kite::T =          zeros(S, 3)
     "acceleration vector of the kite, updated once per time step by next_step!"
     acc_kite::T =          zeros(S, 3)
+    "time of the last update of the rates by update_sys_state! [s]; -Inf before the first one"
+    t_last::S =            -Inf
+    "azimuth [rad] at the time `t_last`"
+    azimuth_last::S =      zero(S)
+    "heading [rad] at the time `t_last`"
+    heading_last::S =      zero(S)
+    "azimuth rate [rad/s], updated by update_sys_state!"
+    azimuth_rate::S =      zero(S)
+    "heading rate [rad/s], updated by update_sys_state!"
+    heading_rate::S =      zero(S)
     "unstressed segment length [m]"
     segment_length::S =           0.0
     "lift coefficient of the kite, depending on the angle of attack"
@@ -223,6 +233,9 @@ function clear!(s::KPS4)
     s.last_force .= [0.0, 0, 0]
     s.vel_kite .= [0.0, 0, 0]
     s.acc_kite .= [0.0, 0, 0]
+    s.t_last = -Inf
+    s.azimuth_rate = 0.0
+    s.heading_rate = 0.0
     s.x .= [0.0, 0, 0]
     s.y .= [0.0, 0, 0]
     s.z .= [0.0, 0, 0]

@@ -182,17 +182,23 @@ end
 end
 
 @testset "update_sys_state! rates" begin
-    ss = SysState(kps4)
-    azimuth_0, heading_0, time_0 = ss.azimuth, ss.heading, ss.time
+    SysState(kps4)
+    # the previous angles and their time are kept in the model, in full precision
+    azimuth_0, heading_0, time_0 = kps4.azimuth_last, kps4.heading_last, kps4.t_last
+    @test azimuth_0 ≈ calc_azimuth(kps4)
+    @test heading_0 ≈ calc_heading(kps4)
+    @test time_0 == integrator.t
     next_step!(kps4, integrator; set_speed=0, dt=DT)
-    update_sys_state!(ss, kps4)
-    # the fresh angles are needed in full precision; the ones stored in `ss` are Float32; read
-    # them after update_sys_state!, which evaluates the model for the accepted state
+    ss = SysState(kps4)
+    # read the fresh angles after update_sys_state!, which evaluates the model for the
+    # accepted state
     azimuth_1, heading_1 = calc_azimuth(kps4), calc_heading(kps4)
-    dt = ss.time - time_0
+    dt = kps4.t_last - time_0
     @test dt ≈ DT
     @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt
     @test ss.heading_rate ≈ wrap(heading_1 - heading_0) / dt
+    @test ss.azimuth_rate != 0
+    @test ss.heading_rate != 0
     # KPS4: the turn rates are the angular velocity of the kite frame
     @test ss.turn_rates ≈ KiteModels.calc_turn_rates(kps4)
 end
@@ -200,27 +206,51 @@ end
 @testset "update_sys_state! rates at the wrap boundary" begin
     # A previous sample one full turn away from the current angle is the same angle:
     # the shortest-angle difference must see 0.1 rad, not 0.1 - 2pi.
+    SysState(kps4)
+    kps4.t_last = integrator.t - DT
+    kps4.heading_last = calc_heading(kps4) - 0.1 - 2pi
+    kps4.azimuth_last = calc_azimuth(kps4) + 0.2 + 2pi
     ss = SysState(kps4)
-    ss.time = kps4.t_0 - DT
-    ss.heading = calc_heading(kps4) - 0.1 - 2pi
-    ss.azimuth = calc_azimuth(kps4) + 0.2 + 2pi
-    update_sys_state!(ss, kps4)
     @test ss.heading_rate ≈ 0.1 / DT
     @test ss.azimuth_rate ≈ -0.2 / DT
 end
 
 @testset "update_sys_state! rates without time step" begin
-    # Directly after `init!` (and after the first `next_step!`) `t_0` is zero, so the time
-    # difference is zero; the rates must then be zero instead of Inf or NaN.
+    # a further update at the same time keeps the rates, also with a new SysState, instead of
+    # dividing by a zero time difference
+    ss_0 = SysState(kps4)
     ss = SysState(kps4)
-    ss.heading -= 0.1
-    ss.azimuth += 0.2
-    update_sys_state!(ss, kps4)
-    @test ss.heading_rate == 0
-    @test ss.azimuth_rate == 0
+    @test ss.heading_rate == ss_0.heading_rate
+    @test ss.azimuth_rate == ss_0.azimuth_rate
+    @test isfinite(ss.heading_rate)
+    @test isfinite(ss.azimuth_rate)
     # KPS4: the turn rates are the angular velocity of the kite frame, which needs no time step
     @test ss.turn_rates ≈ KiteModels.calc_turn_rates(kps4)
     @test all(isfinite, ss.turn_rates)
+    # the first update after init! has no previous angles, so the rates are zero
+    s = KPS4(deepcopy(set))
+    init!(s; prn=false)
+    ss = SysState(s)
+    @test ss.heading_rate == 0
+    @test ss.azimuth_rate == 0
+end
+
+@testset "update_sys_state! rates with a new SysState in each step" begin
+    # a fresh SysState starts with the angles and the time zero; reading the previous angles
+    # from it gave the angles divided by t_0
+    s = KPS4(deepcopy(set))
+    integ = init!(s; prn=false)
+    ss_reused = SysState(s)
+    set_depower_steering(s.kcu, 0.25, 0.3)
+    for _ in 1:20
+        next_step!(s, integ; set_speed=0, dt=DT)
+        update_sys_state!(ss_reused, s)
+        ss_new = SysState(s)
+        @test ss_new.heading_rate == ss_reused.heading_rate
+        @test ss_new.azimuth_rate == ss_reused.azimuth_rate
+    end
+    @test abs(ss_reused.heading_rate) > 0.1
+    @test abs(ss_reused.heading_rate) < 10
 end
 
 @testset "update_sys_state! aerodynamic force and moment" begin
@@ -352,13 +382,15 @@ end
     @test kps3.vel_kite ≈ integrator3.u[i_vel+1:i_vel+3]
     @test ss.vel_kite ≈ kps3.vel_kite
 
-    azimuth_0, heading_0, time_0 = ss.azimuth, ss.heading, ss.time
+    # the previous angles are kept in the model in full precision
+    azimuth_0, heading_0, time_0 = kps3.azimuth_last, kps3.heading_last, kps3.t_last
     next_step!(kps3, integrator3; set_speed=0, dt=DT)
     update_sys_state!(ss, kps3)
     azimuth_1, heading_1 = calc_azimuth(kps3), calc_heading(kps3)
-    dt = ss.time - time_0
-    @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt
-    @test ss.heading_rate ≈ wrap(heading_1 - heading_0) / dt
+    dt = kps3.t_last - time_0
+    @test dt ≈ DT
+    @test ss.azimuth_rate ≈ wrap(azimuth_1 - azimuth_0) / dt atol=1e-6
+    @test ss.heading_rate ≈ wrap(heading_1 - heading_0) / dt atol=1e-6
 end
 
 @testset "update_sys_state! KPS3 forces and velocities" begin
@@ -414,6 +446,33 @@ end
     @test ss.turn_rates ≈ turn_rates rtol=1e-3
     @test SVector(ss.turn_rate_x[1], ss.turn_rate_y[1], ss.turn_rate_z[1]) ≈ ss.turn_rates
     @test norm(turn_rates) > 0.1
+    # a second update in the same time step keeps the turn rates
+    update_sys_state!(ss, kps3)
+    @test ss.turn_rates ≈ turn_rates rtol=1e-3
+end
+
+@testset "update_sys_state! KPS3 turn rates with a new SysState in each step" begin
+    # the previous orientation is kept in the model, not in the SysState, so the result does
+    # not depend on whether the SysState is reused
+    kps3 = KPS3(deepcopy(set))
+    integrator3 = init!(kps3; prn=false)
+    ss_reused = SysState(kps3)
+    set_depower_steering(kps3.kcu, 0.25, 0.3)
+    orient_prev = QuatRotation(fromKS2KA(calc_orient_quat(kps3))...)
+    for i in 1:40
+        next_step!(kps3, integrator3; set_speed=0, dt=DT)
+        update_sys_state!(ss_reused, kps3)
+        ss_new = SysState(kps3)
+        @test ss_new.turn_rates ≈ ss_reused.turn_rates
+        orient = QuatRotation(fromKS2KA(calc_orient_quat(kps3))...)
+        # a fresh SysState starts at the identity orientation and time zero; reading the
+        # previous orientation from it gave the absolute attitude divided by t_0
+        rotation = RotationVec(orient_prev' * orient)
+        turn_rates = SVector(rotation.sx, rotation.sy, rotation.sz) / DT
+        @test ss_new.turn_rates ≈ turn_rates rtol=1e-3 atol=1e-4
+        orient_prev = orient
+    end
+    @test norm(ss_reused.turn_rates) > 0.1
 end
 
 nothing

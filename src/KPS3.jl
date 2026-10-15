@@ -91,6 +91,20 @@ $(TYPEDFIELDS)
     vel_kite::T =          zeros(S, 3)
     "acceleration vector of the kite, updated once per time step by next_step!"
     acc_kite::T =          zeros(S, 3)
+    "time of the last update of the rates by update_sys_state! [s]; -Inf before the first one"
+    t_last::S =            -Inf
+    "azimuth [rad] at the time `t_last`"
+    azimuth_last::S =      zero(S)
+    "heading [rad] at the time `t_last`"
+    heading_last::S =      zero(S)
+    "orientation of the kite (quaternion, KA convention) at the time `t_last`"
+    orient_last::MVector{4, S} = zeros(MVector{4, S})
+    "azimuth rate [rad/s], updated by update_sys_state!"
+    azimuth_rate::S =      zero(S)
+    "heading rate [rad/s], updated by update_sys_state!"
+    heading_rate::S =      zero(S)
+    "turn rates of the kite in the KA body frame [rad/s], updated by update_sys_state!"
+    turn_rates::T =        zeros(S, 3)
     "area of one tether segment [m²]"
     seg_area::S =         zero(S)
     "total actual bridle area [m²]"
@@ -160,6 +174,11 @@ function clear!(s::KPS3)
     s.v_wind_vert   = 0.0
     s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
     s.acc_kite      .= [0.0, 0, 0]
+    s.t_last = -Inf
+    s.orient_last   .= 0.0
+    s.azimuth_rate = 0.0
+    s.heading_rate = 0.0
+    s.turn_rates    .= 0.0
     s.psi = 0.0
     height = sin(deg2rad(s.set.elevation::Float64)) * s.set.l_tether::Float64
     s.v_wind .= s.v_wind_gnd * calc_wind_factor(s.am, height)
