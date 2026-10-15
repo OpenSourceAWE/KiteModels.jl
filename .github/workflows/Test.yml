@@ -121,8 +121,9 @@ jobs:
         Xvfb :99 -screen 0 1024x768x24 &
         echo "DISPLAY=:99" >> $GITHUB_ENV
         
-    - uses: julia-actions/cache@v3
-      continue-on-error: true
+    # No cache: this job compiles with --code-coverage, so it cannot share compiled files with
+    # the other jobs, and its cache of about 2 GB pushed the caches of the other jobs out of the
+    # 10 GB that GitHub keeps per repository
     - uses: julia-actions/julia-buildpkg@v1
     - name: Resolve and instantiate test environment
       shell: bash
