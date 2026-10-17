@@ -28,6 +28,7 @@ function run_helper_tests()
             @test isfile(joinpath(tmpdir1, "examples", "reel_out_4p_torque_control.jl"))
             @test isfile(joinpath(tmpdir1, "examples", "simulate_simple.jl"))
             @test isfile(joinpath(tmpdir1, "examples", "simulate_steering.jl"))
+            @test ! isfile(joinpath(tmpdir1, "examples", "Project.toml"))
             cd(original_dir)
             
             # Test 2: install_examples
@@ -45,6 +46,7 @@ function run_helper_tests()
             @test isfile(joinpath(tmpdir2, "examples", "reel_out_4p_torque_control.jl"))
             @test isfile(joinpath(tmpdir2, "examples", "simulate_simple.jl"))
             @test isfile(joinpath(tmpdir2, "examples", "simulate_steering.jl"))
+            @test ! isfile(joinpath(tmpdir2, "examples", "Project.toml"))
             cd(original_dir)
 
             @test ! ("TestEnv" ∈ keys(Pkg.project().dependencies))

@@ -9,7 +9,7 @@
 # the simulation continues from it instead of starting at zero, and the state is not saved.
 
 using Pkg
-if dirname(Pkg.project().path) != @__DIR__
+if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Timers; tic()

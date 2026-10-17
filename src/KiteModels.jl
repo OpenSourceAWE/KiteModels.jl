@@ -1334,11 +1334,17 @@ function get_default_turbulence()
 end
 
 
+# files of an examples folder that are only valid inside the KiteModels repository
+const REPO_ONLY_FILES = ("Project.toml", "Project.toml.license", "Manifest.toml")
+
+example_files(src_path) = filter(f -> f ∉ REPO_ONLY_FILES, readdir(src_path))
+
 """
     copy_examples()
 
 Copy all example scripts to the folder "examples"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples(; overwrite=true)
     PATH = "examples"
@@ -1346,14 +1352,15 @@ function copy_examples(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples", readdir(src_path); overwrite)
+    copy_files("examples", example_files(src_path); overwrite)
 end
 
 """
     copy_examples_3d()
 
 Copy all 3D example scripts to the folder "examples_3d"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples_3d
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples_3d(; overwrite=true)
     PATH = "examples_3d"
@@ -1361,7 +1368,7 @@ function copy_examples_3d(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples_3d", readdir(src_path); overwrite)
+    copy_files("examples_3d", example_files(src_path); overwrite)
 end
 
 function copy_model_settings(; overwrite=true)
