@@ -148,6 +148,102 @@ end
           Dict(string(key) => value for (key, value) in meta_data)
 end
 
+@testset "load_state" begin
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    meta_data = Dict("script" => "test", "time" => 1.5)
+    # every field round-trips, including NaN, the integers and the Float32 vectors
+    ss = SysState(kps4)
+    save_state(file, ss; meta_data, exclude=())
+    ss2, meta_data2 = load_state(file)
+    @test typeof(ss2) == typeof(ss)
+    @test all(isequal(getfield(ss2, name), getfield(ss, name)) for name in fieldnames(typeof(ss)))
+    @test meta_data2 == meta_data
+    # excluded fields keep their default values; KPS3 has fewer points and springs
+    kps3 = KPS3(deepcopy(set))
+    init!(kps3; prn=false)
+    ss = SysState(kps3)
+    save_state(file, ss; exclude=KiteModels.UNUSED_FIELDS_KPS3)
+    ss2, meta_data2 = load_state(file)
+    @test typeof(ss2) == typeof(ss)
+    @test ss2.X == ss.X && ss2.spring_force == ss.spring_force
+    @test isnan(ss2.bearing)
+    @test ss2.alpha3 == 0
+    @test isempty(meta_data2)
+    # a vector of the wrong length is rejected; the number of points is taken from X
+    write(file, replace(read(file, String), r"  Y: \[[^\]]*\]" => "  Y: [1.0]"))
+    @test_throws ArgumentError load_state(file)
+end
+
+@testset "init! from a loaded state, $Model" for (Model, exclude) in
+        ((KPS4, KiteModels.UNUSED_FIELDS), (KPS3, KiteModels.UNUSED_FIELDS_KPS3))
+    run!(s, integ, steps) = for _ in 1:steps
+        set_depower_steering(s.kcu, 0.25, 0.2)
+        next_step!(s, integ; set_speed=0, dt=DT)
+    end
+    set_ = deepcopy(set)
+    if Model == KPS3
+        # with the default tolerance of 1e-3, a turning KPS3 is only accurate to about half a
+        # metre after one second, and the restarted solver takes different steps than the
+        # uninterrupted one; with 1e-6 both follow the exact solution within a millimetre
+        set_.rel_tol = set_.abs_tol = 1e-6
+    end
+    a = Model(deepcopy(set_))
+    integ_a = init!(a; prn=false)
+    run!(a, integ_a, 40)
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    ss = SysState(a)
+    ss.time = integ_a.t
+    save_state(file, ss; exclude)
+    b = Model(deepcopy(set_))
+    integ_b = init!(b; initial_state=first(load_state(file)))
+    if Model == KPS4
+        # the pitch rate from the velocities is close to the change of the pitch angle during
+        # the last time step, which the uninterrupted simulation uses
+        @test b.pitch_rate ≈ KiteModels.calc_pitch_rate(a) rtol=1e-4
+        @test b.pitch_rate ≈ a.pitch_rate rtol=0.1
+    end
+    # the simulation continues at the same time and stays within a millimetre of the original
+    run!(a, integ_a, 20)
+    run!(b, integ_b, 20)
+    @test integ_b.t ≈ integ_a.t
+    @test maximum(norm.(a.pos .- b.pos)) < 1e-3
+    @test winch_force(b) ≈ winch_force(a) rtol=1e-4
+    # a state with a different number of points is rejected
+    other = Model == KPS4 ? KPS3(deepcopy(set)) : KPS4(deepcopy(set))
+    @test_throws ArgumentError init!(other; initial_state=SysState(a))
+end
+
+@testset "init! from a loaded state during a winch ramp" begin
+    step!(s, integ, v_set) = next_step!(s, integ; set_speed=v_set, dt=DT)
+    a = KPS4(deepcopy(set))
+    integ_a = init!(a; prn=false)
+    for _ in 1:40
+        step!(a, integ_a, 0)
+    end
+    # save while the rate limit of the winch is still ramping up the set speed
+    for _ in 1:3
+        step!(a, integ_a, 4)
+    end
+    @test 0 < a.wm.last_set_speed < 4
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    ss = SysState(a)
+    ss.time = integ_a.t
+    save_state(file, ss)
+    b = KPS4(deepcopy(set))
+    integ_b = init!(b; initial_state=first(load_state(file)))
+    # var_13 and set_speed are Float32
+    @test b.wm.last_set_speed ≈ a.wm.last_set_speed rtol=1e-6
+    @test b.wm.brake == a.wm.brake
+    @test b.sync_speed ≈ a.sync_speed rtol=1e-6
+    # without the state of the winch, the tether length would differ by half a metre
+    for _ in 1:20
+        step!(a, integ_a, 4)
+        step!(b, integ_b, 4)
+    end
+    @test b.l_tether ≈ a.l_tether atol=1e-3
+    @test b.v_reel_out ≈ a.v_reel_out atol=1e-3
+end
+
 @testset "update_sys_state! zoom" begin
     ss = SysState(kps4)
     zoomed = SysState(kps4, 2.0)

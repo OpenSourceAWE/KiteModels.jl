@@ -577,6 +577,20 @@ function calc_turn_rates(s::KPS4)
 end
 
 """
+    calc_pitch_rate(s::KPS4)
+
+Time derivative of the pitch angle of [`orient_euler`](@ref) in [rad/s], calculated from the
+angular velocity of the kite, so from the positions and velocities of the particles. `next_step!`
+approximates the same rate by the change of the pitch angle during the last time step.
+"""
+function calc_pitch_rate(s::KPS4)
+    # fromKS2KA_body is its own inverse, so this gives the turn rates in KS (front-right-down)
+    _, q, r = fromKS2KA_body(calc_turn_rates(s))
+    roll, _, _ = orient_euler(s)
+    q * cos(roll) - r * sin(roll)
+end
+
+"""
     inner_loop!(s::KPS4, pos, vel, v_wind_gnd, segments, d_tether)
 
 Calculate the forces, acting on all particles.
