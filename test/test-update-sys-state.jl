@@ -180,13 +180,13 @@ end
         set_depower_steering(s.kcu, 0.25, 0.2)
         next_step!(s, integ; set_speed=0, dt=DT)
     end
+    # with the default tolerance of 1e-3, a turning KPS3 is only accurate to about half a
+    # metre after one second, and the restarted solver takes different steps than the
+    # uninterrupted one; KPS4 differs by about a millimetre, and by more after a change of
+    # the aerodynamic coefficients in the last digit; with 1e-6 both models follow the exact
+    # solution within a millimetre
     set_ = deepcopy(set)
-    if Model == KPS3
-        # with the default tolerance of 1e-3, a turning KPS3 is only accurate to about half a
-        # metre after one second, and the restarted solver takes different steps than the
-        # uninterrupted one; with 1e-6 both follow the exact solution within a millimetre
-        set_.rel_tol = set_.abs_tol = 1e-6
-    end
+    set_.rel_tol = set_.abs_tol = 1e-6
     a = Model(deepcopy(set_))
     integ_a = init!(a; prn=false)
     run!(a, integ_a, 40)
@@ -215,7 +215,11 @@ end
 
 @testset "init! from a loaded state during a winch ramp" begin
     step!(s, integ, v_set) = next_step!(s, integ; set_speed=v_set, dt=DT)
-    a = KPS4(deepcopy(set))
+    # with the default tolerance of 1e-3, the restarted simulation differs by up to about two
+    # millimetres, depending on the last digit of the aerodynamic coefficients
+    set_ = deepcopy(set)
+    set_.rel_tol = set_.abs_tol = 1e-6
+    a = KPS4(deepcopy(set_))
     integ_a = init!(a; prn=false)
     for _ in 1:40
         step!(a, integ_a, 0)
@@ -229,7 +233,7 @@ end
     ss = SysState(a)
     ss.time = integ_a.t
     save_state(file, ss)
-    b = KPS4(deepcopy(set))
+    b = KPS4(deepcopy(set_))
     integ_b = init!(b; initial_state=first(load_state(file)))
     # var_13 and set_speed are Float32
     @test b.wm.last_set_speed ≈ a.wm.last_set_speed rtol=1e-6
