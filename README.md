@@ -33,6 +33,11 @@ This package is part of Julia Kite Power Tools, which consists of the following 
   `delta` and `stiffness_factor` are no longer needed; they are deprecated and ignored. The new keyword argument
   `trim=true` places the kite at its natural elevation, where all forces are balanced, so that the elevation
   stays constant after `init!`
+- the state of a simulation can be saved with `save_state` to a human-readable YAML file, loaded with
+  `load_state`, and continued with `init!(s; initial_state)`; `SysState` now also contains the spring forces,
+  the aerodynamic forces and moments, the particle velocities and the turn rates of the kite
+- **breaking:** `SysState(s)` now contains the spring forces, so a `Logger` must be created with
+  `Logger(P, steps; segments=n_springs(s))`
 
 ### May 2026
 

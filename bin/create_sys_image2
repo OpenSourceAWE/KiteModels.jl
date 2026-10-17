@@ -19,10 +19,6 @@ if [[ $# -gt 0 ]]; then
     fi
 fi
 
-# PackageCompiler builds the image in a child process with --threads=1, which would use only
-# one GC thread; use 4 threads for the mark phase and 1 for concurrent sweeping instead
-export JULIA_NUM_GC_THREADS=4,1
-
 if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
 fi

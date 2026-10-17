@@ -38,7 +38,8 @@ export calc_azimuth_east, calc_azimuth_north
 export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretched_length, v_wind_kite, winch_force     # getters
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
-export get_default_turbulence, n_springs, save_state, set_default_turbulence, spring_forces, states, upwind_dir
+export get_default_turbulence, load_state, n_springs, save_state, set_default_turbulence, spring_forces, states
+export upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -77,6 +78,53 @@ const SVec3    = SVector{3, SimFloat}
 Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
+
+"""
+    struct CubicSpline
+
+Cubic B-spline, created from a `Dierckx.Spline1D` of degree 3 with the boundary condition
+"nearest" (the default), and evaluated in Julia instead of in Fortran, which is about 7 times
+faster. It is used for the lift and drag coefficients `calc_cl` and `calc_cd` of KPS3 and
+KPS4. A `Spline1D` is converted automatically when it is assigned to one of these fields.
+
+Usage:
+```julia
+calc_cl = CubicSpline(Spline1D(set.alpha_cl, set.cl_list))
+cl = calc_cl(5.0)
+```
+"""
+struct CubicSpline
+    "knots"
+    t::Vector{SimFloat}
+    "B-spline coefficients"
+    c::Vector{SimFloat}
+end
+function CubicSpline(spline::Spline1D)
+    spline.k == 3 || throw(ArgumentError("CubicSpline needs a spline of degree 3, not $(spline.k)"))
+    spline.bc == 3 || throw(ArgumentError("CubicSpline needs a spline with the boundary condition \"nearest\""))
+    CubicSpline(copy(spline.t), copy(spline.c))
+end
+Base.convert(::Type{CubicSpline}, spline::Spline1D) = CubicSpline(spline)
+
+# Evaluate the spline at x with the algorithm of de Boor. Outside of the knots, the value at the
+# nearest knot is returned, like Dierckx does with the boundary condition "nearest".
+function (sp::CubicSpline)(x::Real)
+    t, c = sp.t, sp.c
+    n = length(t)
+    x = clamp(SimFloat(x), t[4], t[n-3])
+    # index of the knot interval with t[l] <= x < t[l+1]
+    l = clamp(searchsortedlast(t, x), 4, n - 4)
+    @inbounds begin
+        d0, d1, d2, d3 = c[l-3], c[l-2], c[l-1], c[l]
+        a3 = (x - t[l])   / (t[l+3] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+        a2 = (x - t[l-1]) / (t[l+2] - t[l-1]); d2 = (1 - a2) * d1 + a2 * d2
+        a1 = (x - t[l-2]) / (t[l+1] - t[l-2]); d1 = (1 - a1) * d0 + a1 * d1
+        a3 = (x - t[l])   / (t[l+2] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+        a2 = (x - t[l-1]) / (t[l+1] - t[l-1]); d2 = (1 - a2) * d1 + a2 * d2
+        a3 = (x - t[l])   / (t[l+1] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+    end
+    d3
+end
 
 # Perturbations of the initial state, tried in this order by the steady state solvers: delta
 # shifts all particles sideways by delta [m] and gives them the velocity delta [m/s]. A perturbed
@@ -659,6 +707,10 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.set_steering = s.kcu.set_steering
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
+    # internal state of the winch, needed to continue a simulation from this state
+    wm = s.wm
+    ss.var_13 = isnothing(wm) ? NaN : wm.last_set_speed
+    ss.var_14 = isnothing(wm) ? NaN : wm.brake
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -714,7 +766,10 @@ system state in a viewer. Optionally the position arrays can be zoomed
 according to the requirements of the viewer.
 
 The field `spring_force` holds the forces of all springs (see [`spring_forces`](@ref)), or is
-empty if `with_springs` is `false`. A `Logger` for this SysState must be created with the
+empty if `with_springs` is `false`. The free fields `var_13` and `var_14` hold the internal
+state of the winch, the rate limited set speed `wm.last_set_speed` and the state of the
+brake `wm.brake` (0 or 1), so that [`init!`](@ref) can continue a simulation from the
+`SysState`; they are `NaN` without a winch model. A `Logger` for this SysState must be created with the
 same number of segments: `Logger(P, steps; segments=n_springs(s))`, or `Logger(P, steps)`
 with `with_springs=false`.
 """
@@ -757,8 +812,7 @@ Example:
 ss = SysState(kps4)
 save_state("output/sys_state.yaml", ss; meta_data=Dict("script" => "test_init_4p"))
 ```
-The file can be read with `YAML.load_file("output/sys_state.yaml")`, which returns a
-`Dict` with the keys `meta_data` and `sys_state`; the latter has the field names as keys.
+The file can be read back with [`load_state`](@ref).
 """
 function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIELDS)
     # double-quoted YAML string; escape_string only writes escapes that YAML knows too, e.g.
@@ -796,6 +850,41 @@ function save_state(filename, ss::SysState; meta_data=Dict(), exclude=UNUSED_FIE
     nothing
 end
 
+"""
+    load_state(filename)
+
+Read a system state from the YAML file `filename` that [`save_state`](@ref) wrote. Returns the
+tuple `(sys_state, meta_data)` of a new `SysState` and the `Dict` of the meta data.
+
+The number of points and of springs of the `SysState` is taken from the length of the fields
+`X` and `spring_force` in the file. Fields that are not in the file, for example because they
+were excluded when saving, keep the default values of `SysState`: zero, except for the
+orientation, which is the unit quaternion.
+
+Example:
+```julia
+sys_state, meta_data = load_state("output/sys_state_test_init_4p.yaml")
+```
+"""
+function load_state(filename)
+    yaml  = KiteUtils.YAML.load_file(filename)
+    state = yaml["sys_state"]
+    ss = SysState(length(state["X"])::Int; segments=length(get(state, "spring_force", ()))::Int)
+    for name in fieldnames(typeof(ss))
+        haskey(state, String(name)) || continue
+        value = state[String(name)]
+        field = getfield(ss, name)
+        if field isa AbstractVector
+            length(value) == length(field) || throw(ArgumentError(
+                "$name has $(length(value)) elements in $filename, but the SysState expects $(length(field))"))
+            field .= value
+        else
+            setfield!(ss, name, convert(fieldtype(typeof(ss), name), value))
+        end
+    end
+    ss, get(yaml, "meta_data", Dict())
+end
+
 function calc_pre_tension(s::AKM)
     # the pre-tension is the elastic stretch, so the damping force is left out
     forces = spring_forces(s; damping=false)
@@ -827,9 +916,51 @@ function init_winch_state!(s::AKM)
     update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
 end
 
+# Set the model to the system state `ss`, which update_sys_state! wrote for a model of the same
+# type with the same number of points: the positions and velocities of the particles, the
+# tether length, the reel-out speed, the set values and the internal state of the winch and
+# the actual and set values of depower and steering of the KCU. Returns the state vector y0 and its derivative yd0. The SysState holds no
+# accelerations, so they are calculated from the residual for zero accelerations.
+function init_from_state!(s::AKM, ss::SysState; upwind_dir)
+    P = length(s.pos)
+    length(ss.X) == P || throw(ArgumentError(
+        "the initial state has $(length(ss.X)) points, but the model has $P"))
+    for i in 1:P
+        s.pos[i] .= (ss.X[i], ss.Y[i], ss.Z[i])
+    end
+    s.l_tether   = ss.l_tether[1]
+    s.v_reel_out = ss.v_reelout[1]
+    # the set values and the internal state of the winch; init! has reset them
+    s.sync_speed = isnan(ss.set_speed[1])  ? nothing : Float64(ss.set_speed[1])
+    s.set_torque = isnan(ss.set_torque[1]) ? nothing : Float64(ss.set_torque[1])
+    wm = s.wm
+    if !isnothing(wm) && !isnan(ss.var_13)
+        wm.last_set_speed = ss.var_13
+        wm.brake          = ss.var_14 != 0
+    end
+    s.kcu.depower      = ss.depower
+    s.kcu.set_depower  = ss.depower
+    s.kcu.steering     = ss.kcu_steering * s.set.cs_4p
+    s.kcu.set_steering = ss.set_steering
+    set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
+    set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
+    # the state vector holds the positions of the particles 2:P, then their velocities
+    n   = 3 * (P - 1)
+    pos = [Float64(c) for i in 2:P for c in (ss.X[i], ss.Y[i], ss.Z[i])]
+    vel = [Float64(c) for i in 2:P for c in (ss.VX[i], ss.VY[i], ss.VZ[i])]
+    y0  = vcat(pos, vel, s.l_tether, s.v_reel_out)
+    yd0 = vcat(vel, zeros(n), s.v_reel_out, 0.0)
+    # the residual of the accelerations is veld - acc, so for veld = 0 it is -acc
+    res = zeros(length(y0))
+    residual!(res, yd0, y0, s, 0.0)
+    yd0[n+1:2n] .= -res[n+1:2n]
+    yd0[end]     = -res[end]
+    y0, yd0
+end
+
 """
-    init!(s::AKM; prn=false, steady_state=true,
-                      trim=false) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+    init!(s::AKM; prn=false, steady_state=true, trim=false,
+                  initial_state=nothing) -> Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
 
 Initializes the integrator of the model (KPS3 and KPS4 only).
 
@@ -845,6 +976,16 @@ Parameters:
 - trim: if `true`, the steady state is found at the natural elevation of the kite, where its
   lift matches gravity, instead of at `s.set.elevation`; see `find_steady_state!`. If no trim
   with attached flow is found, `nothing` is returned. Ignored if `steady_state` is `false`.
+- initial_state: a `SysState` to continue a simulation from, for example from
+  [`load_state`](@ref). The model gets the positions and velocities of the particles, the
+  tether length, the reel-out speed, the set values and the internal state of the winch and
+  the depower and steering of the KCU from it, and `steady_state` and `trim` are ignored.
+  The integrator continues at `initial_state.time`, which must be the time of the state,
+  `integrator.t` when it was saved; a `SysState` from `update_sys_state!` holds the start
+  time of the last time step instead. For KPS4, the pitch rate of the kite is calculated from
+  the velocities of the particles; it differs by O(dt) from the change of the pitch angle
+  during the last time step, which `next_step!` uses otherwise. The state of the controllers
+  of the caller is not restored.
 
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
@@ -853,7 +994,8 @@ Returns:
 An instance of an `ODEIntegrator` or `IDAIntegrator`, or `nothing` if initialization fails.
 """
 function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, steady_state=true,
-               trim=false)::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
+               trim=false, initial_state=nothing
+               )::Union{OrdinaryDiffEqCore.ODEIntegrator, Sundials.IDAIntegrator, Nothing}
     warn_delta_deprecated(delta, :init!)
     warn_stiffness_factor_deprecated(stiffness_factor, :init!)
     clear!(s)
@@ -861,7 +1003,9 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     upwind_dir = deg2rad(Float64(s.set.upwind_dir))
     s.stiffness_factor = 1.0
 
-    y0, yd0 = if steady_state
+    y0, yd0 = if !isnothing(initial_state)
+        init_from_state!(s, initial_state; upwind_dir)
+    elseif steady_state
         try
             KiteModels.find_steady_state!(s; upwind_dir, prn, trim)
         catch e
@@ -894,7 +1038,8 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     end
 
     dt = 1/s.set.sample_freq
-    tspan   = (0.0, dt)
+    t_start = isnothing(initial_state) ? 0.0 : Float64(initial_state.time)
+    tspan   = (t_start, t_start + dt)
     abstol  = s.set.abs_tol # max error in m/s and m
 
     differential_vars = ones(Bool, length(y0))
@@ -903,11 +1048,11 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
-        s.pitch_rate = 0
+        s.pitch_rate = isnothing(initial_state) ? 0.0 : calc_pitch_rate(s)
         s.pitch = pitch
-        set_initial_velocity!(s)
+        isnothing(initial_state) && set_initial_velocity!(s)
     end
-    s.v_reel_out = s.set.v_reel_out
+    isnothing(initial_state) && (s.v_reel_out = s.set.v_reel_out)
     s.integrator = integrator
     return integrator
 end
@@ -1191,11 +1336,17 @@ function get_default_turbulence()
 end
 
 
+# files of an examples folder that are only valid inside the KiteModels repository
+const REPO_ONLY_FILES = ("Project.toml", "Project.toml.license", "Manifest.toml")
+
+example_files(src_path) = filter(f -> f ∉ REPO_ONLY_FILES, readdir(src_path))
+
 """
     copy_examples()
 
 Copy all example scripts to the folder "examples"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples(; overwrite=true)
     PATH = "examples"
@@ -1203,14 +1354,15 @@ function copy_examples(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples", readdir(src_path); overwrite)
+    copy_files("examples", example_files(src_path); overwrite)
 end
 
 """
     copy_examples_3d()
 
 Copy all 3D example scripts to the folder "examples_3d"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples_3d
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples_3d(; overwrite=true)
     PATH = "examples_3d"
@@ -1218,7 +1370,7 @@ function copy_examples_3d(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples_3d", readdir(src_path); overwrite)
+    copy_files("examples_3d", example_files(src_path); overwrite)
 end
 
 function copy_model_settings(; overwrite=true)

@@ -5,10 +5,11 @@
 #
 # After 16 s simulation time, the system state is written to
 # output/sys_state_parking_wind_dir.yaml, with the script name, the simulation time and
-# the date and time of saving as meta data.
+# the date and time of saving as meta data. If LOAD_SYS_STATE is true and that file exists,
+# the simulation continues from it instead of starting at zero, and the state is not saved.
 
 using Pkg
-if dirname(Pkg.project().path) != @__DIR__
+if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using Timers; tic()
@@ -28,7 +29,6 @@ default_turbulence = get_default_turbulence()
 if default_turbulence !== nothing
     set.use_turbulence = default_turbulence
 end
-PLOT_HEADING_RATE = false
 
 include("parking_controller.jl")
 import .ParkingControllers as pcm
@@ -83,6 +83,8 @@ UPWIND_DIR        = -pi/2 # the direction the wind is coming from.
 UPWIND_DIR2       = -pi/2+deg2rad(90)     # Zero is at north; clockwise positive
 INTERPOLATE       = true  # interpolate the turbulence between the grid points of the wind field
 SAVE_TIME         = 16    # simulation time [s] after which the system state is saved
+PLOT_HEADING_RATE = false
+LOAD_SYS_STATE    = true  # continue from the state saved at SAVE_TIME, if it exists
 # end of user parameter section #
 
 viewer::Viewer3D = Viewer3D(SHOW_KITE, "WinchON")
@@ -100,29 +102,35 @@ STEERING::Vector{Float64}      = zeros(Int64(MAX_TIME/dt))
 HEADING_RATE::Vector{Float64}  = zeros(Int64(MAX_TIME/dt))
 BODY_RATE::Vector{Float64}     = zeros(Int64(MAX_TIME/dt))
 
+SCRIPT_NAME = splitext(basename(@__FILE__))[1]
+STATE_FILE  = joinpath(dirname(@__DIR__), "output", "sys_state_$(SCRIPT_NAME).yaml")
+
 # save a copy of sys_state with the time of the state; SysState.time is the start time of the
 # last time step
 function save_sys_state(sys_state, t_sim, time_)
     sys_state = deepcopy(sys_state)
     sys_state.t_sim = t_sim
     sys_state.time = time_
-    output_dir = joinpath(dirname(@__DIR__), "output")
-    mkpath(output_dir)
-    script_name = splitext(basename(@__FILE__))[1]
-    meta_data = Dict("script" => script_name, "time" => sys_state.time,
+    mkpath(dirname(STATE_FILE))
+    meta_data = Dict("script" => SCRIPT_NAME, "time" => sys_state.time,
                      "date_time" => Libc.strftime("%Y-%m-%d_%H:%M:%S", time()))
-    save_state(joinpath(output_dir, "sys_state_$(script_name).yaml"), sys_state; meta_data)
+    save_state(STATE_FILE, sys_state; meta_data)
 end
 
-function sim_parking(integrator)
+# initial_state is the loaded SysState, or nothing when starting at zero; the step i
+# continues from the time of the integrator
+function sim_parking(integrator, initial_state)
     upwind_dir=UPWIND_DIR
     start_time_ns = time_ns()
     clear_viewer(viewer)
-    i=1; j=0; k=0
+    i = round(Int, integrator.t/dt) + 1; j=0; k=0
     GC.gc()
     max_time = 0
     t_gc_tot = 0
-    sys_state = SysState(kps4)
+    # continuing with the loaded SysState keeps the rates, e.g. heading_rate, correct;
+    # update_sys_state! expects the start time of the last time step in sys_state.time
+    sys_state = isnothing(initial_state) ? SysState(kps4) : deepcopy(initial_state)
+    isnothing(initial_state) || (sys_state.time = integrator.t - dt)
     println("Kite position at start: ", round.(pos_kite(kps4), digits=2))
     if KiteUtils.PROJECT == "system.yaml"
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
@@ -165,7 +173,7 @@ function sim_parking(integrator)
             t_gc_tot += @elapsed GC.gc(false)
         end
         update_sys_state!(sys_state, kps4)
-        if i == round(Int, SAVE_TIME/dt)
+        if isnothing(initial_state) && i == round(Int, SAVE_TIME/dt)
             save_sys_state(sys_state, t_sim, integrator.t)
         end
         T[i] = dt * i
@@ -208,11 +216,21 @@ function sim_parking(integrator)
     return div(i, TIME_LAPSE_RATIO)
 end
 
+# returns the first step of the simulation
 function play_parking()
+    initial_state = nothing
+    if LOAD_SYS_STATE
+        if isfile(STATE_FILE)
+            initial_state = first(load_state(STATE_FILE))
+        else
+            println("No saved state in $STATE_FILE, starting at zero; it is saved after $SAVE_TIME s.")
+        end
+    end
     saved_turbulence = kps4.set.use_turbulence
     kps4.set.use_turbulence = 0.0
-    integrator = KiteModels.init!(kps4)
+    integrator = KiteModels.init!(kps4; initial_state)
     kps4.set.use_turbulence = saved_turbulence
+    i_start = round(Int, integrator.t/dt) + 1
     sys_state = SysState(kps4)
     if KiteUtils.PROJECT == "system.yaml"
         KiteViewers.update_system(viewer, sys_state; scale = 0.08, kite_scale=3)
@@ -221,7 +239,7 @@ function play_parking()
     end
     toc()
     try
-        sim_parking(integrator)
+        sim_parking(integrator, initial_state)
     catch e
         if isa(e, AssertionError)
             println("AssertionError! Halting simulation.")
@@ -231,10 +249,16 @@ function play_parking()
         end
     end
     GC.enable(true)
+    i_start
 end
 
-play_parking()
+i_start = play_parking()
 stop(viewer)
+# plot only the simulated steps
+for vec in (T, AZIMUTH, AZIMUTH_EAST, UPWIND_DIR_, AV_UPWIND_DIR, V_WIND_KITE, HEADING, SET_STEERING,
+            STEERING, HEADING_RATE, BODY_RATE)
+    deleteat!(vec, 1:i_start-1)
+end
 v = filter(!=(0.0), V_WIND_KITE)
 ti = std(v) / mean(v) * 100
 println("Turbulence intensity (wind speed magnitude): $(round(ti, digits=2)) %")

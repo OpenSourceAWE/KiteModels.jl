@@ -6,7 +6,7 @@
 # the saved data, without re-running the simulation.
 
 using Pkg
-if dirname(Pkg.project().path) != @__DIR__
+if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 
