@@ -13,6 +13,13 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 "The pair of point indices each segment of `definition` joins."
 segment_points(definition) = [segment.points for segment in definition.segments]
 
+"The `parameters` of the material `segment` of `definition` is made of."
+parameters(definition, segment) = definition.materials[segment.material].parameters
+
+"The axial stiffness times rest length [N] of `segment`, from its `linear` material."
+unit_stiffness(definition, segment) =
+    parameters(definition, segment)["youngs_modulus"] * π * segment.diameter^2 / 4
+
 @testset "KPS4 definition holds the points and springs the model integrates" begin
     kps4 = KPS4(load_settings("system.yaml"))
     init!(kps4; prn=false)
@@ -21,16 +28,19 @@ segment_points(definition) = [segment.points for segment in definition.segments]
     @test definition.metadata.n_points == length(kps4.pos) == segments + 5
     @test segment_points(definition) == [(spring.p1, spring.p2) for spring in kps4.springs]
     @test [point.pos_ENU for point in definition.points] == kps4.pos
-    @test [segment.l0 for segment in definition.segments] ==
+    @test [point.fixed for point in definition.points] == (1:length(kps4.pos) .== 1)
+    @test [segment.rest_length for segment in definition.segments] ==
           [spring.length for spring in kps4.springs]
     @test only(definition.tethers).segments == 1:segments
     @test only(definition.tethers).end_point == segments + 1
     @test only(definition.winches).winch_point == 1
-    @test [segment.unit_stiffness for segment in definition.segments] ≈
+    @test [unit_stiffness(definition, segment) for segment in definition.segments] ≈
           [spring.axial_stiffness * spring.length for spring in kps4.springs]
     @test sum(point.extra_mass for point in definition.points) ≈
           kps4.set.mass + kps4.set.kcu_mass
-    @test all(segment.density == 0 for segment in definition.segments[(segments + 1):end])
+    @test all(parameters(definition, segment)["density"] == 0
+              for segment in definition.segments[(segments + 1):end])
+    @test all(material.law == "linear" for material in definition.materials)
     @test definition.metadata.connectivity_sha == connectivity_sha(definition)
     kcu = segments + 1
     kite_springs = kps4.springs[(segments + 1):end]

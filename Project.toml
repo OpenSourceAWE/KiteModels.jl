@@ -38,7 +38,7 @@ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 WinchModels = "7dcfa46b-7979-4771-bbf4-0aee0da42e1f"
 
 [sources]
-KiteGeometry = {url = "https://github.com/OpenSourceAWE/KiteGeometry.jl", rev = "50b05ac2eaaa0fa5143aab7eb6127b92539ef0ce"}
+KiteGeometry = {url = "https://github.com/OpenSourceAWE/KiteGeometry.jl", rev = "9c9dfd2ce850bcee7dd9f67a7b4bc5c1c650de81"}
 
 [compat]
 AtmosphericModels = "0.3.8"
@@ -47,7 +47,7 @@ DiffEqBase = "6.161.0, 7.21"
 DiscretePIDs = "0.1.5, 1.0"
 DocStringExtensions = "0.9.4"
 Interpolations = "0.15.1, 0.16"
-KiteGeometry = "0.1.1"
+KiteGeometry = "0.2"
 KitePodModels = "0.4.0"
 KiteUtils = "0.13"
 LinearAlgebra = "1.12, 1.13"

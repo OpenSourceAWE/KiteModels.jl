@@ -2,7 +2,7 @@
 
 julia_version = "1.13.2"
 manifest_format = "2.1"
-project_hash = "7e62d219aa04895234cef3db8f3448b1ab929c85"
+project_hash = "79a9d2f8902b40ac919d8c131be0e9c20023ed47"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1556,11 +1556,11 @@ version = "0.6.12"
 
 [[deps.KiteGeometry]]
 deps = ["JSON", "KiteUtils", "LinearAlgebra", "OrderedCollections", "SHA", "StaticArrays", "YAML"]
-git-tree-sha1 = "0a7bb23a083dbeb91b19a0fb601f15a340e18862"
-repo-rev = "50b05ac2eaaa0fa5143aab7eb6127b92539ef0ce"
+git-tree-sha1 = "e5b3aa53dea9b346fc90658a4423f0e4bad0f960"
+repo-rev = "9c9dfd2ce850bcee7dd9f67a7b4bc5c1c650de81"
 repo-url = "https://github.com/OpenSourceAWE/KiteGeometry.jl"
 uuid = "941ca69c-4b42-4a27-9601-abc4d37bf99e"
-version = "0.1.1"
+version = "0.2.0"
 
 [[deps.KiteModels]]
 deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KiteGeometry", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
