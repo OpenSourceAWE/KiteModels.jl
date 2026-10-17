@@ -415,9 +415,12 @@ all forces have the opposite sign of the physical forces.
     K = 1 - rel_side_area                        # correction factor for the drag
     # pos_B, pos_C, pos_D: position of the kite particles B, C, and D
     # v_B,   v_C,   v_D:   velocity of the kite particles B, C, and D
-    pos_B, pos_C, pos_D = pos[s.set.segments+3], pos[s.set.segments+4], pos[s.set.segments+5]
-    v_A, v_B, v_C, v_D  = vel[s.set.segments+2], vel[s.set.segments+3], vel[s.set.segments+4], vel[s.set.segments+5]
-    va_1, va_2,  va_3,  va_4  = s.v_wind - v_A, s.v_wind - v_B, s.v_wind - v_C, s.v_wind - v_D
+    # immutable copies, so that no intermediate vector is allocated on the heap
+    i_A = s.set.segments + 2
+    pos_B, pos_C, pos_D = SVec3(pos[i_A+1]), SVec3(pos[i_A+2]), SVec3(pos[i_A+3])
+    v_A, v_B, v_C, v_D  = SVec3(vel[i_A]), SVec3(vel[i_A+1]), SVec3(vel[i_A+2]), SVec3(vel[i_A+3])
+    v_wind = SVec3(s.v_wind)
+    va_1, va_2,  va_3,  va_4  = v_wind - v_A, v_wind - v_B, v_wind - v_C, v_wind - v_D
 
     pos_centre = 0.5 * (pos_C + pos_D)
     delta = pos_B - pos_centre
@@ -571,6 +574,20 @@ function calc_turn_rates(s::KPS4)
     ω = 0.5 * (x × xd + y × yd + z × zd)
     # project on the KS body axes, then flip to KA
     fromKS2KA_body(SVec3(ω ⋅ x, ω ⋅ y, ω ⋅ z))
+end
+
+"""
+    calc_pitch_rate(s::KPS4)
+
+Time derivative of the pitch angle of [`orient_euler`](@ref) in [rad/s], calculated from the
+angular velocity of the kite, so from the positions and velocities of the particles. `next_step!`
+approximates the same rate by the change of the pitch angle during the last time step.
+"""
+function calc_pitch_rate(s::KPS4)
+    # fromKS2KA_body is its own inverse, so this gives the turn rates in KS (front-right-down)
+    _, q, r = fromKS2KA_body(calc_turn_rates(s))
+    roll, _, _ = orient_euler(s)
+    q * cos(roll) - r * sin(roll)
 end
 
 """

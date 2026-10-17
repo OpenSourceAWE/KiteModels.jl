@@ -39,3 +39,10 @@ match_by = "message"
 match_type = "literal"
 severity = "off"
 path = "src/KPS4.jl"
+
+[[diagnostic.patterns]]
+pattern = "Unused argument `one_point`"
+match_by = "message"
+match_type = "literal"
+severity = "off"
+path = "src/KPS3.jl"
