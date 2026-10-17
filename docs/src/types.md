@@ -11,6 +11,7 @@ SimFloat
 KVec3
 SVec3
 AKM
+CubicSpline
 ```
 
 ## Struct KPS3 and KPS4

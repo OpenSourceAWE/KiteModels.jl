@@ -73,9 +73,9 @@ $(TYPEDFIELDS)
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
     "Function for calculation the lift coefficient, using a spline based on the provided value pairs."
-    calc_cl::Spline1D
+    calc_cl::CubicSpline
     "Function for calculation the drag coefficient, using a spline based on the provided value pairs."
-    calc_cd::Spline1D
+    calc_cd::CubicSpline
     "wind vector at the height of the kite"
     v_wind::T =           zeros(S, 3)
     "wind vector at reference height"
@@ -750,16 +750,21 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS4, _) where S
         res[end] = v_reel_outd
     end
     # copy and flatten result
-    for i in 2:div(T,6)+1
+    # load the fields of s only once, and each vector of res1 and res2 as a whole
+    N = div(T,6)
+    res1, res2 = s.res1, s.res2
+    @inbounds for i in 2:N+1
+        r1, r2 = SVec3(res1[i]), SVec3(res2[i])
         for j in 1:3
-            @inbounds res[3*(i-2)+j]              = s.res1[i][j]
-            @inbounds res[3*(div(T,6))+3*(i-2)+j] = s.res2[i][j]
+            res[3*(i-2)+j]     = r1[j]
+            res[3*N+3*(i-2)+j] = r2[j]
         end
     end
     # copy the position and velocity vectors for easy debugging
-    for i in 1:div(T,6)+1
-        @inbounds s.pos[i] .= pos[i]
-        @inbounds s.vel[i] .= vel[i]
+    s_pos, s_vel = s.pos, s.vel
+    @inbounds for i in 1:N+1
+        s_pos[i] .= pos[i]
+        s_vel[i] .= vel[i]
     end
     s.vel_kite .= vel[end-2]
     s.v_reel_out = v_reel_out
