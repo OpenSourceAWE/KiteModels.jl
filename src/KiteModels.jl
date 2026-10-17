@@ -26,7 +26,8 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using AtmosphericModels
 using Rotations
 import Base.zero
-import OrdinaryDiffEqCore.init
+import DiffEqBase
+import DiffEqBase.init
 
 export EXP, EXPLOG, KPS3, KPS4, KVec3, LOG, ProfileLaw, SimFloat                       # constants and types
 export calc_set_cl_cd!, calc_turbulent_wind, copy_bin, copy_examples, copy_examples_3d, update_sys_state!  # helper functions
@@ -558,7 +559,6 @@ end
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # the positions, velocities and forces of the model must belong to the accepted state
     isnothing(s.integrator) || update_caches!(s, s.integrator)
-    dt = s.t_0 - ss.time
     ss.time = s.t_0
     pos = s.pos
     P = length(pos)
@@ -567,20 +567,21 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
         ss.Y[i] = pos[i][2] * zoom
         ss.Z[i] = pos[i][3] * zoom
     end
-    orient_0 = SVector{4, SimFloat}(ss.orient)
-    ss.orient .= fromKS2KA(calc_orient_quat(s))
+    orient = fromKS2KA(calc_orient_quat(s))
+    ss.orient .= orient
     ss.elevation = calc_elevation(s)
-    new_azimuth = calc_azimuth(s)
-    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
-    d_az = atan(sin(new_azimuth - ss.azimuth), cos(new_azimuth - ss.azimuth))
-    ss.azimuth_rate = d_az / dt
-    ss.azimuth = new_azimuth
+    azimuth = calc_azimuth(s)
+    ss.azimuth = azimuth
     ss.winch_force[1] = winch_force(s)
-    new_heading = calc_heading(s)
-    # Use shortest-angle difference to avoid artificial spikes at wrap boundaries
-    d_psi = atan(sin(new_heading - ss.heading), cos(new_heading - ss.heading))
-    ss.heading_rate = d_psi / dt
-    ss.heading = new_heading
+    heading = calc_heading(s)
+    ss.heading = heading
+    # the angles belong to the accepted state at the time of the integrator; t_0 is the start
+    # time of the last step. The rates use the angles in full precision, not the Float32 ones
+    # of the SysState.
+    t = isnothing(s.integrator) ? s.t_0 : s.integrator.t
+    update_rates!(s, azimuth, heading, orient, t)
+    ss.azimuth_rate = s.azimuth_rate
+    ss.heading_rate = s.heading_rate
     ss.course = calc_course(s)
     ss.v_app = norm(s.v_apparent)
     ss.l_tether[1] = s.l_tether
@@ -644,8 +645,8 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
             ss.VX[i], ss.VY[i], ss.VZ[i] = v
         end
         # KPS3 has no rigid kite frame with particle velocities, so the turn rates are the
-        # finite difference of the orientation since the last update
-        ss.turn_rates .= calc_turn_rates(orient_0, ss.orient, dt)
+        # finite difference of the orientation, calculated by update_rates!
+        ss.turn_rates .= s.turn_rates
     end
     ss.turn_rate_x[1], ss.turn_rate_y[1], ss.turn_rate_z[1] = ss.turn_rates
     # the spring forces are only stored if the SysState was created with room for them
@@ -667,6 +668,28 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.v_wind_gnd  .= s.v_wind_gnd
     ss.v_wind_200m .= s.v_wind_gnd * calc_wind_factor(s.am, 200.0)
     ss.v_wind_kite .= s.v_wind
+    nothing
+end
+
+# Rates of the azimuth, the heading and, for KPS3, the orientation `orient`: the finite
+# difference of the values at the time `t` and the values of the last update with a smaller
+# time, which are kept in the model. A new SysState in each time step therefore gives the same
+# rates as a reused one, and further updates in the same time step keep the rates. On the
+# first update after init! the rates are zero.
+function update_rates!(s::AKM, azimuth, heading, orient, t)
+    t > s.t_last || return nothing
+    dt = t - s.t_last # Inf on the first update
+    # use the shortest-angle difference to avoid artificial spikes at wrap boundaries
+    wrap(delta) = atan(sin(delta), cos(delta))
+    s.azimuth_rate = isfinite(dt) ? wrap(azimuth - s.azimuth_last) / dt : 0.0
+    s.heading_rate = isfinite(dt) ? wrap(heading - s.heading_last) / dt : 0.0
+    if s isa KPS3
+        s.turn_rates .= calc_turn_rates(s.orient_last, orient, dt)
+        s.orient_last .= orient
+    end
+    s.azimuth_last = azimuth
+    s.heading_last = heading
+    s.t_last = t
     nothing
 end
 
@@ -814,7 +837,8 @@ function load_state(filename)
 end
 
 function calc_pre_tension(s::AKM)
-    forces = spring_forces(s)
+    # the pre-tension is the elastic stretch, so the damping force is left out
+    forces = spring_forces(s; damping=false)
     av_force = 0.0
     for i in 1:s.set.segments
         av_force += forces[i]
@@ -999,7 +1023,7 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
 
     differential_vars = ones(Bool, length(y0))
     prob    = DAEProblem{true}((res, yd, y, p, t) -> Base.invokelatest(residual!, res, yd, y, p, t), yd0, y0, tspan, s; differential_vars)
-    integrator = OrdinaryDiffEqCore.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
+    integrator = DiffEqBase.init(prob, solver; abstol=abstol, reltol=s.set.rel_tol, save_everystep=false,
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
