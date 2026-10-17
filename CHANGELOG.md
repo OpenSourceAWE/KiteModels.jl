@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels Unreleased
+### KiteModels v0.13.0 2026-10-17
 #### Added
 - `save_state(filename, ss)` writes a `SysState` to a human-readable YAML file under the key `sys_state`, without the fields that KPS3 and KPS4 do not use (keyword `exclude`; `KiteModels.UNUSED_FIELDS_KPS3` also leaves out `side_slip`, `alpha3` and `alpha4`, which KPS3 does not have, and `aero_moment_KA_x/y/z`, which is always zero for KPS3), and the dictionary passed as keyword `meta_data` under the key `meta_data`. `examples/test_init_4p.jl` and `examples/test_init_1p.jl` use it to write `output/sys_state_<script name>.yaml` after 80 time steps, and `examples_3d/parking_wind_dir.jl` after 16 s simulation time, with the script name, the simulation time and the date and time of saving as meta data, and they fill in `t_sim`, the wall-clock time of the last time step. Strings, and keys of the meta data that are not plain identifiers, are written as quoted YAML strings.
 - `SysState(s)` and `update_sys_state!` (KPS3 and KPS4) store the internal state of the winch, the rate limited set speed `wm.last_set_speed` and the state of the brake `wm.brake` (0 or 1), in the free fields `var_13` and `var_14`, which are `NaN` without a winch model. `init!(s; initial_state)` restores them; saved while the winch ramps up the set speed, the tether length after one more second differs by less than 0.01 mm from the uninterrupted simulation (with a solver tolerance of 1e-6) instead of 0.5 m. Code that writes `var_13` or `var_14` itself should use other fields.
