@@ -708,8 +708,9 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
     # internal state of the winch, needed to continue a simulation from this state
-    ss.var_13 = isnothing(s.wm) ? NaN : s.wm.last_set_speed
-    ss.var_14 = isnothing(s.wm) ? NaN : s.wm.brake
+    wm = s.wm
+    ss.var_13 = isnothing(wm) ? NaN : wm.last_set_speed
+    ss.var_14 = isnothing(wm) ? NaN : wm.brake
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -868,7 +869,7 @@ sys_state, meta_data = load_state("output/sys_state_test_init_4p.yaml")
 function load_state(filename)
     yaml  = KiteUtils.YAML.load_file(filename)
     state = yaml["sys_state"]
-    ss = SysState(length(state["X"]); segments=length(get(state, "spring_force", ())))
+    ss = SysState(length(state["X"])::Int; segments=length(get(state, "spring_force", ()))::Int)
     for name in fieldnames(typeof(ss))
         haskey(state, String(name)) || continue
         value = state[String(name)]
@@ -932,9 +933,10 @@ function init_from_state!(s::AKM, ss::SysState; upwind_dir)
     # the set values and the internal state of the winch; init! has reset them
     s.sync_speed = isnan(ss.set_speed[1])  ? nothing : Float64(ss.set_speed[1])
     s.set_torque = isnan(ss.set_torque[1]) ? nothing : Float64(ss.set_torque[1])
-    if !isnothing(s.wm) && !isnan(ss.var_13)
-        s.wm.last_set_speed = ss.var_13
-        s.wm.brake          = ss.var_14 != 0
+    wm = s.wm
+    if !isnothing(wm) && !isnan(ss.var_13)
+        wm.last_set_speed = ss.var_13
+        wm.brake          = ss.var_14 != 0
     end
     s.kcu.depower      = ss.depower
     s.kcu.set_depower  = ss.depower
