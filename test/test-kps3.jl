@@ -6,7 +6,7 @@ if dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 
-using BenchmarkTools, LinearAlgebra, StaticArrays, Test
+using LinearAlgebra, StaticArrays, Test
 using KiteModels, KitePodModels
 
 const SEGMENTS = load_settings("system.yaml").segments
@@ -66,7 +66,6 @@ const SEGMENTS = load_settings("system.yaml").segments
         v_segment = KVec3(1.0, 2, 3)
         unit_vector = KVec3(2.0, 3.0, 4.0)
         rho = SimFloat(calc_rho(kps.am, 10.0))
-        last_tether_drag = KVec3(0.0, 0.0, 0.0)
         v_app_perp = KVec3(0, -3.0, -4.0)
         area = 20.0
         kps.v_wind_tether .= [0.1, 0.2, 0.3]
@@ -253,7 +252,6 @@ const SEGMENTS = load_settings("system.yaml").segments
         # println(y0)
         # println(yd0)
         p = kps
-        t = 0.0
         clear!(kps)
         residual!(res, yd0, y0, p)
         res1 = res[1:(3*SEGMENTS)]
@@ -450,7 +448,7 @@ const SEGMENTS = load_settings("system.yaml").segments
             set.c2_cor = c2_cor
             kps = KPS3(KCU(set))
             integrator = KiteModels.init!(kps)
-            for i in 1:30
+            for _ in 1:30
                 set_depower_steering(kps.kcu, 0.25, steering)
                 next_step!(kps, integrator; set_speed=0, dt=0.05)
             end
@@ -461,7 +459,7 @@ const SEGMENTS = load_settings("system.yaml").segments
             # it is calculated with the accepted state and the wind at its height, so it differs
             # slightly from heading_0
             @test kps.psi ≈ heading_0 atol=1e-3
-            for i in 1:9
+            for _ in 1:9
                 next_step!(kps, integrator; set_speed=0, dt=0.05)
             end
             rad2deg(atan(sin(calc_heading(kps) - heading_0), cos(calc_heading(kps) - heading_0)))
@@ -469,8 +467,8 @@ const SEGMENTS = load_settings("system.yaml").segments
         # if the wind direction changes, the heading is calculated with the new wind
         let set = deepcopy(load_settings("system.yaml"))
             kps = KPS3(KCU(set))
-            integrator = KiteModels.init!(kps)
-            for i in 1:10
+            integrator = something(KiteModels.init!(kps))
+            for _ in 1:10
                 next_step!(kps, integrator; set_speed=0, dt=0.05, upwind_dir=-pi/2)
             end
             u_0 = copy(integrator.u)
@@ -490,107 +488,6 @@ const SEGMENTS = load_settings("system.yaml").segments
             @test sign(corrected) == sign(uncorrected)
             @test abs(corrected) < 0.95 * abs(uncorrected)
         end
-    end
-
-    function run_benchmarks()
-        global height
-        println("\ncalc_rho:")
-        show(@benchmark calc_rho(height) setup=(height=1.0 + rand() * 200.0))
-        println("\ncalc_wind_factor:")
-        show(@benchmark calc_wind_factor(state.am, height) setup=(height=rand() * 200.0))
-        println("\ncalc_cl:")
-        show(@benchmark kps.calc_cl(α) setup=(α=(rand()-0.5) * 360.0))
-        println("\ncalc_drag:")
-        show(
-            @benchmark KiteModels.calc_drag(
-                state,
-                v_segment,
-                unit_vector,
-                rho,
-                v_app_perp,
-                area,
-            ) setup=(
-                v_segment = KVec3(1.0, 2, 3);
-                unit_vector = KVec3(2.0, 3.0, 4.0);
-                rho = calc_rho(10.0f0);
-                state.last_tether_drag = KVec3(0.0, 0.0, 0.0);
-                v_app_perp = KVec3(0, -3.0, -4.0);
-                area = se().area
-            )
-        )
-        println("\ncalc_aero_forces:")
-        show(
-            @benchmark KPS3.calc_aero_forces(state, pos_kite, v_kite, rho, rel_steering) setup=(
-                state.v_apparent .= KVec3(35.1, 52.2, 69.3);
-                pos_kite = KVec3(30.0, 5.0, 100.0);
-                v_kite = KVec3(3.0, 5.0, 2.0);
-                rho = SimFloat(calc_rho(10.0));
-                rel_steering = 0.1
-            )
-        )
-        println("\ncalc_res:")
-        show(
-            @benchmark KPS3.calc_res(state, pos1, pos2, vel1, vel2, mass, veld, result, i) setup=(
-                i = 1;
-                pos1 = KVec3(30.0, 5.0, 100.0);
-                pos2 = KVec3(30.0+10, 5.0+11, 100.0+20);
-                vel1 = KVec3(3.0, 5.0, 2.0);
-                vel2 = KVec3(3.0+0.1, 5.0+0.2, 2.0+0.3);
-                mass = 9.0;
-                veld = KVec3(0.1, 0.3, 0.4);
-                result = KVec3(0, 0, 0)
-            )
-        )
-        println("\ncalc_loop")
-        show(
-            @benchmark KPS3.loop(state, pos, vel, posd, veld, res1, res2) setup=(
-                pos = zeros(SVector{SEGMENTS+1,KVec3});
-                vel = zeros(SVector{SEGMENTS+1,KVec3});
-                posd = zeros(SVector{SEGMENTS+1,KVec3});
-                veld = zeros(SVector{SEGMENTS+1,KVec3});
-                res1 = zeros(SVector{SEGMENTS+1,KVec3});
-                res2 = zeros(SVector{SEGMENTS+1,KVec3})
-            )
-        )
-        println("\nset_cl_cd")
-        show(@benchmark KPS3.set_cl_cd!(state, alpha) setup = (alpha = 10.0))
-        println("\ncalc_alpha")
-        show(
-            @benchmark KPS3.calc_alpha(v_app, vec_z) setup=(
-                v_app = KVec3(10, 2, 3);
-                vec_z = normalize(KVec3(3, 2, 0))
-            )
-        )
-        println("\ncalc_set_cl_cd")
-        show(
-            @benchmark KPS3.calc_set_cl_cd!(state, vec_c, v_app) setup=(
-                v_app = KVec3(10, 2, 3);
-                vec_c = KVec3(3, 2, 0)
-            )
-        )
-        println("\nresidual!")
-        show(
-            @benchmark residual!(res, yd, y, p, t) setup = (
-                res1 = zeros(SVector{SEGMENTS,KVec3});
-                res2 = deepcopy(res1);
-                res = reduce(vcat, vcat(res1, res2));
-                pos = deepcopy(res1);
-                pos[1] .= [1.0, 2, 3];
-                vel = deepcopy(res1);
-                y = reduce(vcat, vcat(pos, vel));
-                der_pos = deepcopy(res1);
-                der_vel = deepcopy(res1);
-                yd = reduce(vcat, vcat(der_pos, der_vel));
-                p = SciMLBase.NullParameters();
-                t = 0.0
-            )
-        )
-        println("\ntest_initial_condition")
-        show(
-            @benchmark res=test_initial_condition(initial_x) setup =
-                (initial_x = (zeros(12)))
-        )
-        println()
     end
 
 end
