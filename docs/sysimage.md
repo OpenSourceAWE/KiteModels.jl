@@ -45,7 +45,8 @@ starts Julia with the Julia script.
    - Linux: `MemTotal` from `/proc/meminfo`
    - macOS: `sysctl -n hw.memsize`
    - Windows: `Win32_ComputerSystem.TotalPhysicalMemory`
-4. Minimum RAM: 15 GB (15000 MB). Below that, stop with an error on all platforms, before
+4. Minimum RAM: 15 GB (15000 MB) on Linux and Windows, 7 GB (7000 MB) on macOS, so that
+   Macs with 8 GB of RAM can build the image. Below that, stop with an error, before
    instantiating or precompiling anything. If RAM can't be read, warn and continue.
 5. If `JULIA_IMAGE_THREADS` is not set, on all platforms:
    - RAM < 27 GB (26674 MB on Linux, 27000 MB on macOS and Windows) → 2 threads, or 1 if the
@@ -66,13 +67,14 @@ starts Julia with the Julia script.
 
 Without `JULIA_IMAGE_THREADS` set by the caller:
 
-| Platform | Condition                          | Result                                      |
-|----------|------------------------------------|---------------------------------------------|
-| all      | RAM < 15 GB                        | error                                       |
-| all      | total < 30 GB                      | error                                       |
-| all      | 30 GB ≤ total < 34 GB              | 1 thread                                    |
-| all      | 15 GB ≤ RAM < 27 GB, total ≥ 34 GB | 2 threads (1 with fewer than 4 CPU threads) |
-| all      | RAM ≥ 27 GB, total ≥ 34 GB         | half the CPU threads, at most 16            |
+| Platform       | Condition                                 | Result                                      |
+|----------------|-------------------------------------------|---------------------------------------------|
+| Linux, Windows | RAM < 15 GB                               | error                                       |
+| macOS          | RAM < 7 GB                                | error                                       |
+| all            | total < 30 GB                             | error                                       |
+| all            | 30 GB ≤ total < 34 GB                     | 1 thread                                    |
+| all            | RAM ≥ minimum, RAM < 27 GB, total ≥ 34 GB | 2 threads (1 with fewer than 4 CPU threads) |
+| all            | RAM ≥ 27 GB, total ≥ 34 GB                | half the CPU threads, at most 16            |
 
 ## Where the numbers come from
 

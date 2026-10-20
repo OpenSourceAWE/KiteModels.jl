@@ -6,8 +6,8 @@ SPDX-License-Identifier: MIT
 #### Added
 - `docs/sysimage.md`, documenting the rules by which `create_sys_image` checks the memory and chooses the number of image threads, and the peak memory measured in the AWEMeta.jl workflows
 #### Changed
-- `create_sys_image` chooses the number of threads for compiling the system image from the measured memory demand, about 26 GB with one thread and 30 GB with two or more: with at least 34 GB of RAM + swap (including the size the pagefile can grow to on Windows) it uses half of the CPU threads, at most 16, otherwise one; machines with 15 to 27 GB of RAM use two threads (one if they have fewer than 4 CPU threads) instead of one, on all platforms
-- `create_sys_image` stops with an error on all platforms if there is less than 15 GB of RAM or less than 30 GB of RAM + swap; the bash script checks the RAM, and on Linux also RAM + swap, before doing anything else
+- `create_sys_image` chooses the number of threads for compiling the system image from the measured memory demand, about 26 GB with one thread and 30 GB with two or more: with at least 34 GB of RAM + swap (including the size the pagefile can grow to on Windows) it uses half of the CPU threads, at most 16, otherwise one; machines with less than 27 GB of RAM use two threads (one if they have fewer than 4 CPU threads) instead of one, on all platforms
+- `create_sys_image` stops with an error on all platforms if there is less than 15 GB of RAM (7 GB on macOS) or less than 30 GB of RAM + swap; the bash script checks the RAM, and on Linux also RAM + swap, before doing anything else
 - `create_sys_image` respects `JULIA_IMAGE_THREADS` when it is set by the caller
 - `create_sys_image` no longer passes `--heap-size-hint=8000M` to Julia: it limited only the Julia process that drives PackageCompiler, not the processes that compile the system image
 #### Fixed
