@@ -1,5 +1,5 @@
 #!/bin/bash -eu
-# SPDX-FileCopyrightText: 2025 Uwe Fechner
+# SPDX-FileCopyrightText: 2025, 2026 Uwe Fechner
 # SPDX-License-Identifier: MIT
 #
 # This script creates a precompiled system image for faster startup of the examples.
@@ -21,6 +21,65 @@ fi
 
 if [[ $(basename $(pwd)) == "bin" ]]; then
     cd ..
+fi
+
+# Check the memory and choose the number of image threads; the rules are documented in
+# docs/sysimage.md. This runs before anything else, so that a machine with too little memory
+# fails right away.
+
+# Stop if RAM + swap is not enough even for one image thread (measured peak about 26 GB, plus
+# a few GB of margin). Only on Linux, where both are fixed; on Windows the pagefile and on
+# macOS the swap can grow, which test/create_sys_image.jl takes into account.
+if [[ "$OSTYPE" == linux* ]]; then
+    _total_mb=$(awk '/^(MemTotal|SwapTotal):/ {s += $2} END {printf "%i", s / 1024}' /proc/meminfo)
+    if [[ $_total_mb -lt 30720 ]]; then
+        echo "Error: At least 30 GB of RAM + swap is needed to create a system image, but only $(( _total_mb / 1024 )) GB is available." >&2
+        echo "Increase your swap file and retry." >&2
+        exit 1
+    fi
+fi
+
+# Physical memory in MB
+totalmem=""
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    echo "Checking system memory on Windows..."
+    totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
+    limit_27gb=27000
+elif [[ "$OSTYPE" == darwin* ]]; then
+    echo "Checking system memory on macOS..."
+    totalmem=$(sysctl -n hw.memsize 2>/dev/null | awk '{printf "%i", $1 / 1000000}')
+    limit_27gb=27000
+else
+    totalmem=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
+    limit_27gb=26674
+fi
+
+# 15000 MB, because a 16 GB machine reports a little less than 16 GB
+if [[ -z "$totalmem" ]]; then
+    echo "Warning: Could not determine the size of the RAM."
+elif [[ $totalmem -lt 15000 ]]; then
+    echo "Error: At least 15 GB of RAM is needed to create a system image, but only $(( totalmem / 1024 )) GB is available." >&2
+    exit 1
+fi
+
+# The build needs about 26 GB with one image thread and about 30 GB with two or more, so
+# with less than 27 GB of RAM two threads are used (one with fewer than 4 CPU threads).
+# test/create_sys_image.jl chooses the number of threads in all other cases; it uses one
+# thread if RAM + swap is less than 34 GB, also if two were chosen here.
+if [[ -n "${JULIA_IMAGE_THREADS:-}" ]]; then
+    echo "JULIA_IMAGE_THREADS already set to $JULIA_IMAGE_THREADS, leaving as is"
+elif [[ -z "$totalmem" ]]; then
+    export JULIA_IMAGE_THREADS=1 SYSIMAGE_THREADS_AUTO=true
+    echo "Using only one thread for sysimage compilation."
+elif [[ $totalmem -lt $limit_27gb ]]; then
+    _cpus=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo "${NUMBER_OF_PROCESSORS:-2}")
+    if [[ $_cpus -ge 4 ]]; then
+        export JULIA_IMAGE_THREADS=2
+    else
+        export JULIA_IMAGE_THREADS=1
+    fi
+    export SYSIMAGE_THREADS_AUTO=true
+    echo "Less than 27GB of memory detected. Using $JULIA_IMAGE_THREADS thread(s) for sysimage compilation."
 fi
 
 julia_version=$(julia --version | awk '{print($3)}')
@@ -90,32 +149,6 @@ print_memory_snapshot() {
         echo "  Memory diagnostics are only implemented for Linux in this script."
     fi
 }
-
-# Check memory and limit threads if needed
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    # Windows: use wmic or PowerShell
-    echo "Checking system memory on Windows..."
-    totalmem=$(powershell.exe -Command "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB" 2>/dev/null | awk '{printf "%i", $1}')
-    if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
-        echo "Warning: Less than 27GB of memory detected on Windows. Using only one thread for sysimage compilation."
-        export JULIA_IMAGE_THREADS=1
-    fi
-elif [[ "$OSTYPE" == darwin* ]]; then
-    # macOS: use sysctl
-    echo "Checking system memory on macOS..."
-    totalmem=$(sysctl -n hw.memsize 2>/dev/null | awk '{printf "%i", $1 / 1000000}')
-    if [[ -z "$totalmem" || $totalmem -lt 27000 ]]; then
-        echo "Warning: Less than 27GB of memory detected on macOS. Using only one thread for sysimage compilation."
-        export JULIA_IMAGE_THREADS=1
-    fi
-else
-    # Linux: use /proc/meminfo
-    totalmem=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
-    if [[ $totalmem -lt 26674 ]]; then
-        echo "Warning: Less than 27GB of memory detected. Using only one thread for sysimage compilation."
-        export JULIA_IMAGE_THREADS=1
-    fi
-fi
 
 echo "Precompiling packages.."
 run_precompile "--project"

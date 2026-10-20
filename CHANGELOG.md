@@ -2,6 +2,17 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels unreleased
+#### Added
+- `docs/sysimage.md`, documenting the rules by which `create_sys_image` checks the memory and chooses the number of image threads, and the peak memory measured in the AWEMeta.jl workflows
+#### Changed
+- `create_sys_image` chooses the number of threads for compiling the system image from the measured memory demand, about 26 GB with one thread and 30 GB with two or more: with at least 34 GB of RAM + swap (including the size the pagefile can grow to on Windows) it uses half of the CPU threads, at most 16, otherwise one; machines with 15 to 27 GB of RAM use two threads (one if they have fewer than 4 CPU threads) instead of one, on all platforms
+- `create_sys_image` stops with an error on all platforms if there is less than 15 GB of RAM or less than 30 GB of RAM + swap; the bash script checks the RAM, and on Linux also RAM + swap, before doing anything else
+- `create_sys_image` respects `JULIA_IMAGE_THREADS` when it is set by the caller
+- `create_sys_image` no longer passes `--heap-size-hint=8000M` to Julia: it limited only the Julia process that drives PackageCompiler, not the processes that compile the system image
+#### Fixed
+- `create_sys_image` failed on macOS while checking the memory, because it read `/proc/meminfo`; there it now counts the RAM and the free space of the volume that macOS creates its swap files on, minus 5 GB
+
 ### KiteModels v0.13.0 2026-10-17
 #### Added
 - `save_state(filename, ss)` writes a `SysState` to a human-readable YAML file under the key `sys_state`, without the fields that KPS3 and KPS4 do not use (keyword `exclude`; `KiteModels.UNUSED_FIELDS_KPS3` also leaves out `side_slip`, `alpha3` and `alpha4`, which KPS3 does not have, and `aero_moment_KA_x/y/z`, which is always zero for KPS3), and the dictionary passed as keyword `meta_data` under the key `meta_data`. `examples/test_init_4p.jl` and `examples/test_init_1p.jl` use it to write `output/sys_state_<script name>.yaml` after 80 time steps, and `examples_3d/parking_wind_dir.jl` after 16 s simulation time, with the script name, the simulation time and the date and time of saving as meta data, and they fill in `t_sim`, the wall-clock time of the last time step. Strings, and keys of the meta data that are not plain identifiers, are written as quoted YAML strings.
