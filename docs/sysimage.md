@@ -27,8 +27,10 @@ starts Julia with the Julia script.
   - Windows: the size the pagefile can grow to. For a pagefile without a maximum ("System
     managed", or `MaximumSize` 0) Windows allows up to max(3 × RAM, 4 GB), but at most 1/8 of
     the volume. If this can't be determined, the current pagefile size is used.
-  - macOS: the free space of the volume macOS creates its swap files on
-    (`/System/Volumes/VM`, or `/` if that doesn't exist) minus 5 GB, at least 0.
+  - macOS: twice the free space of the volume macOS creates its swap files on
+    (`/System/Volumes/VM`, or `/` if that doesn't exist) minus 5 GB, at least 0. macOS
+    writes compressed memory to its swap files; the build compresses it about 2.5 : 1 (see
+    below). A Mac with 8 GB of RAM thus needs about 16 GB of free disk space.
 - **Total**: RAM + swap, in GB.
 - **GB**: 1024³ bytes. The shell scripts work in MB (1024² bytes); a 16 GB machine reports
   a little less than 16384 MB, so "16 GB" is tested as 15000 MB.
@@ -95,6 +97,15 @@ and 36 GB of swap (zram + swap file), 4 CPU threads:
 Tethers.jl also measured (AWEMeta TE2/TE3 and a local run) about 30 GB with two image
 threads, and about the same up to 16 threads. More than two threads cost no extra memory, so
 the thread count doesn't grow with the memory.
+
+On macOS (AWEMeta TE2: Tethers#main, GitHub runner with an Apple M1, 3 CPU threads and 7 GB
+of RAM, Julia 1.13.2, one thread) the image compiled in about 1.5 hours (40 minutes on the
+16 GB Linux runner). At the peak 9.5 GB of swap was used. The memory compressor held 34.3 GB
+of memory in 3.8 GB of RAM plus the 9.5 GB of swap, a ratio of 2.6; during the build the
+ratio was between 2.1 and 2.6. Hence the free disk space counts twice. The uncompressed
+demand at the peak (active + wired + pages stored in the compressor) was 36.4 GB, more than
+the about 26 GB on Linux; whether the two numbers are comparable is not known. (Run of
+2026-10-20; GB = 1024 MB.)
 
 - With one thread the KiteModels.jl image needs about the same as the Tethers.jl image: at
   most 26.3 GB, on Julia 1.13. Julia 1.12 needs about 3 GB less.

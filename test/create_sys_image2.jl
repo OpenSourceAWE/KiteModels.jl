@@ -60,9 +60,10 @@ function total_ram_swap_gb()
         max(current, max_gb)
     elseif Sys.isapple()
         # macOS has no fixed swap: it creates swap files in the VM volume as needed, until
-        # the disk is full, so count the free space of that volume minus 5 GB as swap
+        # the disk is full. It writes compressed memory to them (measured: 2.5 : 1), so count
+        # twice the free space of that volume minus 5 GB as swap
         vm = isdir("/System/Volumes/VM") ? "/System/Volumes/VM" : "/"
-        swap = max(0, diskstat(vm).available - 5 * 1_073_741_824)
+        swap = 2 * max(0, diskstat(vm).available - 5 * 1_073_741_824)
         (Sys.total_memory() + swap) / 1_073_741_824  # -> GiB
     else
         info = read("/proc/meminfo", String)
