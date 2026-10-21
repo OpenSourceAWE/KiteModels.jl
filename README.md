@@ -111,7 +111,7 @@ with some example input files. You can now run the examples with the command:
 include("examples/menu.jl")
 ```
 
-To speed up the model initialization, you can create a system image:
+To speed up the model initialization, you can create a system image. Building it needs at least 16 GB of RAM (8 GB on macOS) and at least 30 GB of RAM + swap.
 
 ```bash
 cd bin
@@ -160,7 +160,7 @@ and run one of the two example menus:
 menu() # or menu2()
 ```
 
-To reduce the start time, you can create a system image (this can take 30min):
+To reduce the start time, you can create a system image (this can take 30min). Building it needs at least 16 GB of RAM (8 GB on macOS) and at least 30 GB of RAM + swap.
 
 ```bash
 cd bin
