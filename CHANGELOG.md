@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels unreleased
+### KiteModels v0.13.1 2026-10-22
 #### Added
 - The initial azimuth `set.azimuths[1]` is taken into account (KPS3 and KPS4, #243): `find_steady_state!` and `init!` place the kite at this azimuth in the wind reference frame, with or without `trim`; also `init!(s; steady_state=false)`. The kite is kept at the prescribed azimuth instead of balancing its lateral forces, but the tether particles are also balanced laterally, so the tether is pushed sideways by the wind. Like a kite below its natural elevation, a kite at an azimuth is not in equilibrium: it has a side slip angle. Without steering, KPS4 swings back towards the azimuth zero, while the one-point kite of KPS3 is laterally unstable and moves further away from it. The default azimuth of zero keeps the previous behaviour.
 - The initial steering `set.steerings[1]` [%] (KPS3 and KPS4) and the initial heading `set.headings[1]` (KPS4) are taken into account (#243). The steering is set in `clear!`, like the depower, so the steady state is solved with it; a steering other than zero makes the kite turn. The heading is applied by `init!` after the steady state was found: the kite points A, C and D are rotated about the line from the KCU to the kite (point B), so that `calc_heading` returns the prescribed heading, while the position of the kite, its elevation and azimuth and the lengths of all springs stay the same. A kite with a heading other than zero is not in equilibrium and flies towards its nose. KPS3 ignores the heading, because the one-point kite has no heading of its own. The defaults of zero keep the previous behaviour.
