@@ -19,6 +19,7 @@ using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NLsolve, Nonl
       StaticArrays, Statistics, Suppressor
 import Sundials
 using Pkg, Reexport
+import KiteUtils
 import KiteUtils: init!, next_step!, update_sys_state!
 import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using KitePodModels
@@ -710,8 +711,9 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
     # internal state of the winch, needed to continue a simulation from this state
-    ss.var_13 = isnothing(s.wm) ? NaN : s.wm.last_set_speed
-    ss.var_14 = isnothing(s.wm) ? NaN : s.wm.brake
+    wm = s.wm
+    ss.var_13 = isnothing(wm) ? NaN : wm.last_set_speed
+    ss.var_14 = isnothing(wm) ? NaN : wm.brake
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -870,7 +872,7 @@ sys_state, meta_data = load_state("output/sys_state_test_init_4p.yaml")
 function load_state(filename)
     yaml  = KiteUtils.YAML.load_file(filename)
     state = yaml["sys_state"]
-    ss = SysState(length(state["X"]); segments=length(get(state, "spring_force", ())))
+    ss = SysState(length(state["X"])::Int; segments=length(get(state, "spring_force", ()))::Int)
     for name in fieldnames(typeof(ss))
         haskey(state, String(name)) || continue
         value = state[String(name)]
@@ -934,9 +936,10 @@ function init_from_state!(s::AKM, ss::SysState; upwind_dir)
     # the set values and the internal state of the winch; init! has reset them
     s.sync_speed = isnan(ss.set_speed[1])  ? nothing : Float64(ss.set_speed[1])
     s.set_torque = isnan(ss.set_torque[1]) ? nothing : Float64(ss.set_torque[1])
-    if !isnothing(s.wm) && !isnan(ss.var_13)
-        s.wm.last_set_speed = ss.var_13
-        s.wm.brake          = ss.var_14 != 0
+    wm = s.wm
+    if !isnothing(wm) && !isnan(ss.var_13)
+        wm.last_set_speed = ss.var_13
+        wm.brake          = ss.var_14 != 0
     end
     s.kcu.depower      = ss.depower
     s.kcu.set_depower  = ss.depower
@@ -987,6 +990,32 @@ Parameters:
   during the last time step, which `next_step!` uses otherwise. The state of the controllers
   of the caller is not restored.
 
+Without `initial_state`, the initial state is taken from the section `initial` of the
+settings; for KPS3 and KPS4 only the first value of each vector is used:
+- `l_tethers`, `v_reel_outs` and `depowers`: the tether length, the reel-out speed and the
+  depower setting.
+- `elevations`: the elevation of the kite; with `trim=true` only the start value of the search
+  for the natural elevation.
+- `azimuths`: the azimuth of the kite in the wind reference frame; see `find_steady_state!`.
+- `steerings`: the steering setting [%] of the KCU.
+- `headings` (KPS4 only): the heading of the kite. After the steady state was found, the kite
+  is turned about the line from the KCU to the kite, which keeps the position of the kite and
+  the lengths of all springs; the tether is not changed. A kite with a heading other than zero
+  is not in equilibrium: it flies towards its nose. The one-point kite of KPS3 has no heading
+  of its own, so the heading is ignored.
+- `elevation_rates` and `azimuth_rates`: the tether and the kite rotate as a rigid body about
+  the winch, so that the elevation and the azimuth of the kite change with these rates [°/s].
+- `heading_rates` (KPS4 only): the kite also rotates about the line from the KCU to the kite,
+  so that its heading changes with this rate [°/s].
+  The rates only set the velocities, not the accelerations, so the initial state is not
+  consistent with them, which causes a transient during the first fraction of a second. For
+  example, with an elevation rate of -5 °/s the tether force of KPS4 drops from 502 N to 48 N
+  within 0.1 s. Without steering, the heading rate decays within about 0.1 s.
+- `kite_distances` is ignored.
+
+The steady state is solved with the steering applied; its symmetric forces are balanced, but a
+steering other than zero makes the kite turn.
+
 The keyword arguments `delta` and `stiffness_factor` are deprecated and ignored: with
 `steady_state=true`, the initial state is an equilibrium for the full tether stiffness.
 
@@ -1025,6 +1054,10 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
     end
     y0  = Vector{SimFloat}(y0)
     yd0 = Vector{SimFloat}(yd0)
+    if isnothing(initial_state)
+        set_initial_heading!(s, y0, yd0)
+        set_initial_rates!(s, y0, yd0)
+    end
 
     if s.set.solver=="IDA"
         solver  = Sundials.IDA(linear_solver=Symbol(s.set.linear_solver), max_order = s.set.max_order)
@@ -1048,13 +1081,60 @@ function init!(s::AKM; stiffness_factor=nothing, delta=nothing, prn=false, stead
                         dtmax=s.set.dtmax, initializealg=OrdinaryDiffEqCore.NoInit())
     if isa(s, KPS4)
         _, pitch, _ = orient_euler(s)
-        s.pitch_rate = isnothing(initial_state) ? 0.0 : calc_pitch_rate(s)
+        rates = !isnothing(initial_state) || has_initial_rates(s)
+        s.pitch_rate = rates ? calc_pitch_rate(s) : 0.0
         s.pitch = pitch
-        isnothing(initial_state) && set_initial_velocity!(s)
+        rates || set_initial_velocity!(s)
     end
     isnothing(initial_state) && (s.v_reel_out = s.set.v_reel_out)
     s.integrator = integrator
     return integrator
+end
+
+# true if one of the initial rates of the settings that the model uses is not zero; the
+# one-point kite of KPS3 has no heading of its own, so it ignores the heading rate
+function has_initial_rates(s::AKM)
+    s.set.elevation_rate != 0 || s.set.azimuth_rate != 0 || (s isa KPS4 && s.set.heading_rate != 0)
+end
+
+# Add the velocities of the initial rates of the settings to the initial state y0 and its
+# derivative yd0: the tether and the kite rotate as a rigid body about the winch, so that the
+# elevation and the azimuth of the kite change with s.set.elevation_rate and s.set.azimuth_rate,
+# and for KPS4 the kite points A, C and D also rotate about the line from the KCU to the kite
+# (point B) with s.set.heading_rate. The accelerations are not changed, so the initial state is
+# not consistent with the rates, which causes a short transient. Afterwards the state of the
+# model is updated by evaluating the residual.
+function set_initial_rates!(s::AKM, y0, yd0)
+    has_initial_rates(s) || return nothing
+    P = length(s.pos)
+    n = 3 * (P - 1)                 # index offset of the velocities in y0
+    i0(i) = 3 * (i - 2)             # index offset of particle i (2 ≤ i ≤ P)
+    pos(i) = SVec3(y0[i0(i)+1], y0[i0(i)+2], y0[i0(i)+3])
+    function add_velocity!(i, v)
+        y0[n+i0(i)+1:n+i0(i)+3] .+= v
+        yd0[i0(i)+1:i0(i)+3]    .+= v
+    end
+    i_kite = s isa KPS4 ? P - 2 : P
+    kite = pos(i_kite)
+    z = SVec3(0, 0, 1)
+    e_h = normalize(SVec3(kite[1], kite[2], 0))   # horizontal direction from the winch to the kite
+    omega = deg2rad(s.set.elevation_rate) * (e_h × z) + deg2rad(s.set.azimuth_rate) * z
+    for i in 2:P
+        add_velocity!(i, omega × pos(i))
+    end
+    if s isa KPS4 && s.set.heading_rate != 0
+        # rotation of the kite as in heading_after_rotation!, scaled with the change of the
+        # heading per angle of rotation, so that the heading changes with s.set.heading_rate
+        rate = deg2rad(s.set.heading_rate) / heading_slope!(s, y0, yd0)
+        segments = s.set.segments
+        kcu  = pos(segments+1)
+        axis = normalize(kite - kcu)
+        for i in (segments+2, segments+4, segments+5)   # A, C and D
+            add_velocity!(i, rate * (axis × (pos(i) - kcu)))
+        end
+    end
+    residual!(zeros(SimFloat, length(y0)), yd0, y0, s, 0.0)
+    nothing
 end
 
 # Copy the acceleration of the kite from the derivative `du` of the state vector of the
@@ -1336,11 +1416,17 @@ function get_default_turbulence()
 end
 
 
+# files of an examples folder that are only valid inside the KiteModels repository
+const REPO_ONLY_FILES = ("Project.toml", "Project.toml.license", "Manifest.toml")
+
+example_files(src_path) = filter(f -> f ∉ REPO_ONLY_FILES, readdir(src_path))
+
 """
     copy_examples()
 
 Copy all example scripts to the folder "examples"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples(; overwrite=true)
     PATH = "examples"
@@ -1348,14 +1434,15 @@ function copy_examples(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples", readdir(src_path); overwrite)
+    copy_files("examples", example_files(src_path); overwrite)
 end
 
 """
     copy_examples_3d()
 
 Copy all 3D example scripts to the folder "examples_3d"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples_3d
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples_3d(; overwrite=true)
     PATH = "examples_3d"
@@ -1363,7 +1450,7 @@ function copy_examples_3d(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples_3d", readdir(src_path); overwrite)
+    copy_files("examples_3d", example_files(src_path); overwrite)
 end
 
 function copy_model_settings(; overwrite=true)

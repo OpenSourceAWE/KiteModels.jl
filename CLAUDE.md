@@ -86,15 +86,20 @@ This is a Julia package developed with a workspace: `Project.toml` declares
 `[workspace] projects = ["examples", "examples_3d", "docs", "test"]`, each with its own
 `Project.toml`/manifest.
 
-- **Install/setup**: `cd bin && ./install` (installs Julia via juliaup, sets up `Revise` globally).
-  `./install --update` refreshes an existing setup.
+- **Install/setup**: `bin/install` copies the default manifest for the active Julia version and
+  instantiates and precompiles the package and the examples, without prompting and without
+  changing anything outside the repository except the Julia depot. `bin/install -i` is the
+  interactive variant for end users (installs or selects Julia via juliaup, adds the alias `jl`,
+  installs `Revise` globally). `bin/update_default_manifests` updates the default manifests.
 - **Launch a dev REPL**: `./bin/run_julia` (activates the right project, forwards script args).
 - **Build a system image** (much faster startup/time-to-first-plot): `cd bin && ./create_sys_image`
   (can take ~30 min); relaunch via `./bin/run_julia` afterward.
 - **Run the full test suite** (from a Julia session, project = `test/`):
+
   ```julia
   include("test/runtests.jl")
   ```
+
   This walks `test/` and includes every `test-*.jl` file as its own `@testset`, then (unless
   `BUILD_IS_PRODUCTION_BUILD=false`) also runs `bench3.jl`/`bench4.jl` performance regression
   benchmarks. Full run can take up to ~60 minutes.
@@ -110,9 +115,11 @@ This is a Julia package developed with a workspace: `Project.toml` declares
   are copied into a user project with `KiteModels.install_examples()` /
   `KiteModels.install_examples_3d()` / `KiteModels.copy_bin()`.
 - **Build docs locally**:
+
   ```julia
   using Pkg; Pkg.activate("docs"); include("docs/make.jl"); Pkg.activate(".")
   ```
+
   `bin/build_docu` is something else: it renders only `docs/src/open_source_awe.md` (the
   mathematical background) to PDF via `pandoc`, and needs `pandoc` installed.
 - **Cut a release**: `./bin/release` (`--dry-run` first). It takes the top section of `CHANGELOG.md`

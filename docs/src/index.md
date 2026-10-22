@@ -74,7 +74,7 @@ times faster.
 
 ## Installation from git
 
-Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
+Install the Julia installer [juliaup](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. The install script below installs Julia 1.12 or 1.13 if needed.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -92,13 +92,15 @@ git clone https://github.com/OpenSourceAWE/KiteModels.jl.git
 cd KiteModels.jl
 ```
 
-Then, run the install script:
+Then, run the install script in interactive mode:
 
 ```bash
 cd bin
-./install
+./install -i
 cd ..
 ```
+
+With `-i`, the script asks a few questions: it installs or selects a supported Julia version, offers to add the alias `jl` for `bin/run_julia` to your shell configuration, to install Revise and to run the tests. Then it installs the tested package versions and precompiles the package and the examples.
 
 You can now launch Julia:
 

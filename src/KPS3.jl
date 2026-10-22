@@ -201,8 +201,8 @@ function clear!(s::KPS3)
     s.axial_damping  = s.set.axial_damping / s.segment_length
     s.kcu.depower = s.set.depower::Float64/100.0
     s.kcu.set_depower = s.kcu.depower
-    s.kcu.steering = 0.0
-    s.kcu.set_steering = 0.0
+    s.kcu.steering = s.set.steering::Float64/100.0
+    s.kcu.set_steering = s.kcu.steering
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
 end
 
@@ -571,9 +571,10 @@ end
 # Parameters:
 # x: vector of deviations of the tether particle positions from a straight line in x and z
 # length(x) == 2*SEGMENTS
+# Y: optional vector of the deviations in y, length(Y) == SEGMENTS
 # Returns:
 # res, a single vector consisting of the elements of y0 and yd0
-function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=-pi/2)
+function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=-pi/2, Y=nothing)
     pos = zeros(SVector{s.set.segments+1, KVec3})
     vel = zeros(SVector{s.set.segments+1, KVec3})
     acc = zeros(SVector{s.set.segments+1, KVec3})
@@ -590,7 +591,8 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=
         if i == 0
             pos[i+1] .= SVec3(0.0, DELTA, 0.0)
         else
-            pos[i+1] .= SVec3(-cos_el * radius+X[i], DELTA, -sin_el * radius+X[s.set.segments+i])
+            y = isnothing(Y) ? DELTA : DELTA + Y[i]
+            pos[i+1] .= SVec3(-cos_el * radius+X[i], y, -sin_el * radius+X[s.set.segments+i])
         end
         vel[i+1] .= SVec3(DELTA, DELTA, DELTA)
         acc[i+1] .= SVec3(DELTA, DELTA, DELTA)
@@ -620,24 +622,35 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=
     state_y0, yd0
 end
 
-# same as above, but returns a tuple of two one dimensional arrays
-function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=nothing)
-    res1_, res2_ = init_inner(s, X; delta, upwind_dir=something(upwind_dir, -pi/2))
+# same as above, but returns a tuple of two one dimensional arrays. With upwind_dir, the tether is
+# turned so that the kite is at the azimuth s.set.azimuth in the wind reference frame, with the
+# wind coming from upwind_dir.
+function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=nothing, Y=nothing)
+    res1_, res2_ = init_inner(s, X; delta, upwind_dir=something(upwind_dir, -pi/2), Y)
     res1 = vcat(reduce(vcat, res1_), [s.l_tether, s.set.v_reel_out])
     res2 = vcat(reduce(vcat, res2_), [0, 0])
     if !isnothing(upwind_dir)
         n = 6 * s.set.segments  # only rotate the 3D vector part; the last 2 scalars (l_tether, v_reel_out) must not be touched
-        res1 = vcat(turn(res1[1:n], upwind_dir), res1[n+1:end])
-        res2 = vcat(turn(res2[1:n], upwind_dir), res2[n+1:end])
+        turn_dir = upwind_dir - deg2rad(s.set.azimuth)
+        res1 = vcat(turn(res1[1:n], turn_dir), res1[n+1:end])
+        res2 = vcat(turn(res2[1:n], turn_dir), res2[n+1:end])
         # Keep s.pos consistent with the rotated state vectors so callers that
         # read s.pos immediately after init/init! see the correct positions.
         for i in 2:s.set.segments+1
             j = i - 1
             s.pos[i] .= res1[3*(j-1)+1:3*j]
         end
+        # the turbulent wind depends on the horizontal position of the kite, so sample it again
+        # at the turned position
+        if s.set.use_turbulence != 0
+            set_v_wind_ground!(s, s.pos[end][3]; upwind_dir)
+        end
     end
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
+
+# The one-point kite has no heading of its own, so s.set.heading is ignored.
+set_initial_heading!(s::KPS3, y0, yd0) = nothing
 
 """
     spring_forces(s::AKM; damping=true)
@@ -658,45 +671,73 @@ function spring_forces(s::KPS3; damping=true)
     forces
 end
 
+# number of the lateral unknowns of the steady state solver, the lateral angles of the tether
+# segments, which are only needed for an azimuth other than zero
+n_lateral(s::KPS3) = s.set.azimuth == 0 ? 0 : s.set.segments
+
 # Convert the unknowns of the steady state solver, the angle offsets of the tether segments from the
-# elevation angle [rad] (first half) and their relative stretches [-] (second half), to the offsets of
-# the particle positions from the straight, unstretched tether in x and z direction, as used by init.
+# elevation angle [rad] (first third), their relative stretches [-] (second third) and, for an
+# azimuth other than zero, their lateral angles [rad] (last third), to the offsets X of the particle
+# positions from the straight, unstretched tether in x and z direction and the offsets Y in y
+# direction (or nothing), as used by init.
 function steady_state_offsets(s::KPS3, p)
     segments = s.set.segments::Int64
     l0 = s.set.l_tether::Float64 / segments
     elevation = deg2rad(s.set.elevation::Float64)
+    lateral = n_lateral(s) > 0
     X = zeros(SimFloat, 2segments)
-    x, z = 0.0, 0.0
+    Y = lateral ? zeros(SimFloat, segments) : nothing
+    x, y, z = 0.0, 0.0, 0.0
     for i in 1:segments
         angle = elevation + p[i]
         len = l0 * (1 + p[segments+i])
-        x += len * cos(angle)
-        z += len * sin(angle)
+        if lateral
+            len_xz = len * cos(p[2segments+i])
+            y += len * sin(p[2segments+i])
+            Y[i] = y
+        else
+            len_xz = len
+        end
+        x += len_xz * cos(angle)
+        z += len_xz * sin(angle)
         X[i]          = x - i * l0 * cos(elevation)
         X[segments+i] = z - i * l0 * sin(elevation)
     end
-    X
+    X, Y
 end
 
 function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=nothing, warn=true, trim=false)
     res = zeros(MVector{6*s.set.segments+2, SimFloat})
     segments = s.set.segments
-    # init turns the tether into the wind direction; turn the residuals and positions back
-    turnangle = something(upwind_dir, -pi/2) + pi/2
+    # init turns the tether into the wind direction and to the azimuth; turn the residuals and
+    # positions back
+    turnangle = something(upwind_dir, -pi/2) - deg2rad(s.set.azimuth) + pi/2
     horizontal(x, y) = cos(turnangle) * x - sin(turnangle) * y
+    lateral(x, y)    = sin(turnangle) * x + cos(turnangle) * y
 
     # helper function for the steady state finder
     # Equations: the horizontal and vertical force balance of the tether particles, the horizontal
     # force balance of the kite and its elevation angle. The kite can only be fully balanced at its
     # natural elevation, so the elevation from the settings is prescribed instead of its vertical
-    # force balance, unless trim is true.
+    # force balance, unless trim is true. For an azimuth other than zero, also the lateral force
+    # balance of the tether particles, and instead of the lateral force balance of the kite its
+    # lateral position, which keeps the kite at the prescribed azimuth.
     function test_initial_condition!(F, x::Vector)
-        y0, yd0 = init(s, steady_state_offsets(s, x); delta, upwind_dir)
+        X, Y = steady_state_offsets(s, x)
+        y0, yd0 = init(s, X; delta, upwind_dir, Y)
         residual!(res, yd0, y0, s)
         for i in 1:segments
             j = 3*(i-1) + 3*segments
             F[i]          = horizontal(res[j+1], res[j+2])
             F[i+segments] = res[j+3]
+        end
+        if !isnothing(Y)
+            for i in 1:segments-1
+                j = 3*(i-1) + 3*segments
+                F[i+2segments] = lateral(res[j+1], res[j+2])
+            end
+            j = 3*(segments-1)
+            F[3segments] = lateral(y0[j+1], y0[j+2])
         end
         trim && return nothing
         # replace the vertical force balance of the kite by the elevation angle, scaled to meters
@@ -729,13 +770,19 @@ const KPS3_START_STIFFNESS_FACTOR = 0.035
     find_steady_state!(s::KPS3; prn=false, upwind_dir=-pi/2, trim=false)
 
 Find an initial equilibrium, based on the initial parameters
-`l_tether`, elevation and `v_reel_out`.
+`l_tether`, elevation, azimuth and `v_reel_out`.
 
 The tether particles are in equilibrium. The kite is placed at the elevation angle from the
 settings, so only its horizontal force balance is solved for; the kite can only be fully balanced
 at its natural elevation. If the prescribed elevation is far below the natural elevation, the kite
 can only be balanced in deep stall, with an angle of attack beyond the angle of maximum lift; then
 a warning is logged.
+
+The kite is placed at the azimuth `s.set.azimuth` (in degrees, in the wind reference frame).
+For an azimuth other than zero, the lateral forces on the tether particles are balanced too,
+but the lateral forces on the kite are not: instead, the kite is kept at the
+prescribed azimuth. The kite is not in equilibrium there. Without a controller, the one-point
+kite is laterally unstable and moves further away from the azimuth zero.
 
 If `trim` is `true`, the vertical force balance of the kite is solved for too and the elevation
 is free: the kite is placed at the elevation where its lift matches gravity (its natural
@@ -763,7 +810,8 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
         for delta in (restart ? (0.0,) : STEADY_STATE_DELTAS)
             set_v_wind_ground!(s, calc_height(s), s.set.v_wind; upwind_dir)
             # start with a straight, slightly stretched tether; at zero stretch the spring force has a kink
-            p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments)]
+            p0 = [zeros(SimFloat, s.set.segments); fill(SimFloat(1e-3), s.set.segments);
+                  zeros(SimFloat, n_lateral(s))]
             s.stiffness_factor=KPS3_START_STIFFNESS_FACTOR
             p, converged = find_steady_state_inner(s, p0, prn; delta, upwind_dir, warn=false, trim)
             s.stiffness_factor=1.0
@@ -776,7 +824,8 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
             all(isfinite, p) || error("find_steady_state!: solver returned non-finite values. Cannot compute steady state.")
         end
         all(isfinite, p) || return nothing, nothing, false, false
-        local y0, yd0 = init(s, steady_state_offsets(s, p); upwind_dir)
+        local X, Y = steady_state_offsets(s, p)
+        local y0, yd0 = init(s, X; upwind_dir, Y)
         residual!(zeros(length(y0)), yd0, y0, s)  # updates the angle of attack s.alpha_2
         y0, yd0, converged, s.alpha_2 > alpha_stall || (trim && !above_horizon(s))
     end
