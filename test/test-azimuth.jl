@@ -50,6 +50,37 @@ end
         @test sign(normal(mid[1], mid[2])) == -sign(azimuth)
     end
 
+    @testset "$(nameof(Model)), trim, azimuth $(azimuth)°, upwind_dir $(round(rad2deg(upwind_dir)))°" for
+            Model in (KPS3, KPS4), azimuth in (30.0, -30.0), upwind_dir in (-π/2, π/4)
+        s = new_model(Model, azimuth)
+        res1, res2 = @test_logs min_level=Base.CoreLogging.Warn find_steady_state!(s; upwind_dir, trim=true)
+        res = zeros(length(res1))
+        KiteModels.residual!(res, res2, res1, s, 0.0)
+        @test rad2deg(calc_azimuth(s)) ≈ azimuth atol=1e-6
+        @test s.alpha_2 < s.set.alpha_cl[argmax(s.set.cl_list)]  # no deep stall
+        # the elevation is free: the kite is at its natural elevation, not at the prescribed one
+        el = rad2deg(calc_elevation(s))
+        @test abs(el - s.set.elevation) > 0.5
+        @test 50.0 < el < 80.0
+        in_plane, normal = plane_components(upwind_dir, azimuth)
+        segments = s.set.segments
+        particles = Model == KPS3 ? segments : segments + KiteModels.KITE_PARTICLES
+        n = 3particles
+        # the tether particles are balanced in all directions
+        for i in 1:segments-1
+            j = n + 3*(i-1)
+            @test abs(in_plane(res[j+1], res[j+2])) < 1e-4
+            @test abs(normal(res[j+1], res[j+2])) < 1e-4
+            @test abs(res[j+3]) < 1e-4
+        end
+        # the kite is balanced vertically and in its vertical plane; it is kept at the azimuth, so
+        # not laterally. For KPS4, C and D are only balanced in sum, not their moments.
+        z_kite = sum(res[n+3*(i-1)+3] for i in segments:particles)
+        x_kite = sum(in_plane(res[n+3*(i-1)+1], res[n+3*(i-1)+2]) for i in segments:particles)
+        @test abs(z_kite) < 1e-4
+        @test abs(x_kite) < 1e-4
+    end
+
     @testset "$(nameof(Model)), init! at azimuth 30°" for Model in (KPS3, KPS4)
         s = new_model(Model, 30.0)
         @test !isnothing(init!(s))
