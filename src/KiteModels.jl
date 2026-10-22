@@ -19,6 +19,7 @@ using Dierckx, DocStringExtensions, Interpolations, LinearAlgebra, NLsolve, Nonl
       StaticArrays, Statistics, Suppressor
 import Sundials
 using Pkg, Reexport
+import KiteUtils
 import KiteUtils: init!, next_step!, update_sys_state!
 import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using KitePodModels
