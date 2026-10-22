@@ -250,7 +250,7 @@ SPDX-License-Identifier: MIT
 #### Changed
 - Switched from `ControlPlots` to `MakieControlPlots` across all examples, tests, docs, and scripts (#295)
 - Removed `bin/install_controlplots`
-- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behavior
+- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behaviour
 - Cleaned up `bin/install`: no special handling for `ControlPlots` any more
 - `examples/reel_out_4p_torque_control.jl` now uses `reel_out_speed` and interface functions, and plots heading and wind at kite
 - Updated PR template: replaced "Lint workflow is passing" with "JETLS is not reporting any warnings"; updated docs check to reference `scripts/build_docu.jl`
@@ -322,7 +322,7 @@ SPDX-License-Identifier: MIT
 - improved Julia 1.11 compatibility in startup/install tooling
 - `install` now always ensures `Revise` is available in the global Julia environment
 - improved Linux OpenSSL runtime handling to avoid `libssl`/`libcrypto` symbol mismatches
-- fixed failure modes in `install` and startup scripts for more reliable launcher behavior
+- fixed failure modes in `install` and startup scripts for more reliable launcher behaviour
 
 ### KiteModels v0.11.9 2026-04-29
 #### Changed
