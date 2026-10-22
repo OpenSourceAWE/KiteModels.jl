@@ -12,7 +12,7 @@ MIN_FREE_GB=5
 
 usage() {
     cat <<'USAGE'
-Usage: bin/install [-y] [-i] [--update] [--test] [--version X.Y | +X.Y] [-h]
+Usage: bin/install [-y] [-i] [-h]
 
 Make this checkout ready to use with the tested package versions:
   - check that the active Julia version is supported, i.e. that a
@@ -42,37 +42,14 @@ To update all packages to their latest versions use bin/update_default_manifests
                   Revise in the global environment if it is missing, optionally
                   precompile the test and docs environments and run the tests
   -h, --help      show this message
-
-Options used by bin/update_default_manifests (deviations from the repository
-scripts page of KiteUtils, kept because that script needs them):
-  --update        update all packages to their latest versions with Pkg.update()
-                  instead of only resolving the default manifest
-  --test          run the tests after the installation, including the benchmarks
-                  (up to an hour)
-  --version X.Y   use Julia X.Y for this run, installing it with juliaup if
-  +X.Y            needed; the active Julia version is not changed
 USAGE
 }
 
 interactive=false
-update=false
-run_tests=false
-julia_version=""
 while [ $# -gt 0 ]; do
     case "$1" in
         -y|--yes) ;;
         -i) interactive=true ;;
-        --update) update=true ;;
-        --test) run_tests=true ;;
-        --version)
-            if [ $# -lt 2 ]; then
-                echo "bin/install: --version requires a value, e.g. --version 1.12" >&2
-                exit 1
-            fi
-            julia_version=$2
-            shift
-            ;;
-        +*) julia_version=${1#+} ;;
         -h|--help) usage; exit 0 ;;
         *) echo "bin/install: unknown option $1" >&2; usage >&2; exit 1 ;;
     esac
@@ -101,22 +78,9 @@ is_supported() {
     return 1
 }
 
-# The Julia command of this run: the active Julia, or the one chosen with --version
-julia_cmd=(julia)
-if [ -n "$julia_version" ]; then
-    if ! is_supported "$julia_version"; then
-        echo "bin/install: Julia $julia_version is not supported, use one of: ${supported[*]}" >&2
-        exit 1
-    fi
-    if ! julia "+$julia_version" --startup-file=no -e '' &> /dev/null; then
-        juliaup add "$julia_version"
-    fi
-    julia_cmd=(julia "+$julia_version")
-fi
-
-# Print major.minor of the Julia of this run, or nothing if there is none
+# Print major.minor of the Julia that "julia" starts here, or nothing if there is none
 active_julia() {
-    "${julia_cmd[@]}" --startup-file=no -e 'print(VERSION.major, ".", VERSION.minor)' 2>/dev/null || true
+    julia --startup-file=no -e 'print(VERSION.major, ".", VERSION.minor)' 2>/dev/null || true
 }
 
 # Let the user pick one option with an arrow-key menu from REPL.TerminalMenus.
@@ -139,7 +103,7 @@ menu() {
         done
         return 1
     fi
-    "${julia_cmd[@]}" --startup-file=no -e '
+    julia --startup-file=no -e '
         using REPL.TerminalMenus
         default, prompt, options = ARGS[1], ARGS[2], ARGS[3:end]
         term = TerminalMenus.default_terminal(; out=stderr)
@@ -159,6 +123,7 @@ ask() {
 install_revise=false
 precompile_tests=false
 precompile_docs=false
+run_tests=false
 
 if $interactive; then
     if [ ! -t 0 ] || [ ! -t 2 ]; then
@@ -187,43 +152,40 @@ if $interactive; then
         exit 1
     fi
 
-    # With --version the Julia version is already chosen
-    if [ -z "$julia_version" ]; then
-        # Supported Julia versions that juliaup has installed
-        installed=()
-        for v in "${supported[@]}"; do
-            if [ "$(julia "+$v" --startup-file=no -e 'print(VERSION.major, ".", VERSION.minor)' \
-                    2>/dev/null)" = "$v" ]; then
-                installed+=("$v")
-            fi
-        done
-
-        if [ ${#installed[@]} -eq 0 ]; then
-            newest=${supported[${#supported[@]}-1]}
-            echo "None of the supported Julia versions (${supported[*]}) is installed."
-            if ask y "Install Julia $newest with juliaup?"; then
-                juliaup add "$newest"
-                installed=("$newest")
-            else
-                echo "bin/install: no supported Julia version, nothing installed." >&2
-                exit 1
-            fi
+    # Supported Julia versions that juliaup has installed
+    installed=()
+    for v in "${supported[@]}"; do
+        if [ "$(julia "+$v" --startup-file=no -e 'print(VERSION.major, ".", VERSION.minor)' \
+                2>/dev/null)" = "$v" ]; then
+            installed+=("$v")
         fi
+    done
 
-        active=$(active_julia)
-        if ! is_supported "$active" || [ ${#installed[@]} -gt 1 ]; then
-            echo "Active Julia version: ${active:-none}. Supported and installed: ${installed[*]}"
-            default=$active
-            is_supported "$active" || default=${installed[${#installed[@]}-1]}
-            if ! choice=$(menu "$default" "Julia version to use in this repository:" \
-                    "${installed[@]}"); then
-                echo "bin/install: no Julia version selected, nothing installed." >&2
-                exit 1
-            fi
-            if [ "$choice" != "$active" ]; then
-                # Directory override: applies to this repository only
-                juliaup override set "$choice"
-            fi
+    if [ ${#installed[@]} -eq 0 ]; then
+        newest=${supported[${#supported[@]}-1]}
+        echo "None of the supported Julia versions (${supported[*]}) is installed."
+        if ask y "Install Julia $newest with juliaup?"; then
+            juliaup add "$newest"
+            installed=("$newest")
+        else
+            echo "bin/install: no supported Julia version, nothing installed." >&2
+            exit 1
+        fi
+    fi
+
+    active=$(active_julia)
+    if ! is_supported "$active" || [ ${#installed[@]} -gt 1 ]; then
+        echo "Active Julia version: ${active:-none}. Supported and installed: ${installed[*]}"
+        default=$active
+        is_supported "$active" || default=${installed[${#installed[@]}-1]}
+        if ! choice=$(menu "$default" "Julia version to use in this repository:" \
+                "${installed[@]}"); then
+            echo "bin/install: no Julia version selected, nothing installed." >&2
+            exit 1
+        fi
+        if [ "$choice" != "$active" ]; then
+            # Directory override: applies to this repository only
+            juliaup override set "$choice"
         fi
     fi
 
@@ -241,7 +203,7 @@ if $interactive; then
     fi
 
     # The global environment is the default one, e.g. ~/.julia/environments/v1.12
-    if ! "${julia_cmd[@]}" --startup-file=no -e 'using Pkg; Pkg.activate(; io=devnull)
+    if ! julia --startup-file=no -e 'using Pkg; Pkg.activate(; io=devnull)
             exit(haskey(Pkg.project().dependencies, "Revise") ? 0 : 1)' &> /dev/null &&
             ask y "Install Revise in the global environment of Julia $(active_julia)?"; then
         install_revise=true
@@ -253,7 +215,7 @@ if $interactive; then
     if ask n "Precompile the docs environment?"; then
         precompile_docs=true
     fi
-    if ! $run_tests && ask n "Run the tests after the installation (up to an hour)?"; then
+    if ask n "Run the tests after the installation (up to an hour)?"; then
         run_tests=true
     fi
 fi
@@ -300,7 +262,7 @@ cp "$manifest.default" "$manifest"
 echo "Copied $manifest.default to $manifest"
 # The system image contains the packages of the manifest it was built with
 sysimage="bin/kps-image-$version.so"
-if { $manifest_changed || $update; } && [ -f "$sysimage" ]; then
+if $manifest_changed && [ -f "$sysimage" ]; then
     rm -f "$sysimage"
     echo "Deleted the system image $sysimage, because the manifest changed"
 fi
@@ -315,15 +277,10 @@ for default in .*.default *.default; do
     fi
 done
 
-if $update; then
-    echo "Updating all packages to their latest versions..."
-    "${julia_cmd[@]}" --startup-file=no --project -e 'using Pkg; Pkg.update()'
-fi
-
 # Resolve, instantiate and precompile the environment in the given folder
 install_env() {
     echo "Instantiating and precompiling the environment in $1 ..."
-    "${julia_cmd[@]}" --startup-file=no --project="$1" -e \
+    julia --startup-file=no --project="$1" -e \
         'using Pkg; Pkg.resolve(); Pkg.instantiate(); Pkg.precompile(; strict=true)'
 }
 
@@ -332,7 +289,7 @@ install_env examples
 install_env examples_3d
 if $install_revise; then
     echo "Adding Revise to the global environment ..."
-    "${julia_cmd[@]}" --startup-file=no -e 'using Pkg; Pkg.activate(); Pkg.add("Revise")'
+    julia --startup-file=no -e 'using Pkg; Pkg.activate(); Pkg.add("Revise")'
 fi
 if $precompile_tests; then
     install_env test
@@ -341,7 +298,7 @@ if $precompile_docs; then
     install_env docs
 fi
 if $run_tests; then
-    "${julia_cmd[@]}" --startup-file=no --project -e 'using Pkg; Pkg.test()'
+    julia --startup-file=no --project -e 'using Pkg; Pkg.test()'
 fi
 
 echo "Installation for Julia $version finished."

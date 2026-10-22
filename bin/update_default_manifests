@@ -1,18 +1,95 @@
-#!/bin/bash -eu
+#!/bin/bash
 # SPDX-FileCopyrightText: 2025 Uwe Fechner
 # SPDX-License-Identifier: MIT
 
-# Update Manifest-v<version>.toml.default for each supported Julia version.
-# The .default manifest is only replaced if the install, precompilation and tests succeed.
+set -eu
 
-if [[ $(basename $(pwd)) == "bin" ]]; then
-    cd ..
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.."
+
+usage() {
+    cat <<'USAGE'
+Usage: bin/update_default_manifests [-y] [-h|--help]
+
+Update every package to its latest version, separately for each Julia version
+that has a tracked Manifest-v<version>.toml.default, and run the tests under each
+of them, including the benchmarks (up to an hour per version). Only if all tests
+pass are the updated manifests copied to the tracked defaults and committed; if
+any test fails, the script terminates and leaves the defaults alone. Every one of
+those Julia versions has to be on the machine. The system images
+bin/kps-image-<version>.so are deleted, because they were built with the old
+package versions.
+
+  -y          do not ask before updating, testing and committing
+  -h, --help  show this message
+USAGE
+}
+
+assume_yes=false
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -y) assume_yes=true ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "update_default_manifests: unknown option $1" >&2; usage >&2; exit 1 ;;
+    esac
+    shift
+done
+
+versions=()
+for default in Manifest-v*.toml.default; do
+    [ -f "$default" ] || continue
+    version=${default#Manifest-v}
+    versions+=("${version%.toml.default}")
+done
+if [ ${#versions[@]} -eq 0 ]; then
+    echo "update_default_manifests: no Manifest-v<version>.toml.default here." >&2
+    exit 1
 fi
 
-for julia_major in 1.12 1.13; do
-    echo "Updating the manifest for Julia ${julia_major}..."
-    ./bin/install --update -y --test --version "${julia_major}"
-    cp "Manifest-v${julia_major}.toml" "Manifest-v${julia_major}.toml.default"
-    rm -rf ~/.julia/compiled/v${julia_major}/KiteModels/
-    echo "Updated Manifest-v${julia_major}.toml.default !"
+missing=()
+for version in "${versions[@]}"; do
+    on_machine=$(julia "+$version" --startup-file=no \
+        -e 'print(VERSION.major, ".", VERSION.minor)' 2>/dev/null) || on_machine=""
+    [ "$on_machine" = "$version" ] || missing+=("$version")
 done
+if [ ${#missing[@]} -gt 0 ]; then
+    echo "update_default_manifests: no Julia ${missing[*]} on this machine;" \
+         "juliaup add what is missing." >&2
+    exit 1
+fi
+
+if ! $assume_yes; then
+    read -r -p "Update every package, test and commit the defaults of ${versions[*]}? [y/N] " \
+        reply
+    case "$reply" in
+        [yY]*) ;;
+        *) echo "update_default_manifests: nothing updated."; exit 1 ;;
+    esac
+fi
+
+export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
+
+for version in "${versions[@]}"; do
+    manifest="Manifest-v$version.toml"
+    # Pkg resolves into Manifest.toml unless the versioned name is already a file
+    : > "$manifest"
+    rm -f "bin/kps-image-$version.so"
+    echo "update_default_manifests: updating and testing under Julia $version"
+    julia "+$version" --startup-file=no --project -e 'using Pkg; Pkg.update()'
+    if ! julia "+$version" --startup-file=no --project -e 'using Pkg; Pkg.test()'; then
+        echo "update_default_manifests: tests failed under Julia $version;" \
+             "the defaults are unchanged." >&2
+        exit 1
+    fi
+done
+
+defaults=()
+for version in "${versions[@]}"; do
+    cp "Manifest-v$version.toml" "Manifest-v$version.toml.default"
+    defaults+=("Manifest-v$version.toml.default")
+done
+
+if git diff --quiet -- "${defaults[@]}"; then
+    echo "update_default_manifests: the defaults are already up to date."
+    exit 0
+fi
+git commit -m "update the default manifests" -- "${defaults[@]}"
