@@ -15,8 +15,12 @@ SPDX-License-Identifier: MIT
 - `create_sys_image` stops with an error on all platforms if there is less than 15 GB of RAM (7 GB on macOS) or less than 30 GB of RAM + swap; the bash script checks the RAM, and on Linux also RAM + swap, before doing anything else
 - `create_sys_image` respects `JULIA_IMAGE_THREADS` when it is set by the caller
 - `create_sys_image` no longer passes `--heap-size-hint=8000M` to Julia: it limited only the Julia process that drives PackageCompiler, not the processes that compile the system image
+- `bin/run_julia` no longer sets `MPLBACKEND`, and the workshop instructions no longer install `python3-matplotlib`: matplotlib is no longer used, plotting uses MakieControlPlots
+- The compat entry of DocStringExtensions accepts 0.10 (#349).
+- The default manifests for Julia 1.12 and 1.13 use KiteUtils 0.13.3, CSV 1.1.0, Parsers 3.0.0, OrderedCollections 2.0.3 and the latest versions of the other packages.
 #### Fixed
 - `init!(s; steady_state=false)` (KPS4) did not turn `s.pos` into the wind direction, so getters like `calc_azimuth` returned wrong values before the first time step if `upwind_dir` was not -90°.
+- KPS3 with turbulence (`use_turbulence` other than zero): `find_steady_state!` and `init!` used the turbulent wind at the kite position before it was turned into the wind direction and to the azimuth, so the steady state was found for the wind of the wrong location if `upwind_dir` was not -90° or the azimuth was not zero.
 - `create_sys_image` failed on macOS while checking the memory, because it read `/proc/meminfo`; there it now counts the RAM and the free space of the volume that macOS creates its swap files on, minus 5 GB
 
 ### KiteModels v0.13.0 2026-10-17
