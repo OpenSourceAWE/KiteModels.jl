@@ -111,7 +111,7 @@ with some example input files. You can now run the examples with the command:
 include("examples/menu.jl")
 ```
 
-To speed up the model initialization, you can create a system image:
+To speed up the model initialization, you can create a system image. Building it needs at least 16 GB of RAM (8 GB on macOS) and at least 30 GB of RAM + swap.
 
 ```bash
 cd bin
@@ -122,7 +122,7 @@ If you now launch Julia with `./bin/run_julia` and then run the above example ag
 
 ## Installation from git
 
-Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
+Install the Julia installer [juliaup](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. The install script below installs Julia 1.12 or 1.13 if needed.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -140,13 +140,15 @@ git clone https://github.com/OpenSourceAWE/KiteModels.jl.git
 cd KiteModels.jl
 ```
 
-Then, run the install script:
+Then, run the install script in interactive mode:
 
 ```bash
 cd bin
-./install
+./install -i
 cd ..
 ```
+
+With `-i`, the script asks a few questions: it installs or selects a supported Julia version, offers to add the alias `jl` for `bin/run_julia` to your shell configuration, to install Revise and to run the tests. Then it installs the tested package versions and precompiles the package and the examples.
 
 You can now launch Julia:
 
@@ -160,7 +162,7 @@ and run one of the two example menus:
 menu() # or menu2()
 ```
 
-To reduce the start time, you can create a system image (this can take 30min):
+To reduce the start time, you can create a system image (this can take 30min). Building it needs at least 16 GB of RAM (8 GB on macOS) and at least 30 GB of RAM + swap.
 
 ```bash
 cd bin
@@ -179,10 +181,18 @@ git clone https://github.com/USERNAME/KiteModels.jl
 ```
 
 where USERNAME is your github username.
-Then compile a system image:
+Then run the install script, the first time with `-i` as explained above:
 
 ```bash
 cd KiteModels.jl/bin
+./install -i
+```
+
+Later, after pulling changes or switching to another branch, run `bin/install` without parameters: it asks no questions and only installs the package versions of the default manifest.
+
+Then compile a system image:
+
+```bash
 ./create_sys_image
 ```
 

@@ -2,6 +2,27 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels v0.13.1 2026-10-22
+#### Added
+- The initial azimuth `set.azimuths[1]` is taken into account (KPS3 and KPS4, #243): `find_steady_state!` and `init!` place the kite at this azimuth in the wind reference frame, with or without `trim`; also `init!(s; steady_state=false)`. The kite is kept at the prescribed azimuth instead of balancing its lateral forces, but the tether particles are also balanced laterally, so the tether is pushed sideways by the wind. Like a kite below its natural elevation, a kite at an azimuth is not in equilibrium: it has a side slip angle. Without steering, KPS4 swings back towards the azimuth zero, while the one-point kite of KPS3 is laterally unstable and moves further away from it. The default azimuth of zero keeps the previous behaviour.
+- The initial steering `set.steerings[1]` [%] (KPS3 and KPS4) and the initial heading `set.headings[1]` (KPS4) are taken into account (#243). The steering is set in `clear!`, like the depower, so the steady state is solved with it; a steering other than zero makes the kite turn. The heading is applied by `init!` after the steady state was found: the kite points A, C and D are rotated about the line from the KCU to the kite (point B), so that `calc_heading` returns the prescribed heading, while the position of the kite, its elevation and azimuth and the lengths of all springs stay the same. A kite with a heading other than zero is not in equilibrium and flies towards its nose. KPS3 ignores the heading, because the one-point kite has no heading of its own. The defaults of zero keep the previous behaviour.
+- The initial rates `set.elevation_rates[1]` and `set.azimuth_rates[1]` (KPS3 and KPS4) and `set.heading_rates[1]` (KPS4) are taken into account by `init!` (#243). For the elevation and azimuth rates, the velocities of a rotation of the tether and the kite as a rigid body about the winch are added to the initial state. For the heading rate, the kite points A, C and D also rotate about the line from the KCU to the kite. The accelerations are not changed, so the simulation starts with a transient: with an elevation rate of -5 °/s, the tether force of KPS4 drops from 502 N to 48 N within 0.1 s. With rates, the initial pitch rate of KPS4 is calculated from the velocities of the particles instead of being zero. KPS3 ignores the heading rate. The defaults of zero keep the previous behaviour.
+- `docs/sysimage.md`, documenting the rules by which `create_sys_image` checks the memory and chooses the number of image threads, and the peak memory measured in the AWEMeta.jl workflows
+#### Changed
+- `bin/install` follows the repository scripts page of KiteUtils: without parameters it never prompts and changes nothing outside the repository except the Julia depot; it no longer changes the juliaup default, installs Revise, adds the alias `jl` or precompiles the test and docs environments. These are offered by the new interactive mode `bin/install -i`, which selects the Julia version with a juliaup directory override. Stale manifests are backed up as `*.bak` instead of being deleted, other `*.default` configuration files are copied if missing, and the system image is only deleted if the manifest changed. A failing resolve is no longer retried without the pinned versions, but stops the installation. The options `--update`, `--test` and `--version` are removed; `bin/update_default_manifests` now updates the packages, runs the tests and commits the default manifests itself, for every Julia version with a default manifest, and asks before it starts unless `-y` is given.
+- on macOS, `create_sys_image` counts twice the free disk space (minus 5 GB) as swap, because macOS writes compressed memory to its swap files (measured: 2.5 : 1); a Mac with 8 GB of RAM now needs about 16 GB of free disk space instead of 27 GB
+- `create_sys_image` chooses the number of threads for compiling the system image from the measured memory demand, about 26 GB with one thread and 30 GB with two or more: with at least 34 GB of RAM + swap (including the size the pagefile can grow to on Windows) it uses half of the CPU threads, at most 16, otherwise one; machines with less than 27 GB of RAM use two threads (one if they have fewer than 4 CPU threads) instead of one, on all platforms
+- `create_sys_image` stops with an error on all platforms if there is less than 15 GB of RAM (7 GB on macOS) or less than 30 GB of RAM + swap; the bash script checks the RAM, and on Linux also RAM + swap, before doing anything else
+- `create_sys_image` respects `JULIA_IMAGE_THREADS` when it is set by the caller
+- `create_sys_image` no longer passes `--heap-size-hint=8000M` to Julia: it limited only the Julia process that drives PackageCompiler, not the processes that compile the system image
+- `bin/run_julia` no longer sets `MPLBACKEND`, and the workshop instructions no longer install `python3-matplotlib`: matplotlib is no longer used, plotting uses MakieControlPlots
+- The compat entry of DocStringExtensions accepts 0.10 (#349).
+- The default manifests for Julia 1.12 and 1.13 use KiteUtils 0.13.3, CSV 1.1.0, Parsers 3.0.0, OrderedCollections 2.0.3 and the latest versions of the other packages.
+#### Fixed
+- `init!(s; steady_state=false)` (KPS4) did not turn `s.pos` into the wind direction, so getters like `calc_azimuth` returned wrong values before the first time step if `upwind_dir` was not -90°.
+- KPS3 with turbulence (`use_turbulence` other than zero): `find_steady_state!` and `init!` used the turbulent wind at the kite position before it was turned into the wind direction and to the azimuth, so the steady state was found for the wind of the wrong location if `upwind_dir` was not -90° or the azimuth was not zero.
+- `create_sys_image` failed on macOS while checking the memory, because it read `/proc/meminfo`; there it now counts the RAM and the free space of the volume that macOS creates its swap files on, minus 5 GB
+
 ### KiteModels v0.13.0 2026-10-17
 #### Added
 - `save_state(filename, ss)` writes a `SysState` to a human-readable YAML file under the key `sys_state`, without the fields that KPS3 and KPS4 do not use (keyword `exclude`; `KiteModels.UNUSED_FIELDS_KPS3` also leaves out `side_slip`, `alpha3` and `alpha4`, which KPS3 does not have, and `aero_moment_KA_x/y/z`, which is always zero for KPS3), and the dictionary passed as keyword `meta_data` under the key `meta_data`. `examples/test_init_4p.jl` and `examples/test_init_1p.jl` use it to write `output/sys_state_<script name>.yaml` after 80 time steps, and `examples_3d/parking_wind_dir.jl` after 16 s simulation time, with the script name, the simulation time and the date and time of saving as meta data, and they fill in `t_sim`, the wall-clock time of the last time step. Strings, and keys of the meta data that are not plain identifiers, are written as quoted YAML strings.
@@ -231,7 +252,7 @@ SPDX-License-Identifier: MIT
 #### Changed
 - Switched from `ControlPlots` to `MakieControlPlots` across all examples, tests, docs, and scripts (#295)
 - Removed `bin/install_controlplots`
-- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behavior
+- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behaviour
 - Cleaned up `bin/install`: no special handling for `ControlPlots` any more
 - `examples/reel_out_4p_torque_control.jl` now uses `reel_out_speed` and interface functions, and plots heading and wind at kite
 - Updated PR template: replaced "Lint workflow is passing" with "JETLS is not reporting any warnings"; updated docs check to reference `scripts/build_docu.jl`
@@ -303,7 +324,7 @@ SPDX-License-Identifier: MIT
 - improved Julia 1.11 compatibility in startup/install tooling
 - `install` now always ensures `Revise` is available in the global Julia environment
 - improved Linux OpenSSL runtime handling to avoid `libssl`/`libcrypto` symbol mismatches
-- fixed failure modes in `install` and startup scripts for more reliable launcher behavior
+- fixed failure modes in `install` and startup scripts for more reliable launcher behaviour
 
 ### KiteModels v0.11.9 2026-04-29
 #### Changed
