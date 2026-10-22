@@ -22,12 +22,6 @@ If you are interested in further details, have a look at [@Fechner2016].
 
 ## Workshop
 ### Install KiteModels.jl from git
-On Linux, make sure that Python3 and Matplotlib are installed:
-
-```bash
-sudo apt install python3-matplotlib
-```
-
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
 Before installing `KiteModels.jl` it is suggested to create a new folder, for example like this:
