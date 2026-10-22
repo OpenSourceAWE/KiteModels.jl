@@ -92,3 +92,4 @@ examples/.CondaPkg/
 examples_3d/.CondaPkg/
 test/.CondaPkg/
 output/
+Manifest*.toml.bak

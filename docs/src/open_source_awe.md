@@ -42,7 +42,7 @@ Then, run the install script:
 
 ```bash
 cd bin
-./install
+./install -i
 cd ..
 ```
 
