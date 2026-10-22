@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 -->
 ### KiteModels Unreleased
 #### Changed
-- BREAKING: `calc_azimuth_east` returns the opposite sign: it is positive anti-clockwise when seen from above, like `calc_azimuth` and `calc_azimuth_north`, so a kite due north is at +90° instead of -90°. It follows `azimuth_east` of KiteUtils 0.14, which this version requires. The curve of `azimuth_east` in `examples_3d/parking_wind_dir.jl` is mirrored.
+- BREAKING: `calc_azimuth_east` is positive anti-clockwise when seen from above, as `azimuth_east` of KiteUtils 0.14: a kite due north is at +90° instead of -90°.
 
 ### KiteModels v0.13.1 2026-10-22
 #### Added
