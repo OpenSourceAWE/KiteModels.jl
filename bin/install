@@ -81,14 +81,6 @@ done
 
 export JULIA_PKG_SERVER_REGISTRY_PREFERENCE=eager
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    # Avoid Tk backend issues on macOS (e.g. non-responsive close button in ControlPlots windows).
-    # Keep user override if MPLBACKEND is already set.
-    if [[ -z "${MPLBACKEND:-}" ]]; then
-        export MPLBACKEND=qtagg
-    fi
-fi
-
 # The supported Julia versions are the ones with a tracked default manifest
 supported=()
 for default in Manifest-v*.toml.default; do
@@ -346,22 +338,7 @@ if $precompile_tests; then
     install_env test
 fi
 if $precompile_docs; then
-    _plog=$(mktemp)
-    set +e
-    install_env docs 2>&1 | tee "$_plog"
-    _rc=${PIPESTATUS[0]}
-    set -e
-    if [ "$_rc" -ne 0 ]; then
-        # A Conda Python with a mismatching expat breaks the precompilation of the docs
-        if grep -q "XML_SetAllocTrackerActivationThreshold" "$_plog" && grep -q "pyexpat" "$_plog"; then
-            echo "Warning: Skipping docs precompile due to Conda Python/expat mismatch (pyexpat symbol error)."
-            echo "Installation will continue; docs can be precompiled later after repairing the Conda env."
-        else
-            rm -f "$_plog"
-            exit 1
-        fi
-    fi
-    rm -f "$_plog"
+    install_env docs
 fi
 if $run_tests; then
     "${julia_cmd[@]}" --startup-file=no --project -e 'using Pkg; Pkg.test()'
