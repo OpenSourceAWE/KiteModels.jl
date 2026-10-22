@@ -33,6 +33,11 @@ This package is part of Julia Kite Power Tools, which consists of the following 
   `delta` and `stiffness_factor` are no longer needed; they are deprecated and ignored. The new keyword argument
   `trim=true` places the kite at its natural elevation, where all forces are balanced, so that the elevation
   stays constant after `init!`
+- the state of a simulation can be saved with `save_state` to a human-readable YAML file, loaded with
+  `load_state`, and continued with `init!(s; initial_state)`; `SysState` now also contains the spring forces,
+  the aerodynamic forces and moments, the particle velocities and the turn rates of the kite
+- **breaking:** `SysState(s)` now contains the spring forces, so a `Logger` must be created with
+  `Logger(P, steps; segments=n_springs(s))`
 
 ### May 2026
 
@@ -106,7 +111,7 @@ with some example input files. You can now run the examples with the command:
 include("examples/menu.jl")
 ```
 
-To speed up the model initialization, you can create a system image:
+To speed up the model initialization, you can create a system image. Building it needs at least 16 GB of RAM (8 GB on macOS) and at least 30 GB of RAM + swap.
 
 ```bash
 cd bin
@@ -155,7 +160,7 @@ and run one of the two example menus:
 menu() # or menu2()
 ```
 
-To reduce the start time, you can create a system image (this can take 30min):
+To reduce the start time, you can create a system image (this can take 30min). Building it needs at least 16 GB of RAM (8 GB on macOS) and at least 30 GB of RAM + swap.
 
 ```bash
 cd bin

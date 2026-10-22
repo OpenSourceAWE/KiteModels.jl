@@ -40,9 +40,9 @@ $(TYPEDFIELDS)
     "Iterations, number of calls to the function residual!"
     iter:: Int64 = 0
     "Function for calculation the lift coefficient, using a spline based on the provided value pairs."
-    calc_cl::Spline1D
+    calc_cl::CubicSpline
     "Function for calculation the drag coefficient, using a spline based on the provided value pairs."
-    calc_cd::Spline1D
+    calc_cd::CubicSpline
     "wind vector at the height of the kite" 
     v_wind::T =           zeros(S, 3)
     "wind vector at reference height" 
@@ -264,8 +264,9 @@ Velocities of the particles in ENU from the state vector of the integrator; zero
 Returns an `SVector` with one `SVec3` per particle in [m/s].
 """
 function particle_velocities(s::KPS3{S, T, P}) where {S, T, P}
-    isnothing(s.integrator) && return zeros(SVector{P, SVec3})
-    u = s.integrator.u
+    integrator = s.integrator
+    isnothing(integrator) && return zeros(SVector{P, SVec3})
+    u = integrator.u
     # the state vector holds the positions of the particles 2:P, then their velocities
     vel(i) = i == 1 ? zero(SVec3) : SVec3(u[3*(P-1)+3*(i-2)+1], u[3*(P-1)+3*(i-2)+2],
                                           u[3*(P-1)+3*(i-2)+3])
@@ -743,7 +744,7 @@ function find_steady_state_inner(s::KPS3, p, prn=false; delta=0.0, upwind_dir=no
         j = 3*(segments-1)
         x_kite = horizontal(y0[j+1], y0[j+2])
         z_kite = y0[j+3]
-        F[2segments] = (atan(z_kite, x_kite) - deg2rad(s.set.elevation)) * hypot(x_kite, z_kite)
+        F[2segments] = (atan(z_kite, x_kite) - deg2rad(s.set.elevations[1])) * hypot(x_kite, z_kite)
         return nothing
     end
 

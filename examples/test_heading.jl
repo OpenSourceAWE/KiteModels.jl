@@ -13,7 +13,7 @@ using LinearAlgebra
 using Test
 
 using Pkg
-if dirname(Pkg.project().path) != @__DIR__
+if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
     using StaticArrays
 end

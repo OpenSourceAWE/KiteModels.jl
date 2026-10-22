@@ -37,7 +37,7 @@ logger = Logger(particles, STEPS; segments=n_springs(kps4))
 
 if PLOT
     using Pkg
-    if dirname(Pkg.project().path) != @__DIR__
+    if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
         Pkg.activate(@__DIR__)
     end
     using MakieControlPlots

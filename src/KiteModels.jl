@@ -79,6 +79,53 @@ Short alias for the AbstractKiteModel.
 """
 const AKM = AbstractKiteModel
 
+"""
+    struct CubicSpline
+
+Cubic B-spline, created from a `Dierckx.Spline1D` of degree 3 with the boundary condition
+"nearest" (the default), and evaluated in Julia instead of in Fortran, which is about 7 times
+faster. It is used for the lift and drag coefficients `calc_cl` and `calc_cd` of KPS3 and
+KPS4. A `Spline1D` is converted automatically when it is assigned to one of these fields.
+
+Usage:
+```julia
+calc_cl = CubicSpline(Spline1D(set.alpha_cl, set.cl_list))
+cl = calc_cl(5.0)
+```
+"""
+struct CubicSpline
+    "knots"
+    t::Vector{SimFloat}
+    "B-spline coefficients"
+    c::Vector{SimFloat}
+end
+function CubicSpline(spline::Spline1D)
+    spline.k == 3 || throw(ArgumentError("CubicSpline needs a spline of degree 3, not $(spline.k)"))
+    spline.bc == 3 || throw(ArgumentError("CubicSpline needs a spline with the boundary condition \"nearest\""))
+    CubicSpline(copy(spline.t), copy(spline.c))
+end
+Base.convert(::Type{CubicSpline}, spline::Spline1D) = CubicSpline(spline)
+
+# Evaluate the spline at x with the algorithm of de Boor. Outside of the knots, the value at the
+# nearest knot is returned, like Dierckx does with the boundary condition "nearest".
+function (sp::CubicSpline)(x::Real)
+    t, c = sp.t, sp.c
+    n = length(t)
+    x = clamp(SimFloat(x), t[4], t[n-3])
+    # index of the knot interval with t[l] <= x < t[l+1]
+    l = clamp(searchsortedlast(t, x), 4, n - 4)
+    @inbounds begin
+        d0, d1, d2, d3 = c[l-3], c[l-2], c[l-1], c[l]
+        a3 = (x - t[l])   / (t[l+3] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+        a2 = (x - t[l-1]) / (t[l+2] - t[l-1]); d2 = (1 - a2) * d1 + a2 * d2
+        a1 = (x - t[l-2]) / (t[l+1] - t[l-2]); d1 = (1 - a1) * d0 + a1 * d1
+        a3 = (x - t[l])   / (t[l+2] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+        a2 = (x - t[l-1]) / (t[l+1] - t[l-1]); d2 = (1 - a2) * d1 + a2 * d2
+        a3 = (x - t[l])   / (t[l+1] - t[l]);   d3 = (1 - a3) * d2 + a3 * d3
+    end
+    d3
+end
+
 # Perturbations of the initial state, tried in this order by the steady state solvers: delta
 # shifts all particles sideways by delta [m] and gives them the velocity delta [m/s]. A perturbed
 # start can help the nonlinear solver, but the returned steady state is never perturbed.
@@ -558,7 +605,8 @@ end
 
 function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # the positions, velocities and forces of the model must belong to the accepted state
-    isnothing(s.integrator) || update_caches!(s, s.integrator)
+    integrator = s.integrator
+    isnothing(integrator) || update_caches!(s, integrator)
     ss.time = s.t_0
     pos = s.pos
     P = length(pos)
@@ -578,7 +626,7 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     # the angles belong to the accepted state at the time of the integrator; t_0 is the start
     # time of the last step. The rates use the angles in full precision, not the Float32 ones
     # of the SysState.
-    t = isnothing(s.integrator) ? s.t_0 : s.integrator.t
+    t = isnothing(integrator) ? s.t_0 : integrator.t
     update_rates!(s, azimuth, heading, orient, t)
     ss.azimuth_rate = s.azimuth_rate
     ss.heading_rate = s.heading_rate
@@ -660,8 +708,9 @@ function update_sys_state!(ss::SysState, s::AKM, zoom=1.0)
     ss.set_torque[1] = something(s.set_torque, NaN)
     ss.set_speed[1] = something(s.sync_speed, NaN)
     # internal state of the winch, needed to continue a simulation from this state
-    ss.var_13 = isnothing(s.wm) ? NaN : s.wm.last_set_speed
-    ss.var_14 = isnothing(s.wm) ? NaN : s.wm.brake
+    wm = s.wm
+    ss.var_13 = isnothing(wm) ? NaN : wm.last_set_speed
+    ss.var_14 = isnothing(wm) ? NaN : wm.brake
     cl, cd = cl_cd(s)
     ss.CL2 = cl
     ss.CD2 = cd
@@ -725,7 +774,7 @@ same number of segments: `Logger(P, steps; segments=n_springs(s))`, or `Logger(P
 with `with_springs=false`.
 """
 function SysState(s::AKM, zoom=1.0; with_springs=true)
-    ss = SysState(length(s.pos); segments = with_springs ? n_springs(s) : 0)
+    ss = SysState(length(s.pos)::Int; segments = with_springs ? n_springs(s) : 0)
     update_sys_state!(ss, s, zoom)
     ss
 end
@@ -820,7 +869,7 @@ sys_state, meta_data = load_state("output/sys_state_test_init_4p.yaml")
 function load_state(filename)
     yaml  = KiteUtils.YAML.load_file(filename)
     state = yaml["sys_state"]
-    ss = SysState(length(state["X"]); segments=length(get(state, "spring_force", ())))
+    ss = SysState(length(state["X"])::Int; segments=length(get(state, "spring_force", ()))::Int)
     for name in fieldnames(typeof(ss))
         haskey(state, String(name)) || continue
         value = state[String(name)]
@@ -859,11 +908,12 @@ end
 # reset the state of the winch (brake, rate limited set speed) to the state after construction
 # and the initial set speed, so that repeated calls of init! give the same result
 function init_winch_state!(s::AKM)
-    isnothing(s.wm) && return nothing
+    wm = s.wm
+    isnothing(wm) && return nothing
     s.sync_speed = s.set.v_reel_out
-    s.wm.brake = true
-    s.wm.last_set_speed = s.sync_speed
-    update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+    wm.brake = true
+    wm.last_set_speed = s.sync_speed
+    update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
 end
 
 # Set the model to the system state `ss`, which update_sys_state! wrote for a model of the same
@@ -883,9 +933,10 @@ function init_from_state!(s::AKM, ss::SysState; upwind_dir)
     # the set values and the internal state of the winch; init! has reset them
     s.sync_speed = isnan(ss.set_speed[1])  ? nothing : Float64(ss.set_speed[1])
     s.set_torque = isnan(ss.set_torque[1]) ? nothing : Float64(ss.set_torque[1])
-    if !isnothing(s.wm) && !isnan(ss.var_13)
-        s.wm.last_set_speed = ss.var_13
-        s.wm.brake          = ss.var_14 != 0
+    wm = s.wm
+    if !isnothing(wm) && !isnan(ss.var_13)
+        wm.last_set_speed = ss.var_13
+        wm.brake          = ss.var_14 != 0
     end
     s.kcu.depower      = ss.depower
     s.kcu.set_depower  = ss.depower
@@ -1152,7 +1203,8 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
         s.attractor = attractor
     end
     s.t_0 = integrator.t
-    isnothing(s.wm) || update_winch_state!(s.wm, s.sync_speed; use_brake=use_brake(s))
+    wm = s.wm
+    isnothing(wm) || update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
     # KPS3: the wind and the heading below belong to the accepted state, not to the last trial
     # state of the solver
     isa(s, KPS3) && update_kite_state!(s, integrator.u)
@@ -1361,11 +1413,17 @@ function get_default_turbulence()
 end
 
 
+# files of an examples folder that are only valid inside the KiteModels repository
+const REPO_ONLY_FILES = ("Project.toml", "Project.toml.license", "Manifest.toml")
+
+example_files(src_path) = filter(f -> f ∉ REPO_ONLY_FILES, readdir(src_path))
+
 """
     copy_examples()
 
 Copy all example scripts to the folder "examples"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples(; overwrite=true)
     PATH = "examples"
@@ -1373,14 +1431,15 @@ function copy_examples(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples", readdir(src_path); overwrite)
+    copy_files("examples", example_files(src_path); overwrite)
 end
 
 """
     copy_examples_3d()
 
 Copy all 3D example scripts to the folder "examples_3d"
-(it will be created if it doesn't exist).
+(it will be created if it doesn't exist). The `Project.toml` of the examples_3d
+folder is not copied; it is only valid inside the KiteModels repository.
 """
 function copy_examples_3d(; overwrite=true)
     PATH = "examples_3d"
@@ -1388,7 +1447,7 @@ function copy_examples_3d(; overwrite=true)
         mkdir(PATH)
     end
     src_path = joinpath(@__DIR__, "..", PATH)
-    copy_files("examples_3d", readdir(src_path); overwrite)
+    copy_files("examples_3d", example_files(src_path); overwrite)
 end
 
 function copy_model_settings(; overwrite=true)

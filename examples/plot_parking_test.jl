@@ -30,7 +30,7 @@ else
 end
 
 using Pkg
-if dirname(Pkg.project().path) != @__DIR__
+if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
     Pkg.activate(@__DIR__)
 end
 using MakieControlPlots
@@ -62,7 +62,7 @@ set_tether_diameter!(set, set.d_tether)
 
 if PLOT
     using Pkg
-    if dirname(Pkg.project().path) != @__DIR__
+    if isfile(joinpath(@__DIR__, "Project.toml")) && dirname(Pkg.project().path) != @__DIR__
         Pkg.activate(@__DIR__)
     end
     using MakieControlPlots
