@@ -2,6 +2,10 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels Unreleased
+#### Changed
+- BREAKING: `calc_azimuth_east` returns the opposite sign: it is positive anti-clockwise when seen from above, like `calc_azimuth` and `calc_azimuth_north`, so a kite due north is at +90° instead of -90°. It follows `azimuth_east` of KiteUtils 0.14, which this version requires. The curve of `azimuth_east` in `examples_3d/parking_wind_dir.jl` is mirrored.
+
 ### KiteModels v0.13.1 2026-10-22
 #### Added
 - The initial azimuth `set.azimuths[1]` is taken into account (KPS3 and KPS4, #243): `find_steady_state!` and `init!` place the kite at this azimuth in the wind reference frame, with or without `trim`; also `init!(s; steady_state=false)`. The kite is kept at the prescribed azimuth instead of balancing its lateral forces, but the tether particles are also balanced laterally, so the tether is pushed sideways by the wind. Like a kite below its natural elevation, a kite at an azimuth is not in equilibrium: it has a side slip angle. Without steering, KPS4 swings back towards the azimuth zero, while the one-point kite of KPS3 is laterally unstable and moves further away from it. The default azimuth of zero keeps the previous behaviour.
