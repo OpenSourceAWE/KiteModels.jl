@@ -639,6 +639,11 @@ function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=no
             j = i - 1
             s.pos[i] .= res1[3*(j-1)+1:3*j]
         end
+        # the turbulent wind depends on the horizontal position of the kite, so sample it again
+        # at the turned position
+        if s.set.use_turbulence != 0
+            set_v_wind_ground!(s, s.pos[end][3]; upwind_dir)
+        end
     end
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end

@@ -59,6 +59,18 @@ end
         @test rad2deg(calc_azimuth(s)) ≈ 30.0 atol=1e-6
     end
 
+    @testset "KPS3, turbulent wind at the turned kite position" begin
+        set = deepcopy(load_settings("system.yaml"))
+        set.azimuth = 30.0
+        set.use_turbulence = 0.1
+        s = KPS3(KCU(set))
+        upwind_dir = π/4
+        KiteModels.init(s; upwind_dir)
+        pos = s.pos[end]
+        v_wind, _ = calc_turbulent_wind(s.am, pos, upwind_dir, s.t_0)
+        @test s.v_wind ≈ v_wind
+    end
+
     @testset "$(nameof(Model)), azimuth 0° is unchanged" for Model in (KPS3, KPS4)
         s = new_model(Model, 0.0)
         res1, _ = find_steady_state!(s)
