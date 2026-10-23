@@ -74,7 +74,9 @@ for version in "${versions[@]}"; do
     : > "$manifest"
     rm -f "bin/kps-image-$version.so"
     echo "update_default_manifests: updating and testing under Julia $version"
-    julia "+$version" --startup-file=no --project -e 'using Pkg; Pkg.update()'
+    # load Pkg before activating the project: with the empty manifest, Julia 1.12 fails
+    # with a KeyError in the precompilation if Pkg is loaded via the project
+    julia "+$version" --startup-file=no -e 'using Pkg; Pkg.activate("."); Pkg.update()'
     if ! julia "+$version" --startup-file=no --project -e 'using Pkg; Pkg.test()'; then
         echo "update_default_manifests: tests failed under Julia $version;" \
              "the defaults are unchanged." >&2
