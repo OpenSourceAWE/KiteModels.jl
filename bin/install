@@ -17,6 +17,8 @@ Usage: bin/install [-y] [-i] [-h]
 Make this checkout ready to use with the tested package versions:
   - check that the active Julia version is supported, i.e. that a
     Manifest-v<version>.toml.default exists for it
+  - add the General registry if no registry is installed (e.g. in a new, empty
+    Julia depot), otherwise update the installed registries
   - back up manifests that are no longer needed (*.bak): a plain Manifest.toml,
     manifests of unsupported Julia versions, a locally changed
     Manifest-v<version>.toml and the manifests in examples/, examples_3d/, test/
@@ -231,6 +233,12 @@ if ! is_supported "$version"; then
     exit 1
 fi
 echo "Installing for Julia $version..."
+
+# Pkg.resolve() does not add a registry on its own, so add General to a new, empty depot;
+# otherwise update the registries, so that recently registered versions can be found
+julia --startup-file=no -e 'using Pkg
+    isempty(Pkg.Registry.reachable_registries()) ? Pkg.Registry.add("General") :
+        Pkg.Registry.update()'
 
 manifest="Manifest-v$version.toml"
 # examples, examples_3d, test and docs are part of the workspace and use the manifest
