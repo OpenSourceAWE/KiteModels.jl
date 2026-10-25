@@ -9,7 +9,7 @@ Documentation for the package [KiteModels](https://github.com/OpenSourceAWE/Kite
 The models have the following subcomponents, implemented in separate packages:
 
 - AtmosphericModel from [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
-- WinchModel from [WinchModels](https://github.com/OpenSourceAWE/WinchModels.jl)
+- WinchModel from [WinchModels](https://github.com/aenarete/WinchModels.jl)
 - KitePodModel from  [KitePodModels](https://github.com/OpenSourceAWE/KitePodModels.jl)
 
 This package is part of Julia Kite Power Tools, which consists of the following packages:
@@ -18,11 +18,11 @@ This package is part of Julia Kite Power Tools, which consists of the following 
 
 ## What to install
 
-If you want to run simulations and see the results in 3D, please install the meta package  [KiteSimulators](https://github.com/aenarete/KiteSimulators.jl) which contains all other packages. If you are not interested in 3D visualization or control you can just install this package. When you have installed the package KiteSimulators, use the command `using KiteSimulators` instead of `using KiteModels` when this is mentioned in the documentation.
+If you want to run simulations and see the results in 3D, please install the package [KiteControllers](https://github.com/OpenSourceAWE/KiteControllers.jl). If you are not interested in 3D visualization or control you can just install this package.
 
 ## Installation as package
 
-Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already.
+Install [Julia 1.12 or 1.13](https://ufechner7.github.io/2026/10/24/installing-julia-1.13-and-vscode.html), if you haven't already.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -74,7 +74,7 @@ times faster.
 
 ## Installation from git
 
-Install the Julia installer [juliaup](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html), if you haven't already. The install script below installs Julia 1.12 or 1.13 if needed.
+Install the Julia installer [juliaup](https://ufechner7.github.io/2026/10/24/installing-julia-1.13-and-vscode.html), if you haven't already. The install script below installs Julia 1.12 or 1.13 if needed.
 
 Make sure that `MakieControlPlots.jl` works as explained in the [installation instructions](https://github.com/OpenSourceAWE/MakieControlPlots.jl#installation).
 
@@ -202,8 +202,9 @@ The one point and four point kite models are described in detail in [Dynamic Mod
 
 - [Research Fechner](https://research.tudelft.nl/en/publications/?search=Fechner+wind&pageSize=50&ordering=rating&descending=true) for the scientific background of this code
 - the package [KiteUtils](https://github.com/OpenSourceAWE/KiteUtils.jl)
-- the packages [WinchModels](https://github.com/OpenSourceAWE/WinchModels.jl) and [KitePodModels](https://github.com/aenarete/KitePodModels.jl) and [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
-- the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/aenarete/KiteControllers.jl) and [KiteViewers](https://github.com/OpenSourceAWE/KiteViewers.jl)
+- the packages [WinchModels](https://github.com/aenarete/WinchModels.jl) and [KitePodModels](https://github.com/OpenSourceAWE/KitePodModels.jl) and [AtmosphericModels](https://github.com/OpenSourceAWE/AtmosphericModels.jl)
+- the packages [WinchControllers](https://github.com/OpenSourceAWE/WinchControllers.jl), [KiteControllers](https://github.com/OpenSourceAWE/KiteControllers.jl) and [KiteViewers](https://github.com/OpenSourceAWE/KiteViewers.jl)
+- The package [RobustKiteControllers](https://github.com/OpenSourceAWE/RobustKiteControllers.jl) which provides path following controllers, but no reel-in control yet.
 - the [VortexStepMethod](https://github.com/OpenSourceAWE/VortexStepMethod.jl)
 
 Authors: Uwe Fechner ([uwe.fechner.msc@gmail.com](mailto:uwe.fechner.msc@gmail.com)), Bart van de Lint ([bart@vandelint.net](mailto:bart@vandelint.net))
