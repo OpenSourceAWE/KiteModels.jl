@@ -385,7 +385,7 @@ compression, plus the damping force. The residual and [`spring_forces`](@ref) us
         return k * (norm1 - s.segment_length) + c * spring_vel
     else
         k2 = 0.05 * k # compression stiffness tether segments
-        return k2 * ((norm1 - s.segment_length) + c * spring_vel)
+        return k2 * (norm1 - s.segment_length) + c * spring_vel
     end
 end
 

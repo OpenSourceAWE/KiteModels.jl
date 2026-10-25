@@ -351,14 +351,15 @@ compression, plus the damping force. The residual and [`spring_forces`](@ref) us
     l_0 = spring.length                             # Unstressed length
     k = spring.axial_stiffness * s.stiffness_factor # Spring constant
     c = damping ? spring.axial_damping : zero(spring.axial_damping) # Damping coefficient
+    # kite springs are damped more, in tension and in compression, so that the force is
+    # continuous at the unstressed length
+    c_t = i > segments ? s.set.rel_damping * c : c
     if (norm1 - l_0) > 0.0
-        # kite springs are damped more
-        c_t = i > segments ? s.set.rel_damping * c : c
         return k * (norm1 - l_0) + c_t * spring_vel
     elseif i > segments # kite spring
-        return s.set.rel_compr_stiffness * k * (norm1 - l_0) + c * spring_vel
+        return s.set.rel_compr_stiffness * k * (norm1 - l_0) + c_t * spring_vel
     else                # tether spring
-        return 0.1 * k * (norm1 - l_0) + c * spring_vel
+        return 0.1 * k * (norm1 - l_0) + c_t * spring_vel
     end
 end
 
