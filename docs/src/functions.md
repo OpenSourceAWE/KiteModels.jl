@@ -62,6 +62,22 @@ states
 SysState
 ```
 
+## System definition
+
+A `SystemDefinition` from [KiteGeometry](https://github.com/OpenSourceAWE/KiteGeometry.jl) describes the points, segments, tether and winch of a model, so a log can be drawn by anything that reads a definition. Build it after `init!` and pass it to `save_log`, which stores it in the log; `KiteGeometry.definition` reads it back from the loaded log:
+
+```julia
+integrator = init!(s)
+definition = system_definition(s)
+# ... simulate and log! ...
+save_log(logger, definition, "sim_log")
+KiteGeometry.definition(load_log("sim_log"))
+```
+
+```@docs
+system_definition
+```
+
 ## Saving the system state
 
 The system state of one time step can be saved as human-readable YAML file, for example to
@@ -115,4 +131,7 @@ UNUSED_FIELDS_KPS3
 inner_loop!
 loop!
 make_jac
+assemble_system_definition
+line_material!
+spring_name
 ```

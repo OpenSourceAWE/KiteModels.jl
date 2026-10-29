@@ -94,6 +94,7 @@ function simulate(integrator, steps, plot=false)
 end
 
 integrator = KiteModels.init!(kps4; prn=STATISTIC)
+definition = system_definition(kps4)
 kps4.sync_speed = 0.0
 
 av_steps = if PLOT
@@ -124,7 +125,7 @@ println("Kite mass: $(set.mass) kg")
 println("KCU mass:  $(set.kcu_mass) kg")
 println("Tether diameter: $(set.d_tether) mm")
 
-save_log(logger, "reel_out_4p_torque_control")
+save_log(logger, definition, "reel_out_4p_torque_control")
 # savefig("docs/src/reelout_force_4p.png")
 
 # Solver: DFBDF, reltol=0.000001

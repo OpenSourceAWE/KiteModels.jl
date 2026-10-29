@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "6ebd262e17d014f08211b70bb4908cf126f18727"
+project_hash = "c607ec04bd19c491f8a6448b3da35c5a57576af0"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1425,8 +1425,14 @@ git-tree-sha1 = "9eda8292dd3268b3b7ec9df21bbfac24e177ec52"
 uuid = "5ab0869b-81aa-558d-bb23-cbf5423bbe9b"
 version = "0.6.12"
 
+[[deps.KiteGeometry]]
+deps = ["JSON", "KiteUtils", "LinearAlgebra", "OrderedCollections", "SHA", "StaticArrays", "YAML"]
+git-tree-sha1 = "f111b21c7a0d5b6f9b491954d01fcbb672158d65"
+uuid = "941ca69c-4b42-4a27-9601-abc4d37bf99e"
+version = "0.3.2"
+
 [[deps.KiteModels]]
-deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
+deps = ["AtmosphericModels", "Dierckx", "DiffEqBase", "DiscretePIDs", "DocStringExtensions", "Interpolations", "KiteGeometry", "KitePodModels", "KiteUtils", "LinearAlgebra", "LinearSolve", "Logging", "NLSolversBase", "NLsolve", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "REPL", "Reexport", "Rotations", "StaticArrays", "Statistics", "Sundials", "Suppressor", "WinchModels"]
 path = "."
 uuid = "b94af626-7959-4878-9336-2adc27959007"
 version = "0.13.1"
