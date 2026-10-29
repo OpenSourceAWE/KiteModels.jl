@@ -108,9 +108,9 @@ end
     y_ref, _ = find_steady_state!(s)
     s = Model(KCU(deepcopy(load_settings("system.yaml"))))
     KiteModels.clear!(s)
-    y, _ = find_steady_state!(s; delta=0.005)
+    y, _ = @test_deprecated find_steady_state!(s; delta=0.005)
     @test y ≈ y_ref
-    @test !isnothing(init!(Model(KCU(deepcopy(load_settings("system.yaml")))); delta=0.005))
+    @test !isnothing(@test_deprecated init!(Model(KCU(deepcopy(load_settings("system.yaml")))); delta=0.005))
 end
 
 @testset "deprecated keyword stiffness_factor, $Model" for Model in (KPS3, KPS4)
@@ -121,11 +121,11 @@ end
     y_ref, _ = find_steady_state!(s)
     s = Model(KCU(deepcopy(load_settings("system.yaml"))))
     KiteModels.clear!(s)
-    y, _ = find_steady_state!(s; stiffness_factor=0.1)
+    y, _ = @test_deprecated find_steady_state!(s; stiffness_factor=0.1)
     @test y ≈ y_ref
     @test s.stiffness_factor == 1.0
     s = Model(KCU(deepcopy(load_settings("system.yaml"))))
-    @test !isnothing(init!(s; stiffness_factor=0.1))
+    @test !isnothing(@test_deprecated init!(s; stiffness_factor=0.1))
     @test s.stiffness_factor == 1.0
 end
 

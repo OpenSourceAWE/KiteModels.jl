@@ -319,6 +319,36 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
         end
     end
 
+    @testset "side_slip              " begin
+        local kps4 = KPS4(KCU(deepcopy(load_settings("system.yaml"))))
+        kps4.set.alpha = 1.0/7.0
+        init_150(kps4)
+        kps4.set.elevation = 60.0
+        pos, vel, _ = KiteModels.init_pos_vel_acc(kps4, old = true, delta = 1e-6)
+        for v in vel
+            v .= 0.0
+        end
+        rho = 1.25
+        v_app = 20.0
+        # the kite reference frame depends only on the positions
+        (; x, y) = KiteModels.calc_aero_forces(kps4, pos, vel, rho, 0.0, 0.0)
+        side_forces = Dict{Float64, Float64}()
+        for beta in (0.0, -45.0, 45.0)
+            # apparent wind = v_wind, because the kite particles are not moving
+            kps4.v_wind .= v_app * (-cosd(beta) * x + sind(beta) * y)
+            for f in kps4.forces
+                f .= 0.0
+            end
+            KiteModels.calc_aero_forces!(kps4, pos, vel, rho, 0.0, 0.0)
+            @test isapprox(rad2deg(kps4.side_slip), beta, atol = 1e-8)
+            side_forces[beta] = sum(kps4.forces) ⋅ y
+        end
+        # the side force changes sign with the side slip angle and is zero without side slip
+        @test abs(side_forces[0.0]) < 1e-6 * abs(side_forces[45.0])
+        @test side_forces[45.0] != 0.0
+        @test isapprox(side_forces[-45.0], -side_forces[45.0], rtol = 1e-6)
+    end
+
     function init2(kps4)
         kps4.set.alpha = 1.0/7.0
         init_150(kps4)

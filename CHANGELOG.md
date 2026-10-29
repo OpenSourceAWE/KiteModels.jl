@@ -4,6 +4,15 @@ SPDX-License-Identifier: MIT
 -->
 ### KiteModels unreleased
 #### Added
+- `winch_model: "MatlabMachine"` (KPS3 and KPS4): the model of the asynchronous machine,
+  implemented in Matlab, see the `MatlabMachine` of WinchModels.jl. `next_step!` and `init!` pass the
+  reel-out speed and the tether force to `update_winch_state!`
+#### Fixed
+- An unknown `winch_model` now stops with a clear error message. KPS4 failed with a conversion
+  error, KPS3 silently simulated without winch dynamics; KPS3 still allows an empty `winch_model`
+
+### KiteModels v0.13.1 2026-10-22
+#### Added
 - The initial azimuth `set.azimuths[1]` is taken into account (KPS3 and KPS4, #243): `find_steady_state!` and `init!` place the kite at this azimuth in the wind reference frame, with or without `trim`; also `init!(s; steady_state=false)`. The kite is kept at the prescribed azimuth instead of balancing its lateral forces, but the tether particles are also balanced laterally, so the tether is pushed sideways by the wind. Like a kite below its natural elevation, a kite at an azimuth is not in equilibrium: it has a side slip angle. Without steering, KPS4 swings back towards the azimuth zero, while the one-point kite of KPS3 is laterally unstable and moves further away from it. The default azimuth of zero keeps the previous behaviour.
 - The initial steering `set.steerings[1]` [%] (KPS3 and KPS4) and the initial heading `set.headings[1]` (KPS4) are taken into account (#243). The steering is set in `clear!`, like the depower, so the steady state is solved with it; a steering other than zero makes the kite turn. The heading is applied by `init!` after the steady state was found: the kite points A, C and D are rotated about the line from the KCU to the kite (point B), so that `calc_heading` returns the prescribed heading, while the position of the kite, its elevation and azimuth and the lengths of all springs stay the same. A kite with a heading other than zero is not in equilibrium and flies towards its nose. KPS3 ignores the heading, because the one-point kite has no heading of its own. The defaults of zero keep the previous behaviour.
 - The initial rates `set.elevation_rates[1]` and `set.azimuth_rates[1]` (KPS3 and KPS4) and `set.heading_rates[1]` (KPS4) are taken into account by `init!` (#243). For the elevation and azimuth rates, the velocities of a rotation of the tether and the kite as a rigid body about the winch are added to the initial state. For the heading rate, the kite points A, C and D also rotate about the line from the KCU to the kite. The accelerations are not changed, so the simulation starts with a transient: with an elevation rate of -5 °/s, the tether force of KPS4 drops from 502 N to 48 N within 0.1 s. With rates, the initial pitch rate of KPS4 is calculated from the velocities of the particles instead of being zero. KPS3 ignores the heading rate. The defaults of zero keep the previous behaviour.
@@ -250,7 +259,7 @@ SPDX-License-Identifier: MIT
 #### Changed
 - Switched from `ControlPlots` to `MakieControlPlots` across all examples, tests, docs, and scripts (#295)
 - Removed `bin/install_controlplots`
-- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behavior
+- Added a 25 ms delay to each `plot2d` call to match the previous `ControlPlots` behaviour
 - Cleaned up `bin/install`: no special handling for `ControlPlots` any more
 - `examples/reel_out_4p_torque_control.jl` now uses `reel_out_speed` and interface functions, and plots heading and wind at kite
 - Updated PR template: replaced "Lint workflow is passing" with "JETLS is not reporting any warnings"; updated docs check to reference `scripts/build_docu.jl`
@@ -322,7 +331,7 @@ SPDX-License-Identifier: MIT
 - improved Julia 1.11 compatibility in startup/install tooling
 - `install` now always ensures `Revise` is available in the global Julia environment
 - improved Linux OpenSSL runtime handling to avoid `libssl`/`libcrypto` symbol mismatches
-- fixed failure modes in `install` and startup scripts for more reliable launcher behavior
+- fixed failure modes in `install` and startup scripts for more reliable launcher behaviour
 
 ### KiteModels v0.11.9 2026-04-29
 #### Changed

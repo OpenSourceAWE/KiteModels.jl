@@ -902,10 +902,11 @@ function calc_pre_tension(s::AKM)
     return res + 1.0
 end
 
-# KPS3 always uses the brake of the winch, KPS4 for the AsyncMachine or if the set speed is zero
+# KPS3 always uses the brake of the winch, KPS4 for the AsyncMachine and the MatlabMachine or if
+# the set speed is zero
 function use_brake(s::AKM)
     s isa KPS4 || return true
-    s.wm isa AsyncMachine || (!isnothing(s.sync_speed) && s.sync_speed == 0.0)
+    s.wm isa Union{AsyncMachine, MatlabMachine} || (!isnothing(s.sync_speed) && s.sync_speed == 0.0)
 end
 
 # reset the state of the winch (brake, rate limited set speed) to the state after construction
@@ -916,7 +917,8 @@ function init_winch_state!(s::AKM)
     s.sync_speed = s.set.v_reel_out
     wm.brake = true
     wm.last_set_speed = s.sync_speed
-    update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
+    update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s), speed=reel_out_speed(s),
+                        force=winch_force(s))
 end
 
 # Set the model to the system state `ss`, which update_sys_state! wrote for a model of the same
@@ -1207,7 +1209,9 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
     end
     s.t_0 = integrator.t
     wm = s.wm
-    isnothing(wm) || update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s))
+    # speed and force at the start of the time step: the values of the last call of the residual
+    isnothing(wm) || update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s),
+                                         speed=reel_out_speed(s), force=winch_force(s))
     # KPS3: the wind and the heading below belong to the accepted state, not to the last trial
     # state of the solver
     isa(s, KPS3) && update_kite_state!(s, integrator.u)

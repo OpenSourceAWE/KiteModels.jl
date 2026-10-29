@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 ## Goal
 
 Allow a vertical wind component (updraft/downdraft) at the kite, so that the apparent wind gets a
-nonzero z-velocity. Fully backward compatible: the default of `0.0` reproduces today's behavior
+nonzero z-velocity. Fully backward compatible: the default of `0.0` reproduces today's behaviour
 exactly.
 
 ## Original request
@@ -81,18 +81,22 @@ ground wind vector must keep its `0.0` third component; only `s.v_wind` is touch
 ## Implementation steps
 
 1. **`src/KPS4.jl`** — add to the struct, next to `v_wind_tether`:
+
    ```julia
    "vertical wind velocity at the kite, positive up [m/s]"
    v_wind_vert::S = 0.0
    ```
+
 2. **`src/KPS3.jl`** — the same field (note KPS3 is parameterized `{S, T, P}`, KPS4 is
    `{S, T, P, Q, SP}`; the field only needs `S`). Reset it in `clear!` alongside the other wind
    fields.
 3. **`src/KiteModels.jl`, `set_v_wind_ground!`** — after the `if`/`else` and before `s.rho = ...`:
+
    ```julia
    s.v_wind[3] += s.v_wind_vert
    ```
-   Update the docstring: new behavior, sign convention, and the note that the tether wind is
+
+   Update the docstring: new behaviour, sign convention, and the note that the tether wind is
    unaffected.
 4. **`src/KiteModels.jl`, `next_step!`** — add the keyword `v_wind_vert=0.0` and assign
    `s.v_wind_vert = v_wind_vert` next to the existing `s.sync_speed = set_speed` assignments, i.e.

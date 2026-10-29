@@ -5,7 +5,7 @@ CurrentModule = KiteModels
 # Advanced usage
 
 For advanced users it is suggested to install git, bash and vscode or vscodium in addition to Julia. vscode and vscodium both have a very good plugin for Julia support, see [https://www.julia-vscode.org](https://www.julia-vscode.org/).
-Installation instructions: [Julia and VSCode](https://ufechner7.github.io/2024/08/09/installing-julia-with-juliaup.html) .
+Installation instructions: [Julia and VSCode](https://ufechner7.github.io/2026/10/24/installing-julia-1.13-and-vscode.html) .
 
 Whe using vscode, I do NOT use the Julia terminal provided by vscode, but the normal bash terminal which is also available in vscode by selecting **Terminal->New Terminal** From this terminal I start Julia with ```julia --project``` or a different command as explained below. This makes it easier to understand what happens and is also faster when you need to restart.
 
@@ -49,8 +49,8 @@ Sometimes JETLS.jl keeps running even after closing VSCode. This can eat up all 
 
 To reduce the startup time it is suggested to use a custom system image that contains all the packages you use on a daily base in compiled form.
 
-1. Go to the website <https://github.com/ufechner7/KiteModels.jl> and click on the **Fork** button at the top right.
-2. clone the new repository which is owned by you with a command similar to this one: ```git clone https://github.com/ufechner7/KiteModels.jl``` Your own git user name must appear in the URL, otherwise you will not be able to push your changes.
+1. Go to the website <https://github.com/OpenSourceAWE/KiteModels.jl> and click on the **Fork** button at the top right.
+2. clone the new repository which is owned by you with a command similar to this one: ```git clone https://github.com/USERNAME/KiteModels.jl``` Your own git user name must appear in the URL, otherwise you will not be able to push your changes.
 
 After cloning the repo you can create a new system image:
 
