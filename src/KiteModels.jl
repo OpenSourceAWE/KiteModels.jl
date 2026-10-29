@@ -458,8 +458,8 @@ end
 """
     calc_azimuth_east(s::AKM)
 
-Determine the azimuth_east angle of the kite in radian.
-Positive clockwise when seen from above.
+Determine the azimuth_east angle of the kite in radian: the angle of its horizontal position
+from the east axis, positive anti-clockwise when seen from above.
 """
 function calc_azimuth_east(s::AKM)
     KiteUtils.azimuth_east(pos_kite(s))

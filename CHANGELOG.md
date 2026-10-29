@@ -2,6 +2,10 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels unreleased
+#### Changed
+- BREAKING: `calc_azimuth_east` is positive anti-clockwise when seen from above, as `azimuth_east` of KiteUtils 0.14: a kite due north is at +90° instead of -90°.
+
 ### KiteModels v0.13.2 2026-10-29
 #### Added
 - `winch_model: "MatlabMachine"` (KPS3 and KPS4): the model of the asynchronous machine,
