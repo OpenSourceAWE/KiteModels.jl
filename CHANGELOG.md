@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels unreleased
+### KiteModels v0.13.2 2026-10-29
 #### Added
 - `winch_model: "MatlabMachine"` (KPS3 and KPS4): the model of the asynchronous machine,
   implemented in Matlab, see the `MatlabMachine` of WinchModels.jl. `next_step!` and `init!` pass the
