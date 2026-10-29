@@ -2,6 +2,15 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels unreleased
+#### Added
+- `winch_model: "MatlabMachine"` (KPS3 and KPS4): the model of the asynchronous machine,
+  implemented in Matlab, see the `MatlabMachine` of WinchModels.jl. `next_step!` and `init!` pass the
+  reel-out speed and the tether force to `update_winch_state!`
+#### Fixed
+- An unknown `winch_model` now stops with a clear error message. KPS4 failed with a conversion
+  error, KPS3 silently simulated without winch dynamics; KPS3 still allows an empty `winch_model`
+
 ### KiteModels v0.13.1 2026-10-22
 #### Added
 - The initial azimuth `set.azimuths[1]` is taken into account (KPS3 and KPS4, #243): `find_steady_state!` and `init!` place the kite at this azimuth in the wind reference frame, with or without `trim`; also `init!(s; steady_state=false)`. The kite is kept at the prescribed azimuth instead of balancing its lateral forces, but the tether particles are also balanced laterally, so the tether is pushed sideways by the wind. Like a kite below its natural elevation, a kite at an azimuth is not in equilibrium: it has a side slip angle. Without steering, KPS4 swings back towards the azimuth zero, while the one-point kite of KPS3 is laterally unstable and moves further away from it. The default azimuth of zero keeps the previous behaviour.
