@@ -68,3 +68,16 @@ end
     @test s.wm.brake
     @test s.wm.last_set_speed == last_set_speed
 end
+
+@testset "winch_model selects the winch model" begin
+    set = deepcopy(load_settings("system.yaml"))
+    set.winch_model = "MatlabMachine"
+    @test KPS4(KCU(set)).wm isa MatlabMachine
+    @test KPS3(KCU(set)).wm isa MatlabMachine
+    set.winch_model = "NoSuchMachine"
+    @test_throws ErrorException KPS4(KCU(set))
+    @test_throws ErrorException KPS3(KCU(set))
+    # KPS3 can be used without winch dynamics
+    set.winch_model = ""
+    @test isnothing(KPS3(KCU(set)).wm)
+end

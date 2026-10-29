@@ -2,9 +2,16 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
-### KiteModels Unreleased
+### KiteModels unreleased
+#### Added
+- `winch_model: "MatlabMachine"` (KPS3 and KPS4): the model of the asynchronous machine,
+  implemented in Matlab, see the `MatlabMachine` of WinchModels.jl. `next_step!` and `init!` pass the
+  reel-out speed and the tether force to `update_winch_state!`
 #### Changed
 - BREAKING: `calc_azimuth_east` is positive anti-clockwise when seen from above, as `azimuth_east` of KiteUtils 0.14: a kite due north is at +90° instead of -90°.
+#### Fixed
+- An unknown `winch_model` now stops with a clear error message. KPS4 failed with a conversion
+  error, KPS3 silently simulated without winch dynamics; KPS3 still allows an empty `winch_model`
 
 ### KiteModels v0.13.1 2026-10-22
 #### Added

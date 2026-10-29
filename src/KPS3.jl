@@ -214,6 +214,11 @@ function KPS3(kcu::KCU)
         s.wm = AsyncMachine(s.set)
     elseif s.set.winch_model == "TorqueControlledMachine"
         s.wm = TorqueControlledMachine(s.set)
+    elseif s.set.winch_model == "MatlabMachine"
+        s.wm = MatlabMachine(s.set)
+    elseif s.set.winch_model != ""
+        error("Unknown winch_model \"$(s.set.winch_model)\"; use \"AsyncMachine\", " *
+              "\"TorqueControlledMachine\" or \"MatlabMachine\".")
     end
     s.kcu = kcu  
     clear!(s)
@@ -553,6 +558,9 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
     # the state of the winch (brake, rate limited set speed) is updated once per time step in next_step!
     if s.wm isa AsyncMachine
         res[end] = v_reel_outd - calc_acceleration(s.wm::AsyncMachine, v_reel_out, norm(s.forces[1]);
+            set_speed=s.sync_speed, use_brake=true, update_state=false)
+    elseif s.wm isa MatlabMachine
+        res[end] = v_reel_outd - calc_acceleration(s.wm::MatlabMachine, v_reel_out, norm(s.forces[1]);
             set_speed=s.sync_speed, use_brake=true, update_state=false)
     elseif !isnothing(s.wm)
         res[end] = v_reel_outd - calc_acceleration(s.wm::TorqueControlledMachine, v_reel_out, norm(s.forces[1]);
