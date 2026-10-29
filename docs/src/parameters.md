@@ -118,7 +118,7 @@ tether:
                            # SK75: 109 to 132 GPa according to datasheet
 
 winch:
-    winch_model: "AsyncMachine" # or TorqueControlledMachine
+    winch_model: "AsyncMachine" # or TorqueControlledMachine or MatlabMachine
     max_force: 4000        # maximal (nominal) tether force; short overload allowed [N]
     v_ro_max:  8.0         # maximal reel-out speed                          [m/s]
     v_ro_min: -8.0         # minimal reel-out speed (=max reel-in speed)     [m/s]
@@ -150,3 +150,18 @@ environment:
     height_step: 2.0         # use a grid with 2m resolution in z direction                                 [m]
     grid_step:   2.0         # grid resolution in x and y direction                                         [m]               
 ```
+
+### Winch model
+
+`winch_model` selects the model of the winch from
+[WinchModels.jl](https://github.com/aenarete/WinchModels.jl):
+
+- `"AsyncMachine"`: asynchronous machine with gearbox and brake
+- `"TorqueControlledMachine"`: torque-controlled machine with gearbox, without brake
+- `"MatlabMachine"`: the asynchronous machine, implemented in Matlab and called once per time step
+  through the Matlab engine; needs `using MATLAB`, see
+  [Winch Model in Matlab](https://opensourceawe.github.io/KiteControllers.jl/dev/matlab/) in the
+  documentation of KiteControllers.jl
+
+An unknown value stops with an error. KPS3 also accepts an empty `winch_model`, which simulates
+without winch dynamics.

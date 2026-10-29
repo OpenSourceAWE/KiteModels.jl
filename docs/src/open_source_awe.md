@@ -224,7 +224,7 @@ tether:
                            # SK75: 109 to 132 GPa according to datasheet
 
 winch:
-    winch_model: "AsyncMachine" # or TorqueControlledMachine
+    winch_model: "AsyncMachine" # or TorqueControlledMachine or MatlabMachine
     max_force: 4000        # maximal (nominal) tether force; short overload allowed [N]
     v_ro_max:  8.0         # maximal reel-out speed                          [m/s]
     v_ro_min: -8.0         # minimal reel-out speed (=max reel-in speed)     [m/s]
