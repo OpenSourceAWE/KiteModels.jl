@@ -14,17 +14,24 @@ function system_definition(s::KPS4)
     extra_masses = zeros(length(s.pos))
     extra_masses[tether_segments + 1] = s.set.kcu_mass
     extra_masses[(tether_segments + 2):end] .= s.masses[(tether_segments + 2):end]
-    materials = Material[]
+    tether_diameter = s.set.d_tether / 1000
+    line_diameter = s.set.d_line / 1000
+    tether_spring = s.springs[1]
+    line_spring = s.springs[tether_segments + 1]
+    materials = [line_material("tether", s.set.rho_tether,
+                               tether_spring.axial_stiffness * tether_spring.length,
+                               tether_diameter),
+                 line_material("kite_line", 0.0,
+                               line_spring.axial_stiffness * line_spring.length,
+                               line_diameter)]
     segments = Segment[]
     for (i, spring) in enumerate(s.springs)
         in_tether = i <= tether_segments
-        diameter = (in_tether ? s.set.d_tether : s.set.d_line) / 1000
-        density = in_tether ? s.set.rho_tether : 0.0
-        material = line_material!(materials, in_tether ? "tether" : "kite_line", density,
-                                  spring.axial_stiffness * spring.length, diameter)
         push!(segments, Segment(; name=spring_name(s, i, spring),
                                 points=(Int(spring.p1), Int(spring.p2)),
-                                rest_length=spring.length, diameter, material))
+                                rest_length=spring.length,
+                                diameter=in_tether ? tether_diameter : line_diameter,
+                                material=in_tether ? "tether" : "kite_line"))
     end
     return assemble_system_definition(s, materials, segments, extra_masses)
 end
@@ -55,31 +62,25 @@ function system_definition(s::KPS3)
     extra_masses = zeros(length(s.pos))
     extra_masses[end] = s.set.mass + s.set.kcu_mass
     diameter = s.set.d_tether / 1000
-    materials = Material[]
-    material = line_material!(materials, "tether", s.set.rho_tether,
-                              s.axial_stiffness * s.segment_length, diameter)
+    materials = [line_material("tether", s.set.rho_tether,
+                               s.axial_stiffness * s.segment_length, diameter)]
     segments = [Segment(; name="tether_$i", points=(i, i + 1), rest_length=s.segment_length,
-                        diameter, material)
+                        diameter, material="tether")
                 for i in 1:s.set.segments]
     return assemble_system_definition(s, materials, segments, extra_masses)
 end
 
 """
-    line_material!(materials, name, density, unit_stiffness, diameter)
+    line_material(name, density, unit_stiffness, diameter)
 
-The name of the `linear` material among `materials` of `density` [kg/m³] that gives a
-line of `diameter` [m] the axial stiffness times rest length `unit_stiffness` [N], added
-as `name` where none matches.
+The `linear` material `name` of `density` [kg/m³] that gives a line of `diameter` [m] the
+axial stiffness times rest length `unit_stiffness` [N].
 """
-function line_material!(materials, name, density, unit_stiffness, diameter)
+function line_material(name, density, unit_stiffness, diameter)
     area = π * diameter^2 / 4
     parameters = Dict{String, Any}("density" => density,
                                    "youngs_modulus" => unit_stiffness / area)
-    for material in materials
-        material.parameters == parameters && return material.name
-    end
-    push!(materials, Material(; name, law="linear", parameters))
-    return name
+    return Material(; name, law="linear", parameters)
 end
 
 """

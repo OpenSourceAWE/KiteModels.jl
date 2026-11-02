@@ -52,6 +52,19 @@ unit_stiffness(definition, segment) =
                 segment.name for segment in definition.segments) == 6
 end
 
+@testset "KPS4 kite springs of any line diameter share one material" begin
+    for d_line in 1.0:0.1:5.9
+        set = load_settings("system.yaml")
+        set.d_line = d_line
+        kps4 = KPS4(set)
+        KiteModels.init_springs!(kps4)
+        definition = system_definition(kps4)
+        @test [material.name for material in definition.materials] == [:tether, :kite_line]
+        @test [unit_stiffness(definition, segment) for segment in definition.segments] ≈
+              [spring.axial_stiffness * spring.length for spring in kps4.springs]
+    end
+end
+
 @testset "KPS3 definition is one tether from the winch to the kite" begin
     kps3 = KPS3(load_settings("system.yaml"))
     init!(kps3)
