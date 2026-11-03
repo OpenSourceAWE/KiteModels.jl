@@ -122,6 +122,22 @@ const SEGMENTS = load_settings("system.yaml").segments
         @test result ≈ [0.14263997, 0.41669208, 10.12449937]
     end
 
+    @testset "test_calc_spring_force" begin
+        local kps = KPS3(KCU(load_settings("system.yaml")))
+        kps.segment_length = 10.0
+        kps.axial_stiffness = 1000.0
+        kps.axial_damping = 2.0
+        kps.stiffness_factor = 1.0
+        k, c = kps.axial_stiffness, kps.axial_damping
+        # stretched segment
+        @test KiteModels.calc_spring_force(kps, 10.5, 0.3) ≈ k * 0.5 + c * 0.3
+        # compressed segment: reduced stiffness, but the damping is not scaled by the stiffness
+        @test KiteModels.calc_spring_force(kps, 9.5, 0.3) ≈ 0.05 * k * (-0.5) + c * 0.3
+        @test KiteModels.calc_spring_force(kps, 10.0 - 1e-9, 1.0) ≈ c atol=1e-5
+        # without damping
+        @test KiteModels.calc_spring_force(kps, 9.5, 0.3; damping=false) ≈ 0.05 * k * (-0.5)
+    end
+
     @testset "test_calc_loop       " begin
         local kps = KPS3(KCU(load_settings("system.yaml")))
         set_defaults(kps)
