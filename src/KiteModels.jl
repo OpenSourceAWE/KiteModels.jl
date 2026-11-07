@@ -287,9 +287,10 @@ function states(s::KPS4)
     6 * (s.set.segments + KITE_PARTICLES) + 2
 end
 
-# The state vector the getters read: the accepted state of the integrator after init!, before
-# it the state the model was last initialised to or evaluated at by residual!. It holds the
-# positions of the particles 2:P, then their velocities, the tether length and reel-out speed.
+# The state vector the getters read: the accepted state of the integrator after init!,
+# before it the state the model was last initialised to or evaluated at by residual!. It
+# holds the positions of the particles 2:P, then their velocities, the tether length and the
+# reel-out speed.
 function state_vector(s::AKM)::Vector{SimFloat}
     integrator = s.integrator
     isnothing(integrator) ? s.trial_y : integrator.u
@@ -1201,8 +1202,8 @@ end
 
 
 # Evaluate the residual for the accepted state of the integrator. The solver evaluates it
-# for trial states too, so without this the positions, velocities, forces and the apparent
-# wind stored in the model could belong to a rejected trial state; the number of iterations
+# for trial states too, so without this the forces and the apparent wind stored in the
+# model could belong to a rejected trial state; the number of iterations
 # s.iter is not changed. Called by update_sys_state!, not by next_step!, because it costs
 # about 15 % of a time step.
 function update_caches!(s::AKM, integrator)

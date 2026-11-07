@@ -1327,8 +1327,9 @@ function set_initial_heading!(s::KPS4, y0, yd0)
     error("set_initial_heading!: no rotation of the kite found for the heading $(s.set.heading)°")
 end
 
-# Velocities of the particles at the positions pos when reeling out: along the tether, growing
-# linearly from zero at the winch to the reel-out speed at the KCU, which the kite shares.
+# Velocities of the particles at the positions pos when reeling out: along the tether,
+# growing linearly from zero at the winch to the reel-out speed at the KCU, which the kite
+# shares.
 function initial_velocities(s::KPS4, pos)
     vel = zeros(MVector{length(pos), SVec3})
     for i in 2:s.set.segments+1

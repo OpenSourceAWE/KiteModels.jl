@@ -13,7 +13,8 @@ set_data_path(joinpath(dirname(dirname(pathof(KiteModels)::String)), "data"))
 # point i of the particles of the state vector u, whose points start after offset
 state_point(u, offset, i) = i == 1 ? zeros(3) : u[offset+3i-5:offset+3i-3]
 
-@testset "the getters read the accepted state of the integrator, $Model" for Model in (KPS3, KPS4)
+@testset "the getters read the accepted state of the integrator, $Model" for
+        Model in (KPS3, KPS4)
     set = deepcopy(load_settings("system.yaml"))
     s = Model(KCU(set))
     integrator = init!(s; prn=false)
