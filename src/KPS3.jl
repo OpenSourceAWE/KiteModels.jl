@@ -173,7 +173,6 @@ function clear!(s::KPS3)
     s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
     s.acc_kite      .= [0.0, 0, 0]
     s.integrator = nothing
-    s.trial_y .= 0.0
     s.t_last = -Inf
     s.orient_last   .= 0.0
     s.azimuth_rate = 0.0
