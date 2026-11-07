@@ -474,7 +474,7 @@ const SEGMENTS = load_settings("system.yaml").segments
             u_0 = copy(integrator.u)
             next_step!(kps, integrator; set_speed=0, dt=0.05, upwind_dir=-pi/2 + deg2rad(30))
             # s.v_wind is the new wind; restore the state at the start of the time step
-            KiteModels.update_kite_state!(kps, u_0)
+            integrator.u .= u_0
             kps.v_apparent .= kps.v_wind - kps.vel_kite
             @test kps.psi ≈ calc_heading(kps)
         end

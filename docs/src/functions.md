@@ -125,6 +125,7 @@ calc_spring_force
 calc_drag_forces
 calc_drag_force
 tether_drag_forces
+particle_positions
 particle_velocities
 UNUSED_FIELDS
 UNUSED_FIELDS_KPS3

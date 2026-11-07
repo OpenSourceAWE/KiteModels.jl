@@ -78,7 +78,7 @@ Print the vector of the positions of the particles:
 
 ```julia
 julia> kps.pos
-7-element StaticArrays.SVector{7, StaticArrays.MVector{3, Float64}} with indices SOneTo(7):
+7-element StaticArrays.SVector{7, StaticArrays.SVector{3, Float64}} with indices SOneTo(7):
  [0.0, 0.0, 0.0]
  [26.95751778658999, 0.0, 59.59749511924355]
  [51.97088814144287, 0.0, 120.03746888266994]
