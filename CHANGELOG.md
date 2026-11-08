@@ -2,6 +2,11 @@
 SPDX-FileCopyrightText: 2025 Uwe Fechner, Bart van de Lint
 SPDX-License-Identifier: MIT
 -->
+### KiteModels unreleased
+#### Changed
+- BREAKING: `calc_azimuth_east` is positive anti-clockwise when seen from above, as `azimuth_east` of KiteUtils 0.14: a kite due north is at +90° instead of -90°.
+- BREAKING: `save_state` writes `elevations`, `azimuths`, `headings`, `courses` and `AoAs`, one entry per wing, instead of the scalars `elevation`, `azimuth`, `heading`, `course` and `AoA`, following `SysState` of KiteUtils 0.14.1. `load_state` also reads the older files.
+
 ### KiteModels v0.13.2 2026-10-29
 #### Added
 - `winch_model: "MatlabMachine"` (KPS3 and KPS4): the model of the asynchronous machine,

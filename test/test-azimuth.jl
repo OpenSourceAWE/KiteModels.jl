@@ -109,5 +109,13 @@ end
         @test length(res1) == (Model == KPS3 ? 6s.set.segments + 2 :
                                6*(s.set.segments + KiteModels.KITE_PARTICLES) + 2)
     end
+
+    @testset "azimuth_east of a kite due north is +90°, anti-clockwise from east" begin
+        s = new_model(KPS3, 0.0)
+        find_steady_state!(s; upwind_dir=π)
+        @test pos_kite(s)[1] ≈ 0.0 atol=1e-6
+        @test pos_kite(s)[2] > 0.0
+        @test rad2deg(calc_azimuth_east(s)) ≈ 90.0 atol=1e-6
+    end
 end
 nothing

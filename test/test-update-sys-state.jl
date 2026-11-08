@@ -130,7 +130,7 @@ end
     # the shortest representation of Float32 values round-trips
     @test Float32.(state["X"]) == ss.X
     @test Float32.(state["spring_force"]) == ss.spring_force
-    @test state["elevation"] isa Float64
+    @test state["elevations"][1] isa Float64
     save_state(file, ss; exclude=())
     yaml = KiteUtils.YAML.load_file(file)
     @test isempty(yaml["meta_data"])
@@ -172,6 +172,13 @@ end
     # a vector of the wrong length is rejected; the number of points is taken from X
     write(file, replace(read(file, String), r"  Y: \[[^\]]*\]" => "  Y: [1.0]"))
     @test_throws ArgumentError load_state(file)
+end
+
+@testset "load_state puts a single-wing angle of an older file on the first wing" begin
+    file = joinpath(mktempdir(), "sys_state.yaml")
+    save_state(file, SysState(kps4); exclude=(:elevations,))
+    write(file, read(file, String) * "  elevation: 1.25\n")
+    @test load_state(file)[1].elevation ≈ 1.25
 end
 
 @testset "init! from a loaded state, $Model" for (Model, exclude) in
