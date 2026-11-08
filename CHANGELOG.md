@@ -5,6 +5,7 @@ SPDX-License-Identifier: MIT
 ### KiteModels unreleased
 #### Changed
 - BREAKING: `calc_azimuth_east` is positive anti-clockwise when seen from above, as `azimuth_east` of KiteUtils 0.14: a kite due north is at +90° instead of -90°.
+- BREAKING: `save_state` writes `elevations`, `azimuths`, `headings`, `courses` and `AoAs`, one entry per wing, instead of the scalars `elevation`, `azimuth`, `heading`, `course` and `AoA`, following `SysState` of KiteUtils 0.14.1. `load_state` also reads the older files.
 
 ### KiteModels v0.13.2 2026-10-29
 #### Added
