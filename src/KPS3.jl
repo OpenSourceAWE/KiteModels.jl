@@ -419,13 +419,6 @@ Return the absolute value of the force at the winch as calculated during the las
 function winch_force(s::KPS3) norm(s.last_force) end
 
 """
-    reel_out_speed(s::KPS3)
-
-Return the current reel-out speed of the winch in m/s.
-"""
-function reel_out_speed(s::KPS3) s.v_reel_out end
-
-"""
     calc_set_cl_cd!(s::KPS3, vec_c, v_app)
 
 Calculate the lift over drag ratio as a function of the direction vector of the last tether
@@ -759,6 +752,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
                             trim=false)
     warn_delta_deprecated(delta, :find_steady_state!)
     warn_stiffness_factor_deprecated(stiffness_factor, :find_steady_state!)
+    s.integrator = nothing
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver

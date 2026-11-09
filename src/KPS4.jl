@@ -818,13 +818,6 @@ Return the absolute value of the force at the winch as calculated during the las
 function winch_force(s::KPS4) norm(s.last_force) end
 
 """
-    reel_out_speed(s::KPS4)
-
-Return the current reel-out speed of the winch in m/s.
-"""
-function reel_out_speed(s::KPS4) s.v_reel_out end
-
-"""
     cl_cd(s::KPS4)
 
 Calculate the lift and drag coefficients of the kite, based on the current angles of attack.
@@ -936,6 +929,7 @@ function find_steady_state!(s::KPS4; prn=false, delta=nothing, stiffness_factor=
                             trim=false)
     warn_delta_deprecated(delta, :find_steady_state!)
     warn_stiffness_factor_deprecated(stiffness_factor, :find_steady_state!)
+    s.integrator = nothing
     # solve without perturbation of the initial state, with a perturbation only as fallback; the
     # restarts at other elevations use a cheaper solve, so that failing to find a trim is fast
     function solve(; restart=false)
@@ -1281,16 +1275,15 @@ end
 # updated by evaluating the residual.
 function heading_after_rotation!(s::KPS4, y, yd, y_ref, angle)
     segments = s.set.segments
-    # index of the first element of the position of particle i (2 ≤ i) in the state vector
-    i0(i) = 3*(i-2) + 1
-    pos(i) = SVec3(y_ref[i0(i)], y_ref[i0(i)+1], y_ref[i0(i)+2])
+    pos(i) = particle_vector(y_ref, 0, i)
     kcu  = pos(segments+1)
     axis = normalize(pos(segments+3) - kcu)
     for i in (segments+2, segments+4, segments+5)   # A, C and D
         v = pos(i) - kcu
         # Rodrigues' rotation formula
         v_rot = v * cos(angle) + (axis × v) * sin(angle) + axis * (axis ⋅ v) * (1 - cos(angle))
-        y[i0(i):i0(i)+2] .= kcu + v_rot
+        i0 = state_offset(i)
+        y[i0+1:i0+3] .= kcu + v_rot
     end
     residual!(zeros(SimFloat, length(y)), yd, y, s, 0.0)
     calc_heading(s)
@@ -1327,9 +1320,7 @@ function set_initial_heading!(s::KPS4, y0, yd0)
     error("set_initial_heading!: no rotation of the kite found for the heading $(s.set.heading)°")
 end
 
-# Velocities of the particles at the positions pos when reeling out: along the tether,
-# growing linearly from zero at the winch to the reel-out speed at the KCU, which the kite
-# shares.
+# velocities along the tether when reeling out, growing from the winch to the KCU
 function initial_velocities(s::KPS4, pos)
     vel = zeros(MVector{length(pos), SVec3})
     for i in 2:s.set.segments+1

@@ -42,8 +42,7 @@ function create_kite_model(x, y, z, pos)
     s.y = y
     s.z = z
 
-    i = 3 * (length(s.pos) - 4)   # the kite, point B, in the state vector
-    s.trial_y[i+1:i+3] .= pos
+    KiteModels.set_pos_kite!(s, pos)
     s
 end
 
@@ -67,8 +66,7 @@ function create_kite_model(x, y, z, pos, upwind_dir_deg)
 
     KiteModels.set_v_wind_ground!(s, pos[begin+2], deg2rad(upwind_dir_deg))
 
-    i = 3 * (length(s.pos) - 4)   # the kite, point B, in the state vector
-    s.trial_y[i+1:i+3] .= pos
+    KiteModels.set_pos_kite!(s, pos)
     s
 end
 

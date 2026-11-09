@@ -243,9 +243,22 @@ end
 """
     unstretched_length(s::AKM)
 
-Getter for the unstretched tether reel-out length (at zero force).
+Getter for the unstretched tether reel-out length (at zero force) of the accepted state.
 """
-function unstretched_length(s::AKM) s.l_tether end
+function unstretched_length(s::AKM)
+    integrator = s.integrator
+    isnothing(integrator) ? s.l_tether : integrator.u[end-1]
+end
+
+"""
+    reel_out_speed(s::AKM)
+
+Return the reel-out speed of the winch of the accepted state in m/s.
+"""
+function reel_out_speed(s::AKM)
+    integrator = s.integrator
+    isnothing(integrator) ? s.v_reel_out : integrator.u[end]
+end
 
 
 """
@@ -287,25 +300,24 @@ function states(s::KPS4)
     6 * (s.set.segments + KITE_PARTICLES) + 2
 end
 
-# The state vector the getters read: the accepted state of the integrator after init!,
-# before it the state the model was last initialised to or evaluated at by residual!. It
-# holds the positions of the particles 2:P, then their velocities, the tether length and the
-# reel-out speed.
+# accepted state, before init! the last one evaluated: pos 2:P, vel 2:P, length, speed
 function state_vector(s::AKM)::Vector{SimFloat}
     integrator = s.integrator
     isnothing(integrator) ? s.trial_y : integrator.u
 end
 
-# point i of the particles in the state vector u, whose points start after offset; the first
-# particle, the winch, is not in the state and stays at the origin
+# offset in the positions of the state vector of particle i, the winch 1 not being in it
+state_offset(i) = 3 * (i - 2)
+
+# point i of the particles in the state vector u, whose points start after offset
 function particle_vector(u, offset, i)
     i == 1 && return zero(SVec3)
-    j = offset + 3 * (i - 2)
+    j = offset + state_offset(i)
     SVec3(u[j+1], u[j+2], u[j+3])
 end
 
 """
-    particle_positions(s::AKM)
+    particle_positions(s::Union{KPS3, KPS4})
 
 Positions of the particles in ENU of the state of the model: that of the integrator after
 [`init!`](@ref), before it the state of `init` or of the last call of [`residual!`](@ref).
@@ -318,7 +330,7 @@ function particle_positions(s::Union{KPS3{<:Any, <:Any, P}, KPS4{<:Any, <:Any, P
 end
 
 """
-    particle_velocities(s::AKM)
+    particle_velocities(s::Union{KPS3, KPS4})
 
 Velocities of the particles in ENU of the state of the model, as for
 [`particle_positions`](@ref).
@@ -333,6 +345,13 @@ end
 # index of the particle of the kite: the last one of KPS3, point B of KPS4
 kite_particle(::KPS3{<:Any, <:Any, P}) where P = P
 kite_particle(::KPS4{<:Any, <:Any, P}) where P = P - 2
+
+# place the kite of a model that has no integrator at pos [m]
+function set_pos_kite!(s::AKM, pos)
+    i = state_offset(kite_particle(s))
+    s.trial_y[i+1:i+3] .= pos
+    nothing
+end
 
 # s.pos, s.vel and s.vel_kite read the state vector of the model
 @inline function Base.getproperty(s::Union{KPS3, KPS4}, name::Symbol)
@@ -1160,14 +1179,13 @@ function set_initial_rates!(s::AKM, y0, yd0)
     has_initial_rates(s) || return nothing
     P = length(s.pos)
     n = 3 * (P - 1)                 # index offset of the velocities in y0
-    i0(i) = 3 * (i - 2)             # index offset of particle i (2 ≤ i ≤ P)
-    pos(i) = SVec3(y0[i0(i)+1], y0[i0(i)+2], y0[i0(i)+3])
+    pos(i) = particle_vector(y0, 0, i)
     function add_velocity!(i, v)
-        y0[n+i0(i)+1:n+i0(i)+3] .+= v
-        yd0[i0(i)+1:i0(i)+3]    .+= v
+        i0 = state_offset(i)
+        y0[n+i0+1:n+i0+3] .+= v
+        yd0[i0+1:i0+3]    .+= v
     end
-    i_kite = s isa KPS4 ? P - 2 : P
-    kite = pos(i_kite)
+    kite = pos(kite_particle(s))
     z = SVec3(0, 0, 1)
     e_h = normalize(SVec3(kite[1], kite[2], 0))   # horizontal direction from the winch to the kite
     omega = deg2rad(s.set.elevation_rate) * (e_h × z) + deg2rad(s.set.azimuth_rate) * z
@@ -1195,7 +1213,7 @@ end
 # initial state are -g for KPS4 instead of the real ones, so acc_kite stays zero until then.
 function update_acc_kite!(s::AKM, du)
     P = length(s.pos)
-    i = 3 * (P - 1) + 3 * (kite_particle(s) - 2)
+    i = 3 * (P - 1) + state_offset(kite_particle(s))
     s.acc_kite .= (du[i+1], du[i+2], du[i+3])
     nothing
 end
@@ -1246,6 +1264,7 @@ Returns:
 function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing, set_force=nothing, bearing = nothing,
                     attractor=nothing, v_wind_gnd=s.set.v_wind, upwind_dir=-pi/2, v_wind_vert=0.0,
                     dt=1/s.set.sample_freq, interpolate=false)
+    s.integrator = integrator
     KitePodModels.on_timer(s.kcu)
     KiteModels.set_depower_steering!(s, get_depower(s.kcu), get_steering(s.kcu))
     s.sync_speed = set_speed
@@ -1260,7 +1279,7 @@ function next_step!(s::AKM, integrator; set_speed = nothing, set_torque=nothing,
     wm = s.wm
     # speed and force at the start of the time step: the values of the last call of the residual
     isnothing(wm) || update_winch_state!(wm, s.sync_speed; use_brake=use_brake(s),
-                                         speed=reel_out_speed(s), force=winch_force(s))
+                                         speed=s.v_reel_out, force=winch_force(s))
     set_v_wind_ground!(s, calc_height(s), v_wind_gnd; upwind_dir, interpolate)
     if isa(s, KPS3)
         # heading for the correction of the influence of gravity on the turn rate, Eq. 30 of

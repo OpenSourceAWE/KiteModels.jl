@@ -21,9 +21,7 @@ function create_kite_model(x, y, z, pos)
     s.y = y
     s.z = z
 
-    s.pos[end-2][begin] = pos[begin]
-    s.pos[end-2][begin+1] = pos[begin+1]
-    s.pos[end-2][begin+2] = pos[begin+2]
+    KiteModels.set_pos_kite!(s, pos)
     s
 end  
 
@@ -37,9 +35,7 @@ function create_kite_model(x, y, z, pos, wind)
 
     set_v_wind_ground!(s, pos[begin+2], wind_dir=deg2rad(wind))
 
-    s.pos[end-2][begin] = pos[begin]
-    s.pos[end-2][begin+1] = pos[begin+1]
-    s.pos[end-2][begin+2] = pos[begin+2]
+    KiteModels.set_pos_kite!(s, pos)
     
     s
 end  
