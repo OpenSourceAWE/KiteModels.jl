@@ -25,6 +25,7 @@ import KiteUtils: SysState, calc_course, calc_elevation, calc_heading
 @reexport using KitePodModels
 @reexport using WinchModels
 @reexport using AtmosphericModels
+@reexport using KiteGeometry
 using Rotations
 import Base.zero
 import DiffEqBase
@@ -40,7 +41,7 @@ export cl_cd, lift_drag, lift_over_drag, reel_out_speed, tether_length, unstretc
 export calculate_rotational_inertia!
 export copy_model_settings, install_examples_3d, kite_ref_frame, menu2, orient_euler, reactivate_host_app
 export get_default_turbulence, load_state, n_springs, save_state, set_default_turbulence, spring_forces, states
-export upwind_dir
+export system_definition, upwind_dir
 import LinearAlgebra: norm
 
 set_zero_subnormals(true)       # required to avoid drastic slow down on Intel CPUs when numbers become very small
@@ -167,6 +168,7 @@ end
 
 include("KPS4.jl") # include code, specific for the four point kite model
 include("KPS3.jl") # include code, specific for the one point kite model
+include("system_definition.jl")
 include("utils.jl") # functions to calculate the initial state vector, the initial masses and initial springs
 
 function menu2()
