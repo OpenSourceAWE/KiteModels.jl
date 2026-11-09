@@ -85,10 +85,8 @@ $(TYPEDFIELDS)
     res1::SVector{P, KVec3} = zeros(SVector{P, KVec3})
     "part two of the residual, difference between vel' and acc, non-flat, mainly for unit testing"
     res2::SVector{P, KVec3} = zeros(SVector{P, KVec3})
-    "vector of the positions of the particles"
-    pos::SVector{P, KVec3} = zeros(SVector{P, KVec3})
-    "velocity vector of the kite"
-    vel_kite::T =          zeros(S, 3)
+    "state vector of the last call of `init` or `residual!` without an integrator"
+    trial_y::Vector{S} =   zeros(S, 6 * (P - 1) + 2)
     "acceleration vector of the kite, updated once per time step by next_step!"
     acc_kite::T =          zeros(S, 3)
     "time of the last update of the rates by update_sys_state! [s]; -Inf before the first one"
@@ -174,6 +172,7 @@ function clear!(s::KPS3)
     s.v_wind_vert   = 0.0
     s.v_apparent    .= [Float64(s.set.v_wind), 0, 0]
     s.acc_kite      .= [0.0, 0, 0]
+    s.integrator = nothing
     s.t_last = -Inf
     s.orient_last   .= 0.0
     s.azimuth_rate = 0.0
@@ -261,50 +260,18 @@ and its component perpendicular to `unit_vector`.
 end
 
 """
-    particle_velocities(s::KPS3)
-
-Velocities of the particles in ENU from the state vector of the integrator; zero before
-`init!`.
-
-Returns an `SVector` with one `SVec3` per particle in [m/s].
-"""
-function particle_velocities(s::KPS3{S, T, P}) where {S, T, P}
-    integrator = s.integrator
-    isnothing(integrator) && return zeros(SVector{P, SVec3})
-    u = integrator.u
-    # the state vector holds the positions of the particles 2:P, then their velocities
-    vel(i) = i == 1 ? zero(SVec3) : SVec3(u[3*(P-1)+3*(i-2)+1], u[3*(P-1)+3*(i-2)+2],
-                                          u[3*(P-1)+3*(i-2)+3])
-    SVector{P, SVec3}(ntuple(vel, Val(P)))
-end
-
-# Set the positions of the particles and the velocity of the kite from the state vector `u`
-# of the integrator. Between two calls of residual! they belong to the last trial state of
-# the solver.
-function update_kite_state!(s::KPS3{S, T, P}, u) where {S, T, P}
-    # the state vector holds the positions of the particles 2:P, then their velocities
-    for i in 2:P
-        s.pos[i] .= (u[3*(i-2)+1], u[3*(i-2)+2], u[3*(i-2)+3])
-    end
-    i_vel = 3*(P-1) + 3*(P-2)
-    s.vel_kite .= (u[i_vel+1], u[i_vel+2], u[i_vel+3])
-    nothing
-end
-
-"""
     tether_drag_forces(s::KPS3)
 
-Drag forces of the tether and the bridle on each particle in ENU, for the positions `s.pos`
-and the velocities of `particle_velocities`, distributed on the particles as in
-`residual!`.
+Drag forces of the tether and the bridle on each particle in ENU, for the positions and
+velocities of the state of the model, distributed on the particles as in `residual!`.
 
 Returns an `SVector` with one `SVec3` per particle in [N].
 """
 function tether_drag_forces(s::KPS3{S, T, P}) where {S, T, P}
     forces = zeros(MVector{P, SVec3})
-    vel = particle_velocities(s)
+    pos, vel = s.pos, s.vel
     for i in P:-1:2
-        pos1, pos2 = SVec3(s.pos[i]), SVec3(s.pos[i-1])
+        pos1, pos2 = pos[i], pos[i-1]
         segment = pos1 - pos2
         norm1 = norm(segment)
         unit_vector = segment / norm1
@@ -349,9 +316,8 @@ end
 Returns a tuple of the x, y, and z vectors of the kite reference frame.
 """
 function kite_ref_frame(s::KPS3; one_point=true)
-    pos_kite = s.pos[end]
-    delta = pos_kite - s.pos[end - 1]
-    c = -delta
+    pos = s.pos
+    c = pos[end - 1] - pos[end]
     z = normalize(c)
     y = normalize(s.v_apparent × c)
     x = normalize(y × c)
@@ -453,13 +419,6 @@ Return the absolute value of the force at the winch as calculated during the las
 function winch_force(s::KPS3) norm(s.last_force) end
 
 """
-    reel_out_speed(s::KPS3)
-
-Return the current reel-out speed of the winch in m/s.
-"""
-function reel_out_speed(s::KPS3) s.v_reel_out end
-
-"""
     calc_set_cl_cd!(s::KPS3, vec_c, v_app)
 
 Calculate the lift over drag ratio as a function of the direction vector of the last tether
@@ -524,20 +483,19 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
     veld = SVector{div(T,6)+1}(if i==1 SVector(0.0,0,0) else SVector(veld1_[:,i-1]) end for i in 1:div(T,6)+1)
 
     # update parameters
-    pos_kite = pos[segments+1]
-    s.vel_kite .= vel[segments+1]
+    pos_kite, vel_kite = pos[segments+1], vel[segments+1]
     s.l_tether = length
     s.segment_length = length / segments
 
     s.axial_stiffness = s.set.axial_stiffness / s.segment_length
     s.axial_damping  = s.set.axial_damping / s.segment_length
-    s.beta = calc_elevation(s)
+    s.beta = KiteUtils.calc_elevation(pos_kite)
 
     # call core calculation routines
     vec_c = SVector{3, SimFloat}(pos[s.set.segments] - pos_kite)     # convert to SVector to avoid allocations
-    v_app = SVector{3, SimFloat}(s.v_wind - s.vel_kite)
+    v_app = SVector{3, SimFloat}(s.v_wind - vel_kite)
     calc_set_cl_cd!(s, vec_c, v_app)
-    calc_aero_forces(s, pos_kite, s.vel_kite, s.rho, s.steering) # force at the kite
+    calc_aero_forces(s, pos_kite, vel_kite, s.rho, s.steering) # force at the kite
     loop(s, pos, vel, posd, veld, s.res1, s.res2)
   
     # copy and flatten result
@@ -547,12 +505,7 @@ function residual!(res, yd, y::MVector{S, SimFloat}, s::KPS3, _=nothing) where S
            @inbounds res[3*(div(S,6))+3*(i-2)+j] = s.res2[i][j]
         end
     end
-    if norm(res) < 1e5
-        # println(norm(res))
-        for i in eachindex(pos)
-            @inbounds s.pos[i] .= pos[i]
-        end
-    end
+    isnothing(s.integrator) && copyto!(s.trial_y, y)
     # winch calculations
     res[end-1] = lengthd - v_reel_out
     # the state of the winch (brake, rate limited set speed) is updated once per time step in next_step!
@@ -610,10 +563,6 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=
     for i in 1:s.set.segments
         vel[i+1] .+= normalize(pos[i+1] - pos[i]) * (s.set.v_reel_out::Float64 * i / s.set.segments)
     end
-    for i in eachindex(pos)
-        @inbounds s.pos[i] .= pos[i]
-    end
-
     for i in 2:s.set.segments+1
         state_y0[i-1] .= pos[i]  # Initial state vector
         yd0[i-1]      .= vel[i]  # Initial state vector derivative
@@ -623,6 +572,7 @@ function init_inner(s::KPS3, X=zeros(2 * s.set.segments); delta=0.0, upwind_dir=
         state_y0[s.set.segments+i-1] .= vel[i]  # Initial state vector
         yd0[s.set.segments+i-1]      .= acc[i]  # Initial state vector derivative
     end
+    s.trial_y[1:6*s.set.segments] .= reduce(vcat, state_y0)
     set_v_wind_ground!(s, pos[s.set.segments+1][3]; upwind_dir)
     s.l_tether = s.set.l_tether
     s.sync_speed = s.set.v_reel_out
@@ -642,17 +592,12 @@ function init(s::KPS3, X=zeros(2 * (s.set.segments)); delta = 0.0, upwind_dir=no
         turn_dir = upwind_dir - deg2rad(s.set.azimuth)
         res1 = vcat(turn(res1[1:n], turn_dir), res1[n+1:end])
         res2 = vcat(turn(res2[1:n], turn_dir), res2[n+1:end])
-        # Keep s.pos consistent with the rotated state vectors so callers that
-        # read s.pos immediately after init/init! see the correct positions.
-        for i in 2:s.set.segments+1
-            j = i - 1
-            s.pos[i] .= res1[3*(j-1)+1:3*j]
-        end
-        # the turbulent wind depends on the horizontal position of the kite, so sample it again
-        # at the turned position
-        if s.set.use_turbulence != 0
-            set_v_wind_ground!(s, s.pos[end][3]; upwind_dir)
-        end
+    end
+    s.trial_y .= res1
+    # the turbulent wind depends on the horizontal position of the kite, so sample it again
+    # at the turned position
+    if !isnothing(upwind_dir) && s.set.use_turbulence != 0
+        set_v_wind_ground!(s, calc_height(s); upwind_dir)
     end
     MVector{6*(s.set.segments)+2, SimFloat}(res1), MVector{6*(s.set.segments)+2, SimFloat}(res2)
 end
@@ -668,10 +613,10 @@ and for KPS4 also of the springs of the kite. They are the forces of the residua
 current positions and velocities, including the damping force, unless `damping=false`.
 """
 function spring_forces(s::KPS3; damping=true)
-    vel = particle_velocities(s)
+    pos, vel = s.pos, s.vel
     forces = zeros(SimFloat, s.set.segments)
     for i in 1:s.set.segments
-        segment = s.pos[i+1] - s.pos[i]
+        segment = pos[i+1] - pos[i]
         norm1 = norm(segment)
         spring_vel = (segment / norm1) ⋅ (vel[i+1] - vel[i])
         forces[i] = calc_spring_force(s, norm1, spring_vel; damping)
@@ -807,6 +752,7 @@ function find_steady_state!(s::KPS3; prn=false, delta=nothing, stiffness_factor=
                             trim=false)
     warn_delta_deprecated(delta, :find_steady_state!)
     warn_stiffness_factor_deprecated(stiffness_factor, :find_steady_state!)
+    s.integrator = nothing
     el_set = s.set.elevation
     alpha_stall = s.set.alpha_cl[argmax(s.set.cl_list)]  # angle of attack of maximum lift [°]
     # Find the steady state, starting at s.set.elevation. Returns the state, whether the solver

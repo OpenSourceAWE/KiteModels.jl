@@ -32,9 +32,7 @@ function create_kite_model(x, y, z, pos)
 
     KiteModels.set_v_wind_ground!(s, pos[begin+2], deg2rad(-90))
 
-    s.pos[end-2][begin] = pos[begin]
-    s.pos[end-2][begin+1] = pos[begin+1]
-    s.pos[end-2][begin+2] = pos[begin+2]
+    KiteModels.set_pos_kite!(s, pos)
     s
 end  
 
@@ -58,9 +56,7 @@ function create_kite_model(x, y, z, pos, upwind_dir_deg)
 
     KiteModels.set_v_wind_ground!(s, pos[begin+2]; upwind_dir=deg2rad(upwind_dir_deg))
 
-    s.pos[end-2][begin] = pos[begin]
-    s.pos[end-2][begin+1] = pos[begin+1]
-    s.pos[end-2][begin+2] = pos[begin+2] 
+    KiteModels.set_pos_kite!(s, pos)
     s
 end  
 
@@ -324,7 +320,7 @@ end
     kcu_ = KCU(set_)
     s = KPS4(kcu_)
     # place the kite at a realistic position (height 100 m, 50 m downwind)
-    s.pos[end-2] .= [50.0, 0.0, 100.0]
+    KiteModels.set_pos_kite!(s, [50.0, 0.0, 100.0])
     height = 100.0
 
     KiteModels.set_v_wind_ground!(s, height)

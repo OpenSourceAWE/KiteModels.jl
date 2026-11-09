@@ -25,8 +25,10 @@ end
 
 # Rates of the elevation, azimuth and heading [°/s] of the initial state of the integrator,
 # by finite differences: the positions are moved by the velocities of the state times dt.
+# Without the integrator, the getters read the state of the last call of the residual.
 function finite_difference_rates(s, integrator; dt=1e-5)
     u = copy(integrator.u)
+    s.integrator = nothing
     n = 3 * (length(s.pos) - 1)
     res = zeros(length(u))
     angles() = rad2deg.((calc_elevation(s), calc_azimuth(s), calc_heading(s)))
