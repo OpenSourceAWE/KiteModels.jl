@@ -100,9 +100,7 @@ function assemble_system_definition(s::AbstractKiteModel, materials, segments, e
                     segments=collect(1:tether_segments))
     winch = Winch(; name="winch", tethers=[1], winch_point=1, gear_ratio=s.set.gear_ratio,
                   drum_radius=s.set.drum_radius)
-    tables = (; materials, points, segments, tethers=[tether], winches=[winch])
-    name = string(nameof(typeof(s)))
-    draft = SystemDefinition(; metadata=Metadata(; name, n_points), tables...)
-    metadata = Metadata(; name, n_points, connectivity_sha=connectivity_sha(draft))
-    return SystemDefinition(; metadata, tables...)
+    metadata = Metadata(; name=string(nameof(typeof(s))), n_points)
+    return SystemDefinition(; metadata, materials, points, segments, tethers=[tether],
+                            winches=[winch])
 end

@@ -41,7 +41,6 @@ unit_stiffness(definition, segment) =
     @test all(parameters(definition, segment)["density"] == 0
               for segment in definition.segments[(segments + 1):end])
     @test all(material.law == "linear" for material in definition.materials)
-    @test definition.metadata.connectivity_sha == connectivity_sha(definition)
     kcu = segments + 1
     kite_springs = kps4.springs[(segments + 1):end]
     @test [segment.name for segment in definition.segments] ==
@@ -86,6 +85,7 @@ end
     path = mktempdir()
     definition = system_definition(kps4)
     save_log(logger, definition, "topology"; path)
-    @test structure_document(KiteGeometry.definition(load_log("topology"; path))) ==
-          structure_document(definition)
+    logged = KiteGeometry.definition(load_log("topology"; path))
+    @test structure_document(logged) == structure_document(definition)
+    @test logged.metadata.connectivity_sha == connectivity_sha(definition)
 end
