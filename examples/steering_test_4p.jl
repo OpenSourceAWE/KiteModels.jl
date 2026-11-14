@@ -73,11 +73,11 @@ function simulate(integrator, steps; plot=false)
                 heading -= 2*pi
             end
 
-            if rad2deg(heading) < -OFFSET
+            if rad2deg(heading) > OFFSET
                 set_depower_steering(kps4.kcu, kps4.depower, steering)
-            elseif rad2deg(heading) > OFFSET
+            elseif rad2deg(heading) < -OFFSET
                 set_depower_steering(kps4.kcu, kps4.depower, -steering)
-                if rad2deg(last_heading) <= OFFSET
+                if rad2deg(last_heading) >= -OFFSET
                     if steering == 0.5
                         break
                     end
@@ -136,10 +136,10 @@ function plot_steering_vs_turn_rate()
     psi_dot = sl.var_15 # deg/s
 
     # p2=plot(sl.time, sl.v_app; ylabel="v_app [m/s]", fig="v_app")
-    delta = delay(sl.steering, psi_dot ./ sl.v_app)
+    delta = delay(sl.steering, -psi_dot ./ sl.v_app)
     println("delay of turnrate: $(delta*dt) s")
     delayed_steering = shift_vector(sl.steering, delta)
-    G = psi_dot ./ sl.v_app ./ delayed_steering # °/s / m/s = °/m
+    G = -psi_dot ./ sl.v_app ./ delayed_steering # °/s / m/s = °/m
     for (i, _) in enumerate(G)
         if abs(delayed_steering[i]) < 0.1
             G[i] = NaN
@@ -149,7 +149,7 @@ function plot_steering_vs_turn_rate()
     G_std = std(filter(!isnan, G))
     println("mean turnrate_law factor: $(round(G_mean, digits=3)) °/m ± $(round(G_std/G_mean*100, digits=2)) %")
     println("mean turnrate_law factor: $(round(deg2rad(G_mean), digits=4)) rad/m ± $(round(G_std/G_mean*100, digits=2)) %")
-    p1 = plot(sl.time, delayed_steering, sl.var_15./sl.v_app;
+    p1 = plot(sl.time, delayed_steering, -sl.var_15./sl.v_app;
               ylabels=["delayed_steering", "turnrate/v_app [°/m]"],
               ylims=[(-0.6, 0.6), (-G_mean*0.6, G_mean*0.6)],
               fig="steering vs turnrate")
@@ -159,10 +159,10 @@ function plot_steering_vs_turn_rate()
 end
 
 function calc_c1_c2(v_app, psi, beta, psi_dot, steering)
-    # c1 * v_app * u_s + c2/v_app * sin(psi) * cos(beta) - psi_dot = 0
+    # -c1 * v_app * u_s + c2/v_app * sin(psi) * cos(beta) - psi_dot = 0
     # Ac=b where c=[c1,c2] is a vector of the unknown coefficients.
-    # A is a n×2 matrix whose columns are v_app*u_s and sin(ψ)cos(β)/v_app, and b is the vector psi_dot.
-    col1 = v_app .* steering
+    # A is a n×2 matrix whose columns are -v_app*u_s and sin(ψ)cos(β)/v_app, and b is the vector psi_dot.
+    col1 = -v_app .* steering
     col2 = sin.(psi) .* cos.(beta) ./ v_app
     A = [col1 col2]
     # Then solve with c = A\b. That’ll get you a least-squares solution to the problem,
@@ -172,7 +172,7 @@ function calc_c1_c2(v_app, psi, beta, psi_dot, steering)
 end
 
 function plot_turnrate_law(c1, c2, time, v_app, psi, beta, psi_dot, steering)
-    est_steering = psi_dot ./ (v_app * c1) .- c2 ./ (c1 .* v_app.^2) .* sin.(psi) .* cos.(beta)
+    est_steering = c2 ./ (c1 .* v_app.^2) .* sin.(psi) .* cos.(beta) .- psi_dot ./ (v_app * c1)
     p1 = plot(time, steering, est_steering; ylabels=["delayed_steering", "est_steering"],
               ylims=[(-0.6, 0.6), (-0.6, 0.6)],
               fig="steering vs est_steering")

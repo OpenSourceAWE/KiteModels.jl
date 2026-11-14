@@ -71,11 +71,11 @@ function simulate(integrator, steps; plot=false)
                 heading -= 2*pi
             end
 
-            if rad2deg(heading) < -OFFSET
+            if rad2deg(heading) > OFFSET
                 set_depower_steering(kps3.kcu, kps3.depower, steering)
-            elseif rad2deg(heading) > OFFSET
+            elseif rad2deg(heading) < -OFFSET
                 set_depower_steering(kps3.kcu, kps3.depower, -steering)
-                if rad2deg(last_heading) <= OFFSET
+                if rad2deg(last_heading) >= -OFFSET
                     if steering ≈ K*0.5
                         break
                     end
@@ -130,10 +130,10 @@ function plot_steering_vs_turn_rate()
     lg = load_log("tmp")
     sl = lg.syslog
 
-    delta = delay(sl.var_16, sl.var_15./sl.v_app)
+    delta = delay(sl.var_16, -sl.var_15./sl.v_app)
     println("delay of turnrate: $(delta*dt) s")
     delayed_steering = shift_vector(sl.var_16, delta)
-    G = sl.var_15./sl.v_app./delayed_steering
+    G = -sl.var_15./sl.v_app./delayed_steering
     for (i, _) in enumerate(G)
         if abs(delayed_steering[i]) < 0.1
             G[i] = NaN
@@ -142,7 +142,7 @@ function plot_steering_vs_turn_rate()
     G_mean = mean(filter(!isnan, G))
     G_std = std(filter(!isnan, G))
     println("mean turnrate_law factor: $(G_mean) ± $(G_std/G_mean*100) %")
-    p1 = plot(sl.time, delayed_steering, sl.var_15./sl.v_app;
+    p1 = plot(sl.time, delayed_steering, -sl.var_15./sl.v_app;
               ylabels=["delayed_steering", "turnrate/v_app [°/m]"],
               ylims=[(-0.6, 0.6), (-G_mean*0.6, G_mean*0.6)],
               fig="steering vs turnrate")

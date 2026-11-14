@@ -189,8 +189,8 @@ Dyneema or similar high-strength materials for the tether the resulting system i
 
 - a positive `set_torque` will accelerate the reel-out, a negative `set_torque` counteract the pulling force of the kite. The unit is [N/m] as seen at the motor/generator axis.
 - the `depower` settings are dimensionless and can be between zero and one. A value equal to $\mathrm{depower\_zero}/100$ from the `settings.yaml` file means that the kite is fully powered.
-- the `heading` angle, the direction the nose of the kite is pointing to is positive in clockwise direction when seen from above.
-- the `steering` input, dimensionless and in the range of -1.0 .. 1.0. A positive steering input causes a positive turn rate (derivative of the heading).
+- the `heading` angle, the direction the nose of the kite is pointing to, is zero towards zenith and positive to the right as seen from the ground station. The `course`, the direction of the velocity of the kite, is measured the same way. Neither depends on the wind direction.
+- the `steering` input, dimensionless and in the range of -1.0 .. 1.0. A positive steering input turns the kite to the left as seen from the ground station, a negative turn rate (derivative of the heading).
 
 A definition of the reference frames can be found in the [reference frames documentation](https://OpenSourceAWE.github.io/KiteUtils.jl/dev/reference_frames/).
 
