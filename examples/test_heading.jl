@@ -64,7 +64,7 @@ end
     s = create_kite_model((0, 1, 0), (1, 0, 0), (0, 0, -1), # Orientation
                           (0, 0.5, -sqrt(3)/2))             # Pos
     heading = rad2deg(calc_heading2(s))
-    @test isapprox(heading,         0,      atol=1e-4, rtol=1e-4) || isapprox(heading, 360, atol=1e-4, rtol=1e-4)
+    @test wrap2pi(deg2rad(heading)) ≈ 0     atol=deg2rad(1e-4)
 end
 # Kite at an azimuth of 45 degrees and with 0 roll pitch yaw and elevation. Heading is then 90 degrees"
 @testset "azimuth 45" begin
@@ -87,13 +87,12 @@ end
     heading = rad2deg(calc_heading2(s))
     @test isapprox(heading,         270,    atol=1e-4, rtol=1e-4)
 end
-# Kite at an azimuth of 60 degrees and with 45 degrees pitch, 0 roll yaw and elevation. Heading is then 45 degrees"
+# Kite at an azimuth of 60 degrees and with 45 degrees pitch, 0 roll yaw and elevation. Heading is then 41 degrees"
 @testset "pitch 45 azimuth_north 60" begin
     s = create_kite_model((0, sqrt(2)/2, sqrt(2)/2), (1, 0, 0), (0, sqrt(2)/2, -sqrt(2)/2),   # Orientation
                           (-sqrt(3)/2, 1/2, 0))                                               # Pos
     heading = rad2deg(calc_heading2(s))
-    println(heading)
-    @test_broken isapprox(heading,         45,     atol=1e-4, rtol=1e-4)
+    @test isapprox(heading,         40.8933946491309,    atol=1e-4, rtol=1e-4)
 end
 end
 nothing

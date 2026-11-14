@@ -96,7 +96,7 @@ end
     @test isapprox(yaw,             0,      atol=1e-4, rtol=1e-4)
     @test isapprox(azimuth_north,   0,      atol=1e-4, rtol=1e-4)
     @test isapprox(elevation,       -60,    atol=1e-4, rtol=1e-4)
-    @test isapprox(heading,         0,      atol=1e-4, rtol=1e-4) || isapprox(heading, 360, atol=1e-4, rtol=1e-4)
+    @test wrap2pi(deg2rad(heading)) ≈ 0     atol=deg2rad(1e-4)
 end
 
 # Kite at an azimuth of 45 degrees and with 0 roll pitch yaw and elevation. Heading is then 90 degrees"
@@ -206,7 +206,7 @@ end
 
     @test isapprox(azimuth_north,   0,      atol=1e-4, rtol=1e-4)
     @test isapprox(elevation,       0,      atol=1e-4, rtol=1e-4)
-    @test isapprox(heading,         0,      atol=1e-4, rtol=1e-4) || isapprox(heading, 360, atol=1e-4, rtol=1e-4)
+    @test wrap2pi(deg2rad(heading)) ≈ 0     atol=deg2rad(1e-4)
 end
 
 # Kite pointing towards west, to the left as seen from the groundstation, and z-axis towards groundstation at elevation and azimuth equal to 0, should give a heading of 270."
@@ -229,7 +229,7 @@ end
 
     @test isapprox(azimuth_north,   0,      atol=1e-4, rtol=1e-4)
     @test isapprox(elevation,       0,      atol=1e-4, rtol=1e-4)
-    @test isapprox(heading,         0,      atol=1e-4, rtol=1e-4) || isapprox(heading, 360, atol=1e-4, rtol=1e-4)
+    @test wrap2pi(deg2rad(heading)) ≈ 0     atol=deg2rad(1e-4)
 end
 
 # Kite is same place and orientation as base orientation, rotate the windframe x axis 60 degrees to the west"
@@ -241,7 +241,7 @@ end
 
     @test isapprox(azimuth_north,   0,      atol=1e-4, rtol=1e-4)
     @test isapprox(elevation,       0,      atol=1e-4, rtol=1e-4)
-    @test isapprox(heading,         0,      atol=1e-4, rtol=1e-4) || isapprox(heading, 360, atol=1e-4, rtol=1e-4)
+    @test wrap2pi(deg2rad(heading)) ≈ 0     atol=deg2rad(1e-4)
 end
 
 # Kite is same place and orientation as base orientation, rotate the windframe x axis 60 degrees to the east"
@@ -253,7 +253,7 @@ end
     
     @test isapprox(azimuth_north,   0,      atol=1e-4, rtol=1e-4)
     @test isapprox(elevation,       0,      atol=1e-4, rtol=1e-4)
-    @test isapprox(heading,         0,      atol=1e-4, rtol=1e-4) || isapprox(heading, 360, atol=1e-4, rtol=1e-4)
+    @test wrap2pi(deg2rad(heading)) ≈ 0     atol=deg2rad(1e-4)
 end
 
 # Kite is same place and orientation as base orientation, rotate the windframe x axis 45 degrees to the west"

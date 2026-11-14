@@ -38,7 +38,7 @@ spring_lengths(s::KPS4) = [norm(s.pos[sp.p2] - s.pos[sp.p1]) for sp in s.springs
         @test spring_lengths(s) ≈ spring_lengths(ref) rtol=1e-12
     end
 
-    @testset "KPS4, heading 90°: the kite flies to the right as seen from the ground station" begin
+    @testset "KPS4, heading ±90°: flies right, or mirrored left, as seen from the ground station" begin
         azimuths = map((90.0, -90.0)) do heading
             s = new_model(KPS4; heading)
             integrator = init!(s)

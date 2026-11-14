@@ -464,7 +464,7 @@ const SEGMENTS = load_settings("system.yaml").segments
             end
             rad2deg(atan(sin(calc_heading(kps) - heading_0), cos(calc_heading(kps) - heading_0)))
         end
-        # if the wind direction changes, the heading is calculated with the new wind
+        # if the wind direction changes, the kite frame follows the new apparent wind
         let set = deepcopy(load_settings("system.yaml"))
             kps = KPS3(KCU(set))
             integrator = something(KiteModels.init!(kps))
