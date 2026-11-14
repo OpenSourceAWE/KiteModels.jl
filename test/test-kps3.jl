@@ -86,7 +86,7 @@ const SEGMENTS = load_settings("system.yaml").segments
         rho = SimFloat(calc_rho(kps.am, 10.0))
         rel_steering = -0.1
         kps.beta = 0.1
-        kps.psi = 0.2
+        kps.psi = -0.2
         kps.param_cl = 0.2
         kps.param_cd = 1.0
         KiteModels.calc_aero_forces(kps, pos_kite, v_kite, rho, rel_steering)

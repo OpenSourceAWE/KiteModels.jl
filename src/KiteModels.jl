@@ -476,36 +476,26 @@ function calc_azimuth_north(s::AKM)
 end
 
 """
-    calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_point=false, respos=true)
+    calc_heading(s::AKM; one_point=false, respos=true)
 
-Determine the heading angle of the kite in radian.
+Determine the heading angle of the kite in radian: the direction its nose points, zero
+towards zenith and positive to the right as seen from the ground station; see
+`KiteUtils.calc_heading`. If `respos` is true, the result is in 0 .. 2π, else in -π .. π.
 """
-function calc_heading(s::AKM; upwind_dir_=upwind_dir(s), neg_azimuth=false, one_point=false, respos=true)
+function calc_heading(s::AKM; one_point=false, respos=true)
     attitude = fromKS2KA(calc_orient_quat(s; one_point))
-    elevation = calc_elevation(s)
-    # use azimuth in wind reference frame
-    if neg_azimuth
-        azimuth = -calc_azimuth(s)
-    else
-        azimuth = calc_azimuth(s)
-    end
-    calc_heading(attitude, elevation, azimuth; upwind_dir=upwind_dir_, respos)
+    calc_heading(attitude, calc_elevation(s), calc_azimuth_east(s); respos)
 end
 
 """
     calc_course(s::AKM)
 
-Determine the course angle of the kite in radian.
-Undefined if the velocity of the kite is near zero.
+Determine the course angle of the kite in radian: the direction of its velocity, with the
+angle convention of [`calc_heading`](@ref). Undefined if the velocity of the kite is near
+zero.
 """
-function calc_course(s::AKM, neg_azimuth=false)
-    elevation = calc_elevation(s)
-    if neg_azimuth
-        azimuth = -calc_azimuth(s)
-    else
-        azimuth = calc_azimuth(s)
-    end
-    KiteUtils.calc_course(s.vel_kite, elevation, azimuth)
+function calc_course(s::AKM)
+    KiteUtils.calc_course(s.vel_kite, calc_elevation(s), calc_azimuth_east(s))
 end
 
 """
@@ -999,11 +989,12 @@ settings; for KPS3 and KPS4 only the first value of each vector is used:
   for the natural elevation.
 - `azimuths`: the azimuth of the kite in the wind reference frame; see `find_steady_state!`.
 - `steerings`: the steering setting [%] of the KCU.
-- `headings` (KPS4 only): the heading of the kite. After the steady state was found, the kite
-  is turned about the line from the KCU to the kite, which keeps the position of the kite and
-  the lengths of all springs; the tether is not changed. A kite with a heading other than zero
-  is not in equilibrium: it flies towards its nose. The one-point kite of KPS3 has no heading
-  of its own, so the heading is ignored.
+- `headings` (KPS4 only): the heading of the kite [°] as [`calc_heading`](@ref) returns it,
+  positive to the right as seen from the ground station. After the steady state was found,
+  the kite is turned about the line from the KCU to the kite, which keeps the position of the
+  kite and the lengths of all springs; the tether is not changed. A kite with a heading other
+  than zero is not in equilibrium: it flies towards its nose. The one-point kite of KPS3 has
+  no heading of its own, so the heading is ignored.
 - `elevation_rates` and `azimuth_rates`: the tether and the kite rotate as a rigid body about
   the winch, so that the elevation and the azimuth of the kite change with these rates [°/s].
 - `heading_rates` (KPS4 only): the kite also rotates about the line from the KCU to the kite,
