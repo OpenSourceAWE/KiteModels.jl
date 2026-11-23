@@ -458,8 +458,8 @@ end
 """
     calc_azimuth_east(s::AKM)
 
-Determine the azimuth_east angle of the kite in radian.
-Positive clockwise when seen from above.
+Determine the azimuth_east angle of the kite in radian: the angle of its horizontal position
+from the east axis, positive anti-clockwise when seen from above.
 """
 function calc_azimuth_east(s::AKM)
     KiteUtils.azimuth_east(pos_kite(s))
@@ -860,7 +860,8 @@ tuple `(sys_state, meta_data)` of a new `SysState` and the `Dict` of the meta da
 The number of points and of springs of the `SysState` is taken from the length of the fields
 `X` and `spring_force` in the file. Fields that are not in the file, for example because they
 were excluded when saving, keep the default values of `SysState`: zero, except for the
-orientation, which is the unit quaternion.
+orientation, which is the unit quaternion. A file with `elevation`, `azimuth`, `heading`,
+`course` or `AoA` instead of the per-wing lists loads them into the first wing.
 
 Example:
 ```julia
@@ -871,16 +872,16 @@ function load_state(filename)
     yaml  = KiteUtils.YAML.load_file(filename)
     state = yaml["sys_state"]
     ss = SysState(length(state["X"])::Int; segments=length(get(state, "spring_force", ()))::Int)
-    for name in fieldnames(typeof(ss))
+    for name in propertynames(ss)
         haskey(state, String(name)) || continue
         value = state[String(name)]
-        field = getfield(ss, name)
+        field = getproperty(ss, name)
         if field isa AbstractVector
             length(value) == length(field) || throw(ArgumentError(
                 "$name has $(length(value)) elements in $filename, but the SysState expects $(length(field))"))
             field .= value
         else
-            setfield!(ss, name, convert(fieldtype(typeof(ss), name), value))
+            setproperty!(ss, name, value)
         end
     end
     ss, get(yaml, "meta_data", Dict())
