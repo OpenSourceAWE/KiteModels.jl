@@ -55,7 +55,7 @@ meta_data = Dict("script" => script_name, "time" => sys_state.time,
 save_state(joinpath(output_dir, "sys_state_$(script_name).yaml"), sys_state; meta_data,
            exclude=KiteModels.UNUSED_FIELDS_KPS3)
 log!(logger, sys_state)
-elev = rad2deg(logger.elevation_vec[end])
+elev = rad2deg(logger.elevations_vec[end][1])
 println("Lift: $lift, Drag: $drag, elev: $elev, Iterations: $(kps3.iter)")
 
 q = QuatRotation(calc_orient_quat(kps3; viewer=false))

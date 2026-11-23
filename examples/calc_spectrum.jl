@@ -110,7 +110,7 @@ function sim_and_plot(set; depower=DEPOWER, f_ex)
     simulate(kps4, integrator, logger, STEPS, f_ex, sin_amplitude)
     save_log(logger, "tmp")
     if PLOT
-        p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"],
+        p = plot(logger.time_vec, rad2deg.(first.(logger.elevations_vec)), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"],
                 fig="depower: $(depower), f_ex: "*repr(round(f_ex, digits=3)))
         display(p)
         plot_force_speed("tmp", f_ex)

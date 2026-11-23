@@ -99,7 +99,7 @@ for depower in DEPOWER
         catch e
             println("Error: $e")
             if PLOT
-                p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), xlabel="time [s]", ylabel="elevation [°]", 
+                p = plot(logger.time_vec, rad2deg.(first.(logger.elevations_vec)), xlabel="time [s]", ylabel="elevation [°]", 
                          fig="depower: $depower")
                 display(p)
                 sleep(0.2)
@@ -111,7 +111,7 @@ for depower in DEPOWER
     else
         break
     end
-    elev = rad2deg(logger.elevation_vec[end])
+    elev = rad2deg(logger.elevations_vec[end][1])
     if elev > 50 && elev < 75
         if elev > 70
             set.elevation = elev - 2
@@ -130,7 +130,7 @@ for depower in DEPOWER
     end
     # if depower in [DEPOWER[begin+1], DEPOWER[end]] && PLOT
     if PLOT
-        p = plot(logger.time_vec, rad2deg.(logger.elevation_vec), xlabel="time [s]", ylabel="elevation [°]", 
+        p = plot(logger.time_vec, rad2deg.(first.(logger.elevations_vec)), xlabel="time [s]", ylabel="elevation [°]", 
                  fig="depower: $depower")
         display(p)
         sleep(0.2)

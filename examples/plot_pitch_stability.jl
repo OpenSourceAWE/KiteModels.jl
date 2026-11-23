@@ -115,7 +115,7 @@ if ! isnothing(integrator)
     set_depower_steering(kps4.kcu, depower, 0.0)
     simulate(kps4, integrator, logger, STEPS)
 end
-elev = rad2deg(logger.elevation_vec[end])
+elev = rad2deg(logger.elevations_vec[end][1])
 V_WIND_KITE= norm(kps4.v_wind)
 set.elevation = 67.36
 
@@ -132,7 +132,7 @@ if PRINT
     println(", elevation: $(round((elev), digits=2)), height:$(round(height, digits=2))")
 end
 if PLOT
-    display(plot(logger.time_vec, rad2deg.(logger.elevation_vec), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"],
+    display(plot(logger.time_vec, rad2deg.(first.(logger.elevations_vec)), logger.var_01_vec, xlabel="time [s]", ylabels=["elevation [°]", "aoa [°]"],
             fig="depower: $(depower), cmq:"*repr(set.cmq)))
     sleep(0.2)
 end
