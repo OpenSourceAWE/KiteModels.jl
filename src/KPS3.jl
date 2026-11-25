@@ -337,7 +337,8 @@ function calc_aero_forces(s::KPS3, pos_kite, v_kite, rho, rel_steering)
     s.lift_force    .= K * s.param_cl .* normalize(cross(s.drag_force, s.kite_y))   
     # some additional drag is created while steering
     s.drag_force    .*= K * s.param_cd * BRIDLE_DRAG * (1.0 + 0.6 * abs(rel_steering)) 
-    s.cor_steering    = s.set.c2_cor / v_app_norm * sin(s.psi) * cos(s.beta) # in paper named i_(s,c), Eq. 30
+    # i_(s,c), Eq. 30 of the paper, whose heading has the opposite sign
+    s.cor_steering    = -s.set.c2_cor / v_app_norm * sin(s.psi) * cos(s.beta)
     s.steering_force .= -K * Float64(s.set.rel_side_area)/100.0 * Float64(s.set.c_s) * (-rel_steering + s.cor_steering) .* s.kite_y
     s.last_force     .= -(s.lift_force + s.drag_force + s.steering_force) 
     nothing

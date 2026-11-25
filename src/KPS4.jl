@@ -132,8 +132,6 @@ $(TYPEDFIELDS)
     param_cl::S =         0.2
     "drag coefficient of the kite, depending on the angle of attack"
     param_cd::S =         1.0
-    "azimuth angle in radian; initial value is zero"
-    psi::S =              zero(S)
     "depower angle [deg]"
     alpha_depower::S =     0.0
     "pitch angle [rad]"
@@ -252,7 +250,6 @@ function clear!(s::KPS4)
     s.alpha_4 = 0.0
     s.param_cl = 0.2
     s.param_cd = 1.0
-    s.psi = 0.0
     s.rho = s.set.rho_0
     s.bridle_factor = s.set.l_bridle / bridle_length(s.set)
     s.ks = deg2rad(Float64(s.set.max_steering))

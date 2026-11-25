@@ -38,7 +38,7 @@ spring_lengths(s::KPS4) = [norm(s.pos[sp.p2] - s.pos[sp.p1]) for sp in s.springs
         @test spring_lengths(s) ≈ spring_lengths(ref) rtol=1e-12
     end
 
-    @testset "KPS4, heading 90° and -90°: the kite flies sideways" begin
+    @testset "KPS4, heading ±90°: flies right, or mirrored left, as seen from the ground station" begin
         azimuths = map((90.0, -90.0)) do heading
             s = new_model(KPS4; heading)
             integrator = init!(s)
@@ -47,7 +47,7 @@ spring_lengths(s::KPS4) = [norm(s.pos[sp.p2] - s.pos[sp.p1]) for sp in s.springs
             end
             rad2deg(calc_azimuth(s))
         end
-        @test azimuths[1] > 2.0
+        @test azimuths[1] < -2.0
         @test azimuths[2] ≈ -azimuths[1] rtol=1e-3
     end
 
@@ -70,13 +70,13 @@ spring_lengths(s::KPS4) = [norm(s.pos[sp.p2] - s.pos[sp.p1]) for sp in s.springs
         @test ref.steering ≈ (0 - ref.set.c0) / (1 + ref.set.k_ds * (ref.alpha_depower / deg2rad(ref.set.alpha_d_max)))
     end
 
-    @testset "KPS4, steering 20%: the kite turns" begin
+    @testset "KPS4, steering 20%: the kite turns to the left as seen from the ground station" begin
         s = new_model(KPS4; steering=20.0)
         integrator = init!(s)
         for _ in 1:40
             next_step!(s, integrator; set_speed=0.0, dt=0.05)
         end
-        @test rad2deg(calc_heading(s)) > 20.0
+        @test rad2deg(calc_heading(s; respos=false)) < -20.0
     end
 end
 nothing

@@ -103,7 +103,7 @@ println("v_wind_kite: ", ss.v_wind_kite)
 # azimuth: -0.0°
 # azimuth_north: -100.0°
 # alpha2, alpha3, alpha4: 10.315549445214474 10.006140602413751 10.007820124746754
-# heading: 359.99°
+# heading: 0.01°
 # AoA: 10.315549°
 # CL2: 0.58924925 CD2: 0.2437712
 # v_wind_gnd: Float32[14.279713, -2.5178986, 0.0]

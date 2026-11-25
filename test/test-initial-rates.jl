@@ -82,8 +82,8 @@ end
         @test rad2deg(s.pitch_rate) ≈ -2.0 atol=1e-3
     end
 
-    @testset "KPS4, azimuth rate 10°/s, heading 90°: the kite keeps moving" begin
-        s = new_model(KPS4; azimuth_rate=10.0, heading=90.0)
+    @testset "KPS4, azimuth rate 10°/s, heading -90°: the kite keeps moving" begin
+        s = new_model(KPS4; azimuth_rate=10.0, heading=-90.0)
         integrator = init!(s)
         for _ in 1:20
             next_step!(s, integrator; set_speed=0.0, dt=0.05)
